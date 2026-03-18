@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký lịch Goal-Line</title>
+</head>
+<body>
+
+<div class="container">
+    <h2>LỊCH ĐĂNG BÀI GOAL-LINE</h2>
+    
+    <div class="controls">
+        <input type="text" id="adminName" placeholder="Nhập tên của bạn (VD: vinci, Dante...)" required>
+        <button id="submitBtn" onclick="submitSchedule()">ĐĂNG KÝ VÀO CÁC Ô ĐÃ CHỌN</button>
+        <button id="refreshBtn" onclick="loadSchedule()" style="background: #444; color: white;">LÀM MỚI LỊCH</button>
+    </div>
+    <div id="loading">Đang đồng bộ với Google Sheet...</div>
+
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th>Buổi \ Ngày</th>
+                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // TẠO DÒNG NÀY: Dán link Web App của Google Apps Script vào đây
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyCbwoQ83nHwhlHM_sUUSxjSVTCRAm9dH0ueqqAn9867LGa0KkDt1TDUA-51adv_AQB/exec'; 
+    
+    const tableBody = document.getElementById('tableBody');
+    const loading = document.getElementById('loading');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    const buoi = ['Sáng', 'Trưa', 'Tối'];
+    let selectedSlots = []; // Mảng lưu các ô được click
+
+    // 1. Hàm tải dữ liệu từ Sheet
+    async function loadSchedule() {
+        loading.style.display = 'block';
+        tableBody.innerHTML = ''; // Xóa bảng cũ
+        selectedSlots = []; // Reset lựa chọn
+
+        try {
+            const response = await fetch(GAS_URL);
+            const result = await response.json();
+            
+            const data = result.data; // Mảng 2 chiều 3x7
+            
+            // Vẽ bảng
+            buoi.forEach((b, rowIndex) => {
+                const tr = document.createElement('tr');
+                // Cột tiêu đề buổi
+                const th = document.createElement('td');
+                th.className = 'row-header';
+                th.innerText = b;
+                tr.appendChild(th);
+                
+                // 7 cột ngày
+                for(let colIndex = 0; colIndex < 7; colIndex++) {
+                    const td = document.createElement('td');
+                    td.className = 'slot-cell';
+                    td.innerText = data[rowIndex][colIndex] || ''; // Hiện tên admin đang có
+                    
+                    // Xử lý sự kiện click chọn ô
+                    td.onclick = function() {
+                        this.classList.toggle('selected');
+                        
+                        // Cập nhật mảng selectedSlots
+                        const slotObj = {row: rowIndex, col: colIndex};
+                        const existingIndex = selectedSlots.findIndex(s => s.row === rowIndex && s.col === colIndex);
+                        
+                        if (existingIndex > -1) {
+                            selectedSlots.splice(existingIndex, 1); // Bỏ chọn
+                        } else {
+                            selectedSlots.push(slotObj); // Chọn
+                        }
+                    };
+                    tr.appendChild(td);
+                }
+                tableBody.appendChild(tr);
+            });
+            
+        } catch (error) {
+            alert('Lỗi tải dữ liệu. Hãy tải lại trang!');
+        }
+        loading.style.display = 'none';
+    }
+
+    // 2. Hàm gửi dữ liệu lên Sheet
+    async function submitSchedule() {
+        const name = document.getElementById('adminName').value.trim();
+        
+        if (!name) { alert('Vui lòng nhập tên của bạn!'); return; }
+        if (selectedSlots.length === 0) { alert('Vui lòng click chọn ít nhất 1 ô trên lịch!'); return; }
+
+        loading.innerText = 'Đang gửi dữ liệu lên Sheet...';
+        loading.style.display = 'block';
+        submitBtn.disabled = true;
+
+        const payload = {
+            name: name,
+            slots: selectedSlots
+        };
+
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            
+            // Thành công thì tải lại lịch mới nhất
+            alert('Đăng ký thành công!');
+            document.getElementById('adminName').value = '';
+            loadSchedule(); 
+            
+        } catch (error) {
+            alert('Có lỗi xảy ra, vui lòng thử lại!');
+        }
+        
+        submitBtn.disabled = false;
+        loading.innerText = 'Đang đồng bộ với Google Sheet...';
+    }
+
+    // Tự động tải lịch khi vừa mở web
+    window.onload = loadSchedule;
+</script>
+
+</body>
+</html>

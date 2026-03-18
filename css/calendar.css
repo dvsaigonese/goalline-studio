@@ -1,0 +1,23 @@
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e2f; color: white; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: #2a2a40; padding: 20px; border-radius: 10px; }
+        h2 { text-align: center; color: #facc15; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+        input[type="text"] { padding: 10px; flex: 1; border-radius: 5px; border: 1px solid #444; background: #1e1e2f; color: white; font-weight: bold; }
+        button { padding: 10px 20px; background: #facc15; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; color: black; }
+        button:hover { background: #e2b714; }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: center; width: 12.5%; vertical-align: top; }
+        th { background: #00ff7f; color: black; font-weight: bold; } /* Màu xanh giống ảnh thực đăng */
+        .row-header { background: #444; color: white; font-weight: bold; vertical-align: middle; }
+        
+        /* Chỉnh style cho các ô có thể chọn */
+        .slot-cell { background: #333; cursor: pointer; min-height: 50px; transition: 0.2s; white-space: pre-line; font-size: 0.9em;}
+        .slot-cell:hover { background: #444; }
+        
+        /* Hiệu ứng khi Admin click chọn ô đó */
+        .slot-cell.selected { background: #facc15; color: black; font-weight: bold; border: 2px solid white; }
+        
+        #loading { text-align: center; color: #00ff7f; display: none; margin-top: 10px;}
