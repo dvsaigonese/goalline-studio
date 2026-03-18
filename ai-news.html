@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Newsroom - Goal-Line</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* CSS viết gộp ở đây cho nhanh, bạn có thể tách ra css/ai-news.css sau */
+        .newsroom-container { display: flex; height: 100vh; padding-left: 64px; } /* Trừ chỗ cho sidebar */
+        .news-feed { width: 50%; border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; }
+        .ai-assistant { width: 50%; padding: 20px; display: flex; flex-direction: column; background: #1e1e24;}
+        
+        .news-item { background: var(--bg-panel); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); transition: 0.2s;}
+        .news-item:hover { border-color: var(--primary); }
+        .news-title { font-size: 1.1rem; font-weight: bold; color: white; margin-bottom: 10px; }
+        .news-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; }
+        .news-desc { font-size: 0.9rem; color: #ccc; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;}
+        
+        .ai-chat-box { flex-grow: 1; background: var(--bg-dark); border-radius: 10px; border: 1px solid var(--border); padding: 20px; overflow-y: auto; color: white; white-space: pre-wrap; line-height: 1.6;}
+        .ai-controls { margin-top: 15px; display: flex; gap: 10px; }
+        
+        .btn-ai { background: var(--accent); color: black; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .btn-ai:hover { background: #e2b714; }
+        
+        /* Cài đặt API Key */
+        .api-key-setup { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    
+    <div class="toolbar" style="position: fixed; left: 0; top: 0; height: 100vh;">
+        <a href="index.html" class="tool-btn" title="Home">🏠</a>
+    </div>
+
+    <div class="newsroom-container">
+        <div class="news-feed">
+            <h2 style="color: var(--primary); margin-bottom: 20px;">📰 BREAKING NEWS</h2>
+            <div id="news-loading" style="color: var(--text-muted);">Fetching data from news sources...</div>
+            <div id="news-container"></div>
+        </div>
+
+        <div class="ai-assistant">
+            <h2 style="color: var(--accent); margin-bottom: 20px;">🤖 GEMINI CONTENT ASSISTANT</h2>
+            
+            <div id="api-key-section" class="api-key-setup">
+                <label>Please enter your Google Gemini API Key to use the AI:</label>
+                <div class="row-input mt-2">
+                    <input type="password" id="gemini-key" class="form-control" placeholder="AIzaSy...">
+                    <button class="add-btn" onclick="saveApiKey()" style="width: auto; padding: 0 15px;">Save Key</button>
+                </div>
+                <small class="tip">Get a free key at: aistudio.google.com/app/apikey</small>
+            </div>
+
+            <div class="setting-group" style="margin-bottom: 20px;">
+                <label style="color: var(--text-muted); font-size: 0.9rem; display: block; margin-bottom: 8px;">🎭 Writing Style:</label>
+                <select id="ai-tone" class="form-control" style="width: 100%; padding: 10px; background: #18181b; color: white; border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">
+                    <option value="nuance">⚖️Nuanced - An toàn, Đa chiều, Khách quan</option>
+                    <option value="devil">🔥Devil's Advocate - Phản biện gắt, Đi ngược đám đông</option>
+                </select>
+            </div>
+
+            <div class="ai-chat-box" id="ai-response">
+                Hello Boss! Click the "Ask AI to Write" button on any news item on the left. I will analyze the story and suggest the most engaging content angles for Goal-Line!
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="js/modules/ai-news.js"></script>
+</body>
+</html>
