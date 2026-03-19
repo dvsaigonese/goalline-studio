@@ -1,0 +1,67 @@
+.newsroom-container { display: flex; height: 100vh; padding-left: 64px; } /* Trừ chỗ cho sidebar */
+.news-feed { width: 50%; border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; }
+.ai-assistant { width: 50%; padding: 20px; display: flex; flex-direction: column; background: #1e1e24;}
+
+.news-item { background: var(--bg-panel); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); transition: 0.2s;}
+.news-item:hover { border-color: var(--primary); }
+.news-title { font-size: 1.1rem; font-weight: bold; color: white; margin-bottom: 10px; }
+.news-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; }
+.news-desc { font-size: 0.9rem; color: #ccc; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;}
+
+.ai-chat-box { flex-grow: 1; background: var(--bg-dark); border-radius: 10px; border: 1px solid var(--border); padding: 20px; overflow-y: auto; color: white; white-space: pre-wrap; line-height: 1.6;}
+.ai-controls { margin-top: 15px; display: flex; gap: 10px; }
+
+.btn-ai { background: var(--accent); color: black; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+.btn-ai:hover { background: #e2b714; }
+
+/* Cài đặt API Key */
+.api-key-setup { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+
+
+/* =========================================
+           MOBILE RESPONSIVE CHO AI NEWSROOM
+        ========================================= */
+@media screen and (max-width: 768px) {
+    /* 1. Đưa thanh công cụ lên nằm ngang ở trên cùng */
+    .toolbar {
+        position: relative !important;
+        height: auto !important;
+        width: 100%;
+        flex-direction: row;
+        padding: 10px 20px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+    /* 2. Gỡ bỏ ép cứng chiều cao và lề trái */
+    .newsroom-container {
+        flex-direction: column;
+        padding-left: 0; 
+        height: auto;
+        min-height: 100vh;
+    }
+    /* 3. Đưa 2 cột thành 100% chiều rộng, xếp chồng lên nhau */
+    .news-feed, .ai-assistant {
+        width: 100%;
+        height: auto;
+        border-right: none;
+    }
+    /* 4. Giới hạn khung cuộn tin tức để chừa chỗ cho AI hiển thị */
+    .news-feed {
+        max-height: 50vh; 
+        border-bottom: 2px solid var(--primary);
+    }
+    
+    /* 5. Khung chat AI tự do giãn nở */
+    .ai-assistant {
+        min-height: 50vh;
+        padding-bottom: 40px;
+    }
+    
+    /* Tối ưu nút bấm cho ngón tay */
+    .btn-ai {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+        margin-top: 10px;
+    }
+}
