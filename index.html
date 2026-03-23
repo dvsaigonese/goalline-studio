@@ -6,48 +6,64 @@
     <title>Goal-Line Tools Suite</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css" /> 
 </head>
 <body class="landing-body">
     <div class="landing-wrapper">
-        <div class="landing-header">
+        <header class="landing-header">
             <img src="assets/img/GL_logo.jpg" alt="Goal-Line Logo" class="landing-logo">
-            <h1>Goal-Line Studio</h1>
-            <p>Select a tool to start your workflow</p>
-        </div>
+            <h1 class="gradient-text">Goal-Line Studio</h1>
+            <p class="subtitle">Select a tool to start your workflow</p>
+        </header>
 
-        <div class="tool-cards-container">
+        <main class="tool-grid">
             <a href="ai-news.html" class="tool-card">
                 <div class="card-icon" style="color: var(--accent);">
                     <i class="fa-solid fa-robot"></i>
                 </div>
-                <h3>AI Newsroom</h3>
-                <p>Stay updated with breaking news from major outlets, and let the AI assistant suggest unique angles and craft posts in Goal-Line's signature style.</p>
-                <div class="card-btn">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-content">
+                    <h3>AI Newsroom</h3>
+                    <p>Stay updated with breaking news from major outlets, and let the AI assistant suggest unique angles and craft posts.</p>
+                </div>
+                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
             </a>
 
             <a href="watermark.html" class="tool-card">
-                <div class="card-icon" style="color: var(--accent);">
-                    <i class="fa-solid fa-stamp"></i>
+                <div class="card-icon" style="color: var(--danger);"> <i class="fa-solid fa-stamp"></i>
                 </div>
-                <h3>Watermark & Title</h3>
-                <p>Quickly attach the Goal-Line logo and article titles to your match images.</p>
-                <div class="card-btn">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-content">
+                    <h3>Watermark & Title</h3>
+                    <p>Quickly attach the Goal-Line logo and article titles to your match images.</p>
+                </div>
+                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
             </a>
 
             <a href="board.html" class="tool-card">
                 <div class="card-icon" style="color: var(--primary);">
                     <i class="fa-solid fa-chess-board"></i>
                 </div>
-                <h3>Tactical Board</h3>
-                <p>Design tactics, draw zones, and plan your strategy with our advanced pitch tool.</p>
-                <div class="card-btn">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-content">
+                    <h3>Tactical Board</h3>
+                    <p>Design tactics, draw zones, and plan your strategy with our advanced pitch tool.</p>
+                </div>
+                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
             </a>
-        </div>
+
+            <a href="calendar.html" class="tool-card">
+                <div class="card-icon" style="color: #10b981;">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Schedule Manager (Coming soon or never)</h3>
+                    <p>Coordinate posts and track admin duties with the Google Sheets integrated calendar.</p>
+                </div>
+                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+            </a>
+        </main>
         
-        <div class="landing-footer">
-            © Goal-Line Team
-        </div>
+        <footer class="landing-footer">
+            © 2026 Goal-Line Team. All Systems Operational.
+        </footer>
     </div>
 </body>
 </html>
