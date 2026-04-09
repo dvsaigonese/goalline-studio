@@ -107,11 +107,11 @@ const renderWatermark = () => {
     // 2. Vẽ nền
     ctx.drawImage(processedImage, 0, 0, width, height);
 
-    // 3. Phủ Gradient (Làm vùng đen dưới đáy cao hơn xíu để chữ nổi bật)
-    const gradient = ctx.createLinearGradient(0, height * 0.45, 0, height);
+    // 3. Phủ Gradient (Chỉ làm tối nhẹ 20% dưới đáy để làm nền cho chữ)
+    const gradient = ctx.createLinearGradient(0, height * 0.8, 0, height);
     gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');    
-    gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.75)'); 
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.9)');  
+    gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.3)'); // Mờ hơn, không nuốt mất mặt cỏ
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');  // Đủ độ tương phản cho chữ trắng
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
