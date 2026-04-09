@@ -168,6 +168,15 @@ canvas.addEventListener("mousedown", (e) => {
     // 3. Check Arrow
     for (let i = AppState.arrows.length - 1; i >= 0; i--) {
         const arr = AppState.arrows[i];
+        
+        // Check handle uốn cong (Ưu tiên check cái này trước)
+        if (arr.isHitHandle(pos.x, pos.y, 'control', responsiveConstant, AppState.userScale)) {
+            AppState.selectedObj = arr;
+            AppState.selectedType = 'arrow';
+            AppState.isDragging = true;
+            AppState.arrowDragPoint = 'control'; // Điểm mới
+            render(); return;
+        }
         if (arr.isHitHandle(pos.x, pos.y, 'from', responsiveConstant, AppState.userScale)) {
             AppState.selectedObj = arr;
             AppState.selectedType = 'arrow';
@@ -187,7 +196,12 @@ canvas.addEventListener("mousedown", (e) => {
             AppState.selectedType = 'arrow';
             AppState.isDragging = true;
             AppState.arrowDragPoint = 'body';
-            AppState.dragOffset = { fromX: pos.x - arr.fromX, fromY: pos.y - arr.fromY, toX: pos.x - arr.toX, toY: pos.y - arr.toY };
+            // Bổ sung lưu thêm offset của cx, cy để khi kéo thân mũi tên nó bê nguyên hình dạng cong đi theo
+            AppState.dragOffset = { 
+                fromX: pos.x - arr.fromX, fromY: pos.y - arr.fromY, 
+                toX: pos.x - arr.toX, toY: pos.y - arr.toY,
+                cx: pos.x - arr.cx, cy: pos.y - arr.cy
+            };
             render(); return;
         }
     }
@@ -253,13 +267,17 @@ canvas.addEventListener("mousemove", (e) => {
                 arr.fromX = pos.x; arr.fromY = pos.y;
             } else if (AppState.arrowDragPoint === 'to') {
                 arr.toX = pos.x; arr.toY = pos.y;
+            } else if (AppState.arrowDragPoint === 'control') { // <--- Xử lý khi kéo điểm cong
+                arr.cx = pos.x; arr.cy = pos.y;
             } else if (AppState.arrowDragPoint === 'body') {
                 arr.fromX = pos.x - AppState.dragOffset.fromX;
                 arr.fromY = pos.y - AppState.dragOffset.fromY;
                 arr.toX = pos.x - AppState.dragOffset.toX;
                 arr.toY = pos.y - AppState.dragOffset.toY;
+                arr.cx = pos.x - AppState.dragOffset.cx; // <--- Điểm cong trôi theo thân
+                arr.cy = pos.y - AppState.dragOffset.cy;
             }
-        } 
+        }
         
         // --- POLYGON ---
         else if (AppState.selectedType === 'polygon') {
@@ -319,7 +337,7 @@ document.getElementById("btn-continue").addEventListener("click", () => {
     const data = Storage.load();
     if(data) {
         AppState.circles = data.circles.map(d => new Circle(d.x, d.y, d.radius, d.color, d.text, d.textColor, d.detailsText));
-        AppState.arrows = data.arrows.map(d => new Arrow(d.fromX, d.fromY, d.toX, d.toY, d.color, d.type, d.isArrow));
+        AppState.arrows = data.arrows.map(d => new Arrow(d.fromX, d.fromY, d.toX, d.toY, d.color, d.type, d.isArrow, d.cx, d.cy)); 
         AppState.texts = data.texts.map(d => new TextObj(d.x, d.y, d.text, d.fontSize, d.rotate));
         // Lưu ý: Polygon constructor nhận array points
         AppState.polygons = data.polygons.map(d => new Polygon(d.points || d)); // Fallback cho data cũ nếu có
