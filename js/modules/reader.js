@@ -7,6 +7,9 @@ let currentBlobUrl = null;
 let corsOk = null;
 let viewingTrans = false;
 let cachedTranslations = {}; 
+let currentPage = 1;       // Biến lưu trang hiện tại cho cuộn vô tận
+let isLoadingMore = false; // Cờ chặn spam API khi đang cuộn
+let loadedUrls = new Set(); // Set nhớ các bài đã load
 
 /* ─── DOM ─────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -102,7 +105,7 @@ window.saveSettings = function() {
   corsOk = null;
   syncUI();
   closeSettings();
-  pingCors().then(() => loadHeadlines());
+  pingCors().then(() => loadHeadlines(1));
 };
 
 /* ─── Networking ──────────────────────────────────── */
@@ -159,36 +162,76 @@ window.testConn = async function() {
   }
 };
 
-/* ─── Headlines ───────────────────────────────────── */
-window.loadHeadlines = async function() {
+/* ─── Headlines & Infinite Scroll ─────────────────── */
+window.loadHeadlines = async function(page = 1) {
   if (!cfg.server) return;
-  if (hlList) hlList.innerHTML = `<div class="hl-empty"><div class="spinner" style="width:20px;height:20px;margin:0 auto 10px"></div>Đang tải headlines…</div>`;
-  if (refreshHL) refreshHL.classList.add('spin');
   
-  if (corsOk === null) await pingCors();
-
-  if (!corsOk) {
-    if (hlList) {
-      hlList.innerHTML = `
-        <div class="cors-notice"><strong>⚠️ CORS bị chặn</strong>Headlines cần CORS. Xem hướng dẫn thêm <code>ruleset.yaml</code>.</div>
-        <div class="hl-empty">Dán link bài báo vào ô phía trên để đọc.</div>`;
+  if (page === 1) {
+    currentPage = 1;
+    loadedUrls.clear();
+    if (hlList) hlList.innerHTML = `<div class="hl-empty"><div class="spinner" style="width:20px;height:20px;margin:0 auto 10px"></div>Đang tải headlines…</div>`;
+    if (refreshHL) refreshHL.classList.add('spin');
+    
+    if (corsOk === null) await pingCors();
+    if (!corsOk) {
+      if (hlList) hlList.innerHTML = `<div class="cors-notice"><strong>⚠️ CORS bị chặn</strong>Headlines cần CORS. Xem hướng dẫn thêm <code>ruleset.yaml</code>.</div><div class="hl-empty">Dán link bài báo vào ô phía trên để đọc.</div>`;
+      if (refreshHL) refreshHL.classList.remove('spin');
+      return;
     }
-    if (refreshHL) refreshHL.classList.remove('spin');
-    return;
+  } else {
+    // Chèn spinner mini ở dưới cùng khi tải thêm trang
+    if (hlList) {
+      const loader = document.createElement('div');
+      loader.id = 'hlLoader';
+      loader.innerHTML = `<div class="spinner" style="width:20px;height:20px;margin:15px auto"></div>`;
+      hlList.appendChild(loader);
+    }
   }
   
   try {
-    const html = await fetchLadder('https://www.nytimes.com/athletic/football/');
-    renderHeadlines(parseAthletic(html));
+    const url = page === 1 ? 'https://www.nytimes.com/athletic/football/' : `https://www.nytimes.com/athletic/football/?page=${page}`;
+    const html = await fetchLadder(url);
+    const items = parseAthletic(html);
+    
+    if (page === 1) {
+      renderHeadlines(items);
+    } else {
+      const loader = $('hlLoader');
+      if (loader) loader.remove();
+      if (items.length > 0) {
+        appendHeadlines(items);
+      } else {
+         hlList.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; color:#6e7681; font-size:11px">Đã hết bài viết!</div>`);
+      }
+    }
   } catch(e) {
-    if (hlList) hlList.innerHTML = `<div class="hl-empty">❌ Không tải được<br/><span style="font-size:11px">${esc(e.message)}</span></div>`;
+    if (page === 1) {
+      if (hlList) hlList.innerHTML = `<div class="hl-empty">❌ Không tải được<br/><span style="font-size:11px">${esc(e.message)}</span></div>`;
+    } else {
+      const loader = $('hlLoader');
+      if (loader) loader.remove();
+    }
   }
-  if (refreshHL) refreshHL.classList.remove('spin');
+  if (page === 1 && refreshHL) refreshHL.classList.remove('spin');
+  isLoadingMore = false;
 };
+
+// Lắng nghe sự kiện cuộn trên danh sách bài
+if (hlList) {
+  hlList.addEventListener('scroll', () => {
+    // Bắt đáy (cách đáy 50px là bắt đầu tải trang tiếp theo)
+    if (hlList.scrollTop + hlList.clientHeight >= hlList.scrollHeight - 50) {
+      if (!isLoadingMore && corsOk) {
+        isLoadingMore = true;
+        currentPage++;
+        loadHeadlines(currentPage);
+      }
+    }
+  });
+}
 
 function parseAthletic(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  const seen = new Set();
   const items = [];
 
   function getOriginalUrl(href) {
@@ -201,13 +244,38 @@ function parseAthletic(html) {
 
   doc.querySelectorAll('a[href]').forEach(a => {
     const orig = getOriginalUrl(a.getAttribute('href'));
-    if (!orig || seen.has(orig)) return;
+    if (!orig || loadedUrls.has(orig)) return;
 
     const container = a.closest('article, [data-testid="story-card"]') || a;
 
+    // --- CHỈ LẤY NGÀY BẰNG CÁCH ĐƠN GIẢN NHẤT ---
+    let finalDate = '';
+    
+    // 1. Mót trực tiếp từ URL (Nhanh, chuẩn xác 99%)
+    const dateMatch = orig.match(/\/(\d{4})\/(\d{2})\/(\d{2})\//);
+    if (dateMatch) {
+      finalDate = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
+    } else {
+      // 2. Nếu link dạng đặc biệt không có ngày, nhưng có chữ "ago" -> Bài hôm nay
+      const textContent = container.textContent.toLowerCase();
+      if (textContent.match(/\d+\s*(h|m|hour|minute)s?\s*ago/)) {
+        const now = new Date();
+        finalDate = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } else {
+        // 3. Dự phòng lấy từ thẻ time
+        const timeTag = container.querySelector('time');
+        if (timeTag && timeTag.getAttribute('datetime')) {
+          try {
+            const d = new Date(timeTag.getAttribute('datetime'));
+            if (!isNaN(d)) finalDate = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          } catch(e) {}
+        }
+      }
+    }
+    // ---------------------------------------------
+
     const temp = container.cloneNode(true);
-    const elementsToSplit = temp.querySelectorAll('p, h1, h2, h3, h4, h5, div, br, li, ul, article, section');
-    elementsToSplit.forEach(el => {
+    temp.querySelectorAll('p, h1, h2, h3, h4, h5, div, br, li, ul, article, section').forEach(el => {
       el.prepend(doc.createTextNode('\n'));
       el.append(doc.createTextNode('\n'));
     });
@@ -229,7 +297,7 @@ function parseAthletic(html) {
     }
 
     if (!title || title.length < 15 || title.length > 250) return;
-    seen.add(orig);
+    loadedUrls.add(orig);
 
     let excerpt = '';
     let author = '';
@@ -239,9 +307,7 @@ function parseAthletic(html) {
 
     remaining.forEach(txt => {
       const lower = txt.toLowerCase();
-      
       if (lower.match(/read more|min read|share|save/) || lower === 'opinion' || lower === 'analysis') return;
-
       if (/^\d+$/.test(txt) || /^\d+[kKmMsS]$/.test(txt)) {
         comments = txt; 
       } else if (txt.length > 45) {
@@ -262,11 +328,35 @@ function parseAthletic(html) {
       }
     }
 
-    items.push({ title, excerpt, author, comments, url: orig });
+    items.push({ title, excerpt, author, comments, url: orig, date: finalDate });
   });
 
   return items.slice(0, 30);
 }
+
+// Chỉnh lại icon thời gian từ đồng hồ 🕒 thành cuốn lịch 📅
+function appendHeadlines(items) {
+  if (!hlList || !items.length) return;
+  const currentCount = document.querySelectorAll('.hl-item').length;
+  
+  const html = items.map((a, i) => `
+    <div class="hl-item" data-url="${esc(a.url)}" data-i="${currentCount + i}" onclick="pickHL(this)">
+      <div class="hl-title">${esc(a.title)}</div>
+      ${a.excerpt ? `<div class="hl-excerpt">${esc(a.excerpt)}</div>` : ''}
+      
+      <div class="hl-footer" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px;">
+        ${a.author ? `<span class="hl-author">✍️ ${esc(a.author)}</span>` : '<span style="display:none"></span>'}
+        
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 6px;">
+          ${a.date ? `<span style="font-size:10px; color:#8b949e;">📅 ${a.date}</span>` : '<span></span>'}
+          ${a.comments ? `<span class="hl-comments">💬 ${esc(a.comments)}</span>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+    
+  hlList.insertAdjacentHTML('beforeend', html);
+}
+
 
 function renderHeadlines(items) {
   if (!hlList) return;
@@ -274,15 +364,8 @@ function renderHeadlines(items) {
     hlList.innerHTML = `<div class="hl-empty"><div class="hl-empty-icon">🔍</div>Không parse được headlines.<br/><span style="font-size:11px">Dán link thủ công ở ô phía trên.</span></div>`;
     return;
   }
-  hlList.innerHTML = items.map((a, i) => `
-    <div class="hl-item" data-url="${esc(a.url)}" data-i="${i}" onclick="pickHL(this)">
-      <div class="hl-title">${esc(a.title)}</div>
-      ${a.excerpt ? `<div class="hl-excerpt">${esc(a.excerpt)}</div>` : ''}
-      <div class="hl-footer">
-        ${a.author ? `<span class="hl-author">✍️ ${esc(a.author)}</span>` : '<span></span>'}
-        ${a.comments ? `<span class="hl-comments">💬 ${esc(a.comments)}</span>` : ''}
-      </div>
-    </div>`).join('');
+  hlList.innerHTML = ''; // Clear trước khi ráp bài
+  appendHeadlines(items);
 }
 
 window.pickHL = function(el) {
@@ -547,15 +630,6 @@ function cleanAndStyleHTML(htmlString) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, 'text/html');
 
-  // 0. BƠM VIEWPORT META TAG (Chống lỗi Iframe tự zoom hoặc tràn viền trên mobile)
-  let metaViewport = doc.querySelector('meta[name="viewport"]');
-  if (!metaViewport) {
-    metaViewport = doc.createElement('meta');
-    metaViewport.name = 'viewport';
-    doc.head.appendChild(metaViewport);
-  }
-  metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-
   // 1. DỌN RÁC
   const junkSelectors = [
     'script', 'noscript', 'nav', 'footer', 
@@ -563,12 +637,30 @@ function cleanAndStyleHTML(htmlString) {
     '.paywall-container', '.newsletter-wrapper',
     '.share-tools', '[data-testid*="Social"]'
   ];
-  
   junkSelectors.forEach(s => {
     try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {}
   });
 
-  // 2. LỘT BÙA REACT (Chừa lại iframe)
+  // 2. CHUYỂN ĐỔI MÚI GIỜ (GMT+7) TRƯỚC KHI RENDER
+  doc.querySelectorAll('time, span, div, p').forEach(el => {
+    if (el.children.length > 0) return; 
+    
+    const txt = el.textContent.trim();
+    // Bắt mốc thời gian dạng EDT/EST/GMT của bọn Tây
+    if (txt.match(/\d{4}.*(EDT|EST|GMT|UTC)/i)) {
+      try {
+        const d = new Date(txt);
+        if (!isNaN(d)) el.textContent = d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'full', timeStyle: 'short' }) + ' (Giờ VN)';
+      } catch(e) {}
+    } else if (el.tagName.toLowerCase() === 'time' && el.getAttribute('datetime')) {
+      try {
+        const d = new Date(el.getAttribute('datetime'));
+        if (!isNaN(d)) el.textContent = d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'full', timeStyle: 'short' }) + ' (Giờ VN)';
+      } catch(e) {}
+    }
+  });
+
+  // 3. LỘT BÙA REACT
   doc.querySelectorAll('*').forEach(el => {
     if (el.tagName.toLowerCase() !== 'iframe') {
       el.removeAttribute('style');
@@ -577,87 +669,50 @@ function cleanAndStyleHTML(htmlString) {
     }
   });
 
-  // 3. BƠM CSS LIỀU CAO ĐỂ ÉP KHUÔN
+  // 4. BƠM VIEWPORT + CSS
+  let metaViewport = doc.querySelector('meta[name="viewport"]');
+  if (!metaViewport) {
+    metaViewport = doc.createElement('meta');
+    metaViewport.name = 'viewport';
+    doc.head.appendChild(metaViewport);
+  }
+  metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+
   const style = doc.createElement('style');
   style.textContent = `
-    :root {
-      --bg: #ffffff;
-      --text: #1a1a1a;
-      --link: #205b31;
-      --border: #e2e8f0;
-    }
-    
-    /* Ép tất cả tuân thủ kích thước hộp, không được phình to ra */
+    :root { --bg: #ffffff; --text: #1a1a1a; --link: #205b31; --border: #e2e8f0; }
     *, *::before, *::after { box-sizing: border-box !important; }
 
-    /* Khóa chết chiều ngang, cấm cuộn ngang */
-    html, body { 
-      width: 100% !important; 
-      max-width: 100vw !important; 
-      overflow-x: hidden !important; 
-      margin: 0 !important; 
-    }
+    html { width: 100% !important; max-width: 100vw !important; overflow-x: hidden !important; margin: 0 !important; background: var(--bg) !important; }
 
-    body { 
-      background: var(--bg) !important; 
-      color: var(--text) !important; 
-      padding: 20px 15px !important; 
-    }
+    /* CĂN GIỮA CHUẨN ĐỌC BÁO MÁY TÍNH */
+    body { background: var(--bg) !important; color: var(--text) !important; padding: 30px 20px !important; margin: 0 auto !important; max-width: 740px !important; width: 100% !important;}
 
-    /* DIỆT MARGIN ÂM (negative margin) - thủ phạm kéo chữ sát mép và trào viền */
+    @media (max-width: 768px) { body { padding: 20px 15px !important; } }
+
+    /* CHỐNG VỠ KHUNG */
     #__next, #site-content, main, article, header, section,
     [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] {
-      display: block !important; 
-      position: static !important; 
-      height: auto !important; 
-      min-height: 0 !important; 
-      max-height: none !important; 
-      width: 100% !important; 
-      max-width: 100% !important; 
-      transform: none !important;
-      margin: 0 !important;  /* Bí quyết là đây */
-      padding: 0 !important;
+      display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; width: 100% !important; max-width: 100% !important; transform: none !important; margin: 0 !important; padding: 0 !important;
     }
 
     img[src^="data:image"] { display: none !important; }
     img:not([src^="data:image"]), figure, picture { max-width: 100% !important; height: auto !important; display: block !important; margin: 2rem auto !important; position: static !important; }
 
-    /* ÉP CHỮ XUỐNG DÒNG NẾU QUÁ DÀI */
-    [class*="Article_ContentContainer"], .article-body, p, li, h1, h2, h3, h4 { 
-      position: relative !important; 
-      z-index: 9999 !important; 
-      opacity: 1 !important; 
-      visibility: visible !important; 
-      background: transparent !important; 
-      word-wrap: break-word !important; 
-      overflow-wrap: break-word !important; 
-      max-width: 100% !important;
-    }
+    [class*="Article_ContentContainer"], .article-body, p, li, h1, h2, h3, h4 { position: relative !important; z-index: 9999 !important; opacity: 1 !important; visibility: visible !important; background: transparent !important; word-wrap: break-word !important; overflow-wrap: break-word !important; max-width: 100% !important; }
 
     table { width: 100% !important; border-collapse: collapse !important; margin: 2rem 0 !important; font-family: -apple-system, sans-serif !important; font-size: 0.95rem !important; background: #fff !important; }
     th, td { border-bottom: 1px solid var(--border) !important; padding: 12px 8px !important; text-align: left; }
     th { font-weight: 700 !important; background: #f8f9fa !important; color: #333 !important;}
     tr:hover { background: #f1f5f9 !important; }
     
-    iframe {
-      width: 100% !important;
-      max-width: 100% !important;
-      min-height: 600px !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 6px !important;
-      margin: 2rem 0 !important;
-      display: block !important;
-      resize: vertical !important; 
-      background: #f8f9fa !important;
-    }
+    iframe { width: 100% !important; max-width: 100% !important; min-height: 600px !important; border: 1px solid var(--border) !important; border-radius: 6px !important; margin: 2rem 0 !important; display: block !important; resize: vertical !important; background: #f8f9fa !important; }
     
     aside { display: block !important; background: #f8f9fa !important; padding: 20px !important; margin: 2rem 0 !important; border-left: 4px solid var(--link) !important; font-style: italic; max-width: 100% !important; }
 
     h1 { font-family: "Playfair Display", Georgia, serif !important; font-size: 2.4rem !important; line-height: 1.2 !important; margin-bottom: 1.5rem !important; font-weight: 700 !important; }
     h2, h3, h4 { font-family: -apple-system, sans-serif !important; margin-top: 2.5rem !important; margin-bottom: 1rem !important; line-height: 1.3 !important; }
     p, li { font-family: Georgia, serif !important; font-size: 1.15rem !important; line-height: 1.7 !important; margin-bottom: 1.4rem !important; color: #333 !important; }
-    
-    /* Ép link gãy dòng nếu dán link URL quá dài */
     a { color: var(--link) !important; text-decoration: underline !important; text-underline-offset: 3px; word-break: break-all !important; }
   `;
   doc.head.appendChild(style);
