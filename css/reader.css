@@ -248,6 +248,7 @@ hr.divider{border:none;border-top:1px solid var(--border)}
 
 .hidden-sub-tabs { display: none !important; }
 
+
 .hl-container { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
 .hl-list { display: none; flex: 1; overflow-y: auto; padding: 4px 0; }
 .hl-list.active { display: block; }
