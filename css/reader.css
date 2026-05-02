@@ -201,3 +201,53 @@ hr.divider{border:none;border-top:1px solid var(--border)}
 .hl-container { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
 .hl-list { display: none; flex: 1; overflow-y: auto; padding: 4px 0; }
 .hl-list.active { display: block; }
+
+/* ====================================================
+   SIDEBAR TABS & SUB-TABS
+==================================================== */
+.sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--card); flex-shrink: 0; }
+.tab-btn { flex: 1; background: transparent; border: none; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 10px 0; cursor: pointer; border-bottom: 2px solid transparent; transition: all var(--t); }
+.tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.tab-btn.active { color: var(--g); border-bottom-color: var(--g); background: rgba(0,200,83,0.05); }
+
+/* Sub-tabs dạng Pill (Viên thuốc) - Tự rớt dòng, không cần cuộn ngang */
+.sidebar-sub-tabs { 
+  display: flex; 
+  flex-wrap: wrap; /* Cho phép rớt xuống dòng khi hết chỗ */
+  gap: 6px; /* Khoảng cách đều đặn giữa các tab */
+  padding: 10px 12px; 
+  background: rgba(0,0,0,0.15); 
+  border-bottom: 1px solid var(--border); 
+  flex-shrink: 0;
+}
+
+.sub-tab-btn { 
+  flex: 0 0 auto; 
+  background: rgba(255,255,255,0.03); 
+  border: 1px solid var(--border); 
+  border-radius: 12px; /* Bo góc tròn trịa như viên thuốc */
+  color: var(--muted); 
+  font-size: 10px; 
+  font-weight: 700; 
+  text-transform: uppercase; 
+  padding: 5px 10px; 
+  cursor: pointer; 
+  transition: all var(--t); 
+}
+
+.sub-tab-btn:hover { 
+  color: var(--text); 
+  background: rgba(255,255,255,0.08);
+}
+
+.sub-tab-btn.active { 
+  color: var(--g); 
+  background: rgba(0,200,83,0.08); 
+  border-color: rgba(0,200,83,0.3); 
+}
+
+.hidden-sub-tabs { display: none !important; }
+
+.hl-container { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+.hl-list { display: none; flex: 1; overflow-y: auto; padding: 4px 0; }
+.hl-list.active { display: block; }
