@@ -7,9 +7,15 @@ let currentBlobUrl = null;
 let corsOk = null;
 let viewingTrans = false;
 let cachedTranslations = {}; 
-let currentPage = 1;       // Biến lưu trang hiện tại cho cuộn vô tận
-let isLoadingMore = false; // Cờ chặn spam API khi đang cuộn
-let loadedUrls = new Set(); // Set nhớ các bài đã load
+
+const TABS = {
+  football: { url: 'https://www.nytimes.com/athletic/football/', page: 1, loaded: false, urls: new Set(), icon: '⚽' },
+  nba: { url: 'https://www.nytimes.com/athletic/nba/', page: 1, loaded: false, urls: new Set(), icon: '🏀' },
+  f1: { url: 'https://www.nytimes.com/athletic/formula-1/', page: 1, loaded: false, urls: new Set(), icon: '🏎️' },
+  tennis: { url: 'https://www.nytimes.com/athletic/tennis/', page: 1, loaded: false, urls: new Set(), icon: '🎾' }
+};
+let currentTab = 'football';
+let isLoadingMore = false;
 
 /* ─── DOM ─────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -23,16 +29,15 @@ const btnTranslate = $('btnTranslate');
 const btnNewTab = $('btnNewTab');
 const btnOriginal = $('btnOriginal');
 const sepTab = $('sepTab');
-const hlList = $('hlList');
-const refreshHL = $('btnRefreshHL');
 const loadOvl = $('loadingOverlay');
 const loadTxt = $('loadingText');
 const emptyState = $('emptyState');
 const frame = $('viewerFrame');
 const transPanel = $('transPanel');
 const transContent = $('transContent');
+const btnRefreshHL = $('btnRefreshHL');
 
-/* ─── Mobile Sidebar Logic ────────────────────────── */
+/* ─── Mobile Sidebar & Tabs Logic ─────────────────── */
 const btnToggleSidebar = $('btnToggleSidebar');
 const sidebar = $('sidebar');
 const sidebarBackdrop = $('sidebarBackdrop');
@@ -45,16 +50,40 @@ window.toggleSidebar = function() {
 if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
 if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', toggleSidebar);
 
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabId = btn.dataset.tab;
+    if (currentTab === tabId) return;
+
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    document.querySelectorAll('.hl-list').forEach(l => l.classList.remove('active'));
+    const listEl = document.getElementById(`list-${tabId}`);
+    if (listEl) listEl.classList.add('active');
+
+    currentTab = tabId;
+
+    if (!TABS[tabId].loaded) {
+      loadHeadlines(tabId, 1);
+    }
+  });
+});
+
 /* ─── Init ────────────────────────────────────────── */
 function init() {
   try { 
     const s = localStorage.getItem(STORE); 
-    if (s) cfg = { ...cfg, ...JSON.parse(s) }; 
-  } catch (e) {}
+    if (s) {
+      cfg = { ...cfg, ...JSON.parse(s) }; 
+    }
+  } catch (e) {
+    console.warn("Lỗi đọc config:", e);
+  }
   fillSettings();
   syncUI();
   if (cfg.server) {
-    pingCors().then(() => loadHeadlines());
+    pingCors().then(() => loadHeadlines(currentTab, 1));
   }
 }
 
@@ -68,10 +97,18 @@ function syncUI() {
     if (el) el.classList.toggle('hidden', !ok);
   });
   
-  if (btnRead && urlInput) btnRead.disabled = !urlInput.value.trim();
-  if (btnTranslate) btnTranslate.disabled = !currentUrl || !cfg.apiKey;
-  if (statusDot) statusDot.className = !ok ? 'status-dot' : corsOk === false ? 'status-dot err' : 'status-dot on';
-  if (statusLabel) statusLabel.textContent = ok ? cfg.server.replace(/^https?:\/\//, '').slice(0, 38) : 'Chưa cấu hình';
+  if (btnRead && urlInput) {
+    btnRead.disabled = !urlInput.value.trim();
+  }
+  if (btnTranslate) {
+    btnTranslate.disabled = !currentUrl || !cfg.apiKey;
+  }
+  if (statusDot) {
+    statusDot.className = !ok ? 'status-dot' : (corsOk === false ? 'status-dot err' : 'status-dot on');
+  }
+  if (statusLabel) {
+    statusLabel.textContent = ok ? cfg.server.replace(/^https?:\/\//, '').slice(0, 38) : 'Chưa cấu hình';
+  }
 }
 
 function fillSettings() {
@@ -94,7 +131,10 @@ window.closeSettings = function() {
 
 window.saveSettings = function() {
   const server = $('cfgServer').value.trim().replace(/\/$/, '');
-  if (!server) { alert('Nhập URL Ladder server.'); return; }
+  if (!server) { 
+    alert('Nhập URL Ladder server.'); 
+    return; 
+  }
   cfg = { 
     server: server, 
     user: $('cfgUser').value.trim(), 
@@ -105,39 +145,54 @@ window.saveSettings = function() {
   corsOk = null;
   syncUI();
   closeSettings();
-  pingCors().then(() => loadHeadlines(1));
+  
+  Object.keys(TABS).forEach(k => {
+    TABS[k].loaded = false; 
+    TABS[k].page = 1; 
+    TABS[k].urls.clear();
+    const listEl = document.getElementById(`list-${k}`);
+    if (listEl) listEl.innerHTML = '';
+  });
+  pingCors().then(() => loadHeadlines(currentTab, 1));
 };
 
 /* ─── Networking ──────────────────────────────────── */
-function authHdr() {
-  return cfg.user && cfg.pass ? { 'Authorization': 'Basic ' + btoa(`${cfg.user}:${cfg.pass}`) } : {};
+function authHdr() { 
+  if (cfg.user && cfg.pass) {
+    return { 'Authorization': 'Basic ' + btoa(`${cfg.user}:${cfg.pass}`) };
+  }
+  return {}; 
 }
 
 async function fetchLadder(url) {
-  const res = await fetch(`${cfg.server}/api/${url}`, {
-    headers: authHdr(),
-    signal: AbortSignal.timeout(20000)
+  const res = await fetch(`${cfg.server}/api/${url}`, { 
+    headers: authHdr(), 
+    signal: AbortSignal.timeout(20000) 
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
   const text = await res.text();
-  
-  try {
-    const data = JSON.parse(text);
+  try { 
+    const data = JSON.parse(text); 
     if (data && data.body) {
-     return data.body; 
+      return data.body; 
     }
-  } catch (e) {}
-  
+  } catch (e) {
+    // Không phải JSON thì trả về text gốc
+  }
   return text;
 }
 
 async function pingCors() {
-  try {
-    await fetch(`${cfg.server}/ruleset`, { headers: authHdr(), signal: AbortSignal.timeout(6000) });
-    corsOk = true;
-  } catch (e) {
-    corsOk = false;
+  try { 
+    await fetch(`${cfg.server}/ruleset`, { 
+      headers: authHdr(), 
+      signal: AbortSignal.timeout(6000) 
+    }); 
+    corsOk = true; 
+  } catch (e) { 
+    corsOk = false; 
   }
   syncUI();
 }
@@ -148,89 +203,123 @@ window.testConn = async function() {
   const pass   = $('cfgPass').value;
   const el     = $('testResult');
   if (!el) return;
-  el.className = 'test-result'; el.textContent = '⏳ Đang kiểm tra…'; el.style.display = 'block';
+  
+  el.className = 'test-result'; 
+  el.textContent = '⏳ Đang kiểm tra…'; 
+  el.style.display = 'block';
+  
   try {
-    const hdr = user && pass ? { Authorization: 'Basic ' + btoa(`${user}:${pass}`) } : {};
+    const hdr = (user && pass) ? { Authorization: 'Basic ' + btoa(`${user}:${pass}`) } : {};
     const r   = await fetch(`${server}/ruleset`, { headers: hdr, signal: AbortSignal.timeout(8000) });
     if (r.status === 401) { 
-      el.className = 'test-result err'; el.textContent = '❌ Sai username/password (401)'; 
+      el.className = 'test-result err'; 
+      el.textContent = '❌ Sai username/password (401)'; 
     } else { 
-      el.className = 'test-result ok'; el.textContent = `✅ Kết nối thành công (${r.status})`; 
+      el.className = 'test-result ok'; 
+      el.textContent = `✅ Kết nối thành công (${r.status})`; 
     }
-  } catch(e) {
-    el.className = 'test-result err'; el.textContent = `❌ ${e.message}`;
+  } catch(e) { 
+    el.className = 'test-result err'; 
+    el.textContent = `❌ ${e.message}`; 
   }
 };
 
 /* ─── Headlines & Infinite Scroll ─────────────────── */
-window.loadHeadlines = async function(page = 1) {
+window.refreshCurrentTab = function() {
+  TABS[currentTab].loaded = false;
+  loadHeadlines(currentTab, 1);
+};
+
+window.loadHeadlines = async function(tabId, page = 1) {
   if (!cfg.server) return;
   
+  const tabData = TABS[tabId];
+  const listEl = document.getElementById(`list-${tabId}`);
+  
   if (page === 1) {
-    currentPage = 1;
-    loadedUrls.clear();
-    if (hlList) hlList.innerHTML = `<div class="hl-empty"><div class="spinner" style="width:20px;height:20px;margin:0 auto 10px"></div>Đang tải headlines…</div>`;
-    if (refreshHL) refreshHL.classList.add('spin');
+    tabData.page = 1;
+    tabData.urls.clear();
+    if (listEl) {
+      listEl.innerHTML = `<div class="hl-empty"><div class="spinner" style="width:20px;height:20px;margin:0 auto 10px"></div>Đang tải ${tabId.toUpperCase()}…</div>`;
+    }
+    if (btnRefreshHL) {
+      btnRefreshHL.classList.add('spin');
+    }
     
-    if (corsOk === null) await pingCors();
+    if (corsOk === null) {
+      await pingCors();
+    }
     if (!corsOk) {
-      if (hlList) hlList.innerHTML = `<div class="cors-notice"><strong>⚠️ CORS bị chặn</strong>Headlines cần CORS. Xem hướng dẫn thêm <code>ruleset.yaml</code>.</div><div class="hl-empty">Dán link bài báo vào ô phía trên để đọc.</div>`;
-      if (refreshHL) refreshHL.classList.remove('spin');
+      if (listEl) {
+        listEl.innerHTML = `<div class="cors-notice"><strong>⚠️ CORS bị chặn</strong></div>`;
+      }
+      if (btnRefreshHL) {
+        btnRefreshHL.classList.remove('spin');
+      }
       return;
     }
   } else {
-    // Chèn spinner mini ở dưới cùng khi tải thêm trang
-    if (hlList) {
+    if (listEl) {
       const loader = document.createElement('div');
-      loader.id = 'hlLoader';
+      loader.id = `hlLoader-${tabId}`;
       loader.innerHTML = `<div class="spinner" style="width:20px;height:20px;margin:15px auto"></div>`;
-      hlList.appendChild(loader);
+      listEl.appendChild(loader);
     }
   }
   
   try {
-    const url = page === 1 ? 'https://www.nytimes.com/athletic/football/' : `https://www.nytimes.com/athletic/football/?page=${page}`;
-    const html = await fetchLadder(url);
-    const items = parseAthletic(html);
+    const fetchUrl = page === 1 ? tabData.url : `${tabData.url}?page=${page}`;
+    const html = await fetchLadder(fetchUrl);
+    const items = parseAthletic(html, tabData);
     
+    tabData.loaded = true;
+
     if (page === 1) {
-      renderHeadlines(items);
+      renderHeadlines(items, listEl, tabData.icon);
     } else {
-      const loader = $('hlLoader');
+      const loader = document.getElementById(`hlLoader-${tabId}`);
       if (loader) loader.remove();
+      
       if (items.length > 0) {
-        appendHeadlines(items);
+        appendHeadlines(items, listEl);
       } else {
-         hlList.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; color:#6e7681; font-size:11px">Đã hết bài viết!</div>`);
+        if (listEl) {
+          listEl.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; color:#6e7681; font-size:11px">Đã hết bài viết!</div>`);
+        }
       }
     }
   } catch(e) {
-    if (page === 1) {
-      if (hlList) hlList.innerHTML = `<div class="hl-empty">❌ Không tải được<br/><span style="font-size:11px">${esc(e.message)}</span></div>`;
-    } else {
-      const loader = $('hlLoader');
-      if (loader) loader.remove();
+    if (page === 1) { 
+      if (listEl) {
+        listEl.innerHTML = `<div class="hl-empty">❌ Lỗi tải<br/><span style="font-size:11px">${esc(e.message)}</span></div>`; 
+      }
+    } else { 
+      const loader = document.getElementById(`hlLoader-${tabId}`); 
+      if (loader) loader.remove(); 
     }
   }
-  if (page === 1 && refreshHL) refreshHL.classList.remove('spin');
+  if (page === 1 && btnRefreshHL) {
+    btnRefreshHL.classList.remove('spin');
+  }
   isLoadingMore = false;
 };
 
-// Lắng nghe sự kiện cuộn trên danh sách bài
-if (hlList) {
-  hlList.addEventListener('scroll', () => {
-    // Bắt đáy (cách đáy 50px là bắt đầu tải trang tiếp theo)
-    if (hlList.scrollTop + hlList.clientHeight >= hlList.scrollHeight - 50) {
-      if (!isLoadingMore && corsOk) {
-        isLoadingMore = true;
-        currentPage++;
-        loadHeadlines(currentPage);
+Object.keys(TABS).forEach(tabId => {
+  const listEl = document.getElementById(`list-${tabId}`);
+  if (listEl) {
+    listEl.addEventListener('scroll', () => {
+      if (listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 50) {
+        if (!isLoadingMore && corsOk && TABS[tabId].loaded) {
+          isLoadingMore = true;
+          TABS[tabId].page++;
+          loadHeadlines(tabId, TABS[tabId].page);
+        }
       }
-    }
-  });
-}
+    });
+  }
+});
 
-function parseAthletic(html) {
+function parseAthletic(html, tabData) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = [];
 
@@ -244,35 +333,30 @@ function parseAthletic(html) {
 
   doc.querySelectorAll('a[href]').forEach(a => {
     const orig = getOriginalUrl(a.getAttribute('href'));
-    if (!orig || loadedUrls.has(orig)) return;
+    if (!orig || tabData.urls.has(orig)) return;
 
     const container = a.closest('article, [data-testid="story-card"]') || a;
-
-    // --- CHỈ LẤY NGÀY BẰNG CÁCH ĐƠN GIẢN NHẤT ---
     let finalDate = '';
     
-    // 1. Mót trực tiếp từ URL (Nhanh, chuẩn xác 99%)
     const dateMatch = orig.match(/\/(\d{4})\/(\d{2})\/(\d{2})\//);
     if (dateMatch) {
       finalDate = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
     } else {
-      // 2. Nếu link dạng đặc biệt không có ngày, nhưng có chữ "ago" -> Bài hôm nay
       const textContent = container.textContent.toLowerCase();
       if (textContent.match(/\d+\s*(h|m|hour|minute)s?\s*ago/)) {
-        const now = new Date();
-        finalDate = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        finalDate = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
       } else {
-        // 3. Dự phòng lấy từ thẻ time
         const timeTag = container.querySelector('time');
         if (timeTag && timeTag.getAttribute('datetime')) {
           try {
             const d = new Date(timeTag.getAttribute('datetime'));
-            if (!isNaN(d)) finalDate = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            if (!isNaN(d)) {
+              finalDate = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
           } catch(e) {}
         }
       }
     }
-    // ---------------------------------------------
 
     const temp = container.cloneNode(true);
     temp.querySelectorAll('p, h1, h2, h3, h4, h5, div, br, li, ul, article, section').forEach(el => {
@@ -281,9 +365,7 @@ function parseAthletic(html) {
     });
 
     const rawText = temp.textContent || '';
-    const chunks = rawText.split('\n')
-      .map(t => t.trim().replace(/\s+/g, ' '))
-      .filter(t => t.length > 1);
+    const chunks = rawText.split('\n').map(t => t.trim().replace(/\s+/g, ' ')).filter(t => t.length > 1);
 
     if (chunks.length === 0) return;
     const uniqueChunks = [...new Set(chunks)];
@@ -297,20 +379,20 @@ function parseAthletic(html) {
     }
 
     if (!title || title.length < 15 || title.length > 250) return;
-    loadedUrls.add(orig);
+    tabData.urls.add(orig);
 
     let excerpt = '';
     let author = '';
     let comments = '';
-
+    
     const remaining = uniqueChunks.filter(c => !title.includes(c) && !c.includes(title));
 
     remaining.forEach(txt => {
       const lower = txt.toLowerCase();
       if (lower.match(/read more|min read|share|save/) || lower === 'opinion' || lower === 'analysis') return;
       if (/^\d+$/.test(txt) || /^\d+[kKmMsS]$/.test(txt)) {
-        comments = txt; 
-      } else if (txt.length > 45) {
+        comments = txt;
+      } else if (txt.length > 45) { 
         if (!excerpt) excerpt = txt; 
       } else if (txt.length > 3 && txt.length <= 45) {
         const isDate = lower.includes('ago') || lower.includes('202') || /^\w{3} \d{1,2}/.test(txt);
@@ -322,7 +404,7 @@ function parseAthletic(html) {
 
     if (author) {
       const match = author.match(/^(.*?[a-zA-Z\.'’])(\d+)$/);
-      if (match) {
+      if (match) { 
         author = match[1].trim(); 
         if (!comments) comments = match[2]; 
       }
@@ -334,19 +416,26 @@ function parseAthletic(html) {
   return items.slice(0, 30);
 }
 
-// Chỉnh lại icon thời gian từ đồng hồ 🕒 thành cuốn lịch 📅
-function appendHeadlines(items) {
-  if (!hlList || !items.length) return;
-  const currentCount = document.querySelectorAll('.hl-item').length;
+function renderHeadlines(items, listEl, icon) {
+  if (!listEl) return;
+  if (!items.length) {
+    listEl.innerHTML = `<div class="hl-empty"><div class="hl-empty-icon">${icon}</div>Không tìm thấy bài viết.</div>`;
+    return;
+  }
+  listEl.innerHTML = ''; 
+  appendHeadlines(items, listEl);
+}
+
+function appendHeadlines(items, listEl) {
+  if (!listEl || !items.length) return;
+  const currentCount = listEl.querySelectorAll('.hl-item').length;
   
   const html = items.map((a, i) => `
     <div class="hl-item" data-url="${esc(a.url)}" data-i="${currentCount + i}" onclick="pickHL(this)">
       <div class="hl-title">${esc(a.title)}</div>
       ${a.excerpt ? `<div class="hl-excerpt">${esc(a.excerpt)}</div>` : ''}
-      
       <div class="hl-footer" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px;">
         ${a.author ? `<span class="hl-author">✍️ ${esc(a.author)}</span>` : '<span style="display:none"></span>'}
-        
         <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 6px;">
           ${a.date ? `<span style="font-size:10px; color:#8b949e;">📅 ${a.date}</span>` : '<span></span>'}
           ${a.comments ? `<span class="hl-comments">💬 ${esc(a.comments)}</span>` : ''}
@@ -354,18 +443,7 @@ function appendHeadlines(items) {
       </div>
     </div>`).join('');
     
-  hlList.insertAdjacentHTML('beforeend', html);
-}
-
-
-function renderHeadlines(items) {
-  if (!hlList) return;
-  if (!items.length) {
-    hlList.innerHTML = `<div class="hl-empty"><div class="hl-empty-icon">🔍</div>Không parse được headlines.<br/><span style="font-size:11px">Dán link thủ công ở ô phía trên.</span></div>`;
-    return;
-  }
-  hlList.innerHTML = ''; // Clear trước khi ráp bài
-  appendHeadlines(items);
+  listEl.insertAdjacentHTML('beforeend', html);
 }
 
 window.pickHL = function(el) {
@@ -384,9 +462,17 @@ window.pickHL = function(el) {
 
 /* ─── Article loader ──────────────────────────────── */
 async function loadArticle(url) {
-  if (!url) url = urlInput ? urlInput.value.trim() : '';
+  if (!url) {
+    url = urlInput ? urlInput.value.trim() : '';
+  }
   if (!url) return;
-  try { new URL(url); } catch (e) { alert('URL không hợp lệ.'); return; }
+  
+  try { 
+    new URL(url); 
+  } catch (e) { 
+    alert('URL không hợp lệ.'); 
+    return; 
+  }
 
   currentUrl = url;
   viewingTrans = false;
@@ -411,16 +497,17 @@ async function loadArticle(url) {
       if (frame) frame.classList.add('on');
       if (btnTranslate) btnTranslate.disabled = !cfg.apiKey;
       return;
-    } catch(e) {
-      corsOk = false; syncUI();
+    } catch(e) { 
+      corsOk = false; 
+      syncUI(); 
     }
   }
 
   if (loadTxt) loadTxt.textContent = 'Đang mở qua proxy…';
   currentHtml = '';
   if (btnTranslate) btnTranslate.disabled = true;
-  let proxyUrl = `${cfg.server}/${encodeURIComponent(url)}`;
   
+  let proxyUrl = `${cfg.server}/${encodeURIComponent(url)}`;
   if (cfg.user && cfg.pass) {
     try {
       const u = new URL(cfg.server); 
@@ -431,7 +518,10 @@ async function loadArticle(url) {
   }
   
   if (frame) {
-    frame.onload = () => { if (loadOvl) loadOvl.classList.remove('on'); frame.classList.add('on'); };
+    frame.onload = () => { 
+      if (loadOvl) loadOvl.classList.remove('on'); 
+      frame.classList.add('on'); 
+    };
     frame.onerror = showFrameErr;
     frame.src = proxyUrl;
   }
@@ -448,10 +538,10 @@ function setBlobFrame(html) {
   if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
   const blob = new Blob([html], { type: 'text/html' });
   currentBlobUrl = URL.createObjectURL(blob);
-  if (frame) {
+  if (frame) { 
     frame.onload = null; 
-    frame.onerror = null;
-    frame.src = currentBlobUrl;
+    frame.onerror = null; 
+    frame.src = currentBlobUrl; 
   }
 }
 
@@ -462,17 +552,20 @@ function showFrameErr() {
     const title = emptyState.querySelector('.empty-title');
     const desc = emptyState.querySelector('.empty-desc');
     if (title) title.textContent = 'Không hiển thị được';
-    if (desc) desc.innerHTML = `X-Frame-Options đang chặn iframe.<br/>Dùng <strong>↗ Tab mới</strong> để đọc,<br/>hoặc thêm <code style="background:var(--border);padding:2px 4px;border-radius:3px">ruleset.yaml</code> vào HF Space.`;
+    if (desc) desc.innerHTML = `X-Frame-Options đang chặn iframe.<br/>Dùng <strong>↗ Tab mới</strong> để đọc.`;
   }
 }
 
-window.openNewTab = function() {
-  if (currentUrl) window.open(`${cfg.server}/${encodeURIComponent(currentUrl)}`, '_blank');
+window.openNewTab = function() { 
+  if (currentUrl) window.open(`${cfg.server}/${encodeURIComponent(currentUrl)}`, '_blank'); 
 };
 
 /* ─── Translation ─────────────────────────────────── */
 async function translateArticle() {
-  if (!cfg.apiKey) { openSettings(); return; }
+  if (!cfg.apiKey) { 
+    openSettings(); 
+    return; 
+  }
   if (!currentUrl) return;
 
   if (cachedTranslations[currentUrl]) {
@@ -484,11 +577,11 @@ async function translateArticle() {
   let text = '';
   if (currentHtml) {
     text = extractText(currentHtml);
-  } else {
-    try {
-      const doc = frame.contentDocument || frame.contentWindow?.document;
-      if (doc) text = extractFromDoc(doc);
-    } catch (e) {}
+  } else { 
+    try { 
+      const doc = frame.contentDocument || frame.contentWindow?.document; 
+      if (doc) text = extractFromDoc(doc); 
+    } catch (e) {} 
   }
 
   if (!text || text.length < 100) {
@@ -498,9 +591,7 @@ async function translateArticle() {
   }
 
   if (btnTranslate) btnTranslate.disabled = true;
-  if (transContent) {
-    transContent.innerHTML = `<div class="trans-loading"><div class="spinner"></div><p>Gemini đang đọc và chuẩn bị dịch...<br>Bài càng dài sẽ dịch càng lâu, chờ khoảng 30s-1p cho chắc cú nha</p></div>`;
-  }
+  if (transContent) transContent.innerHTML = `<div class="trans-loading"><div class="spinner"></div><p>Gemini đang chuẩn bị dịch...</p></div>`;
   showTransPanel();
 
   const maxC = 25000;
@@ -511,38 +602,23 @@ async function translateArticle() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Bạn là biên tập viên thể thao của một tờ báo bóng đá Việt Nam chuyên nghiệp. Dịch bài báo The Athletic sau sang tiếng Việt.
-
-Quy tắc:
-- Văn phong tự nhiên, đọc ra dáng báo thể thao Việt Nam chính thống.
-- Giữ nguyên tên cầu thủ, CLB, giải đấu bằng tiếng Anh.
-- Giữ nguyên số liệu, thống kê, tỉ số.
-- Tiêu đề phải hấp dẫn, đúng văn phong báo bóng đá.
-- BẮT BUỘC: Trong văn bản có các thẻ [IMAGE: url], bạn phải giữ đúng vị trí và chuyển chúng thành thẻ HTML: <img src="url" alt="Ảnh minh họa">.
-- Trả về HTML với: <h1> tiêu đề, <p class="byline"> tác giả/ngày nếu có, <p> mỗi đoạn, <h2> tiêu đề phụ nếu có.
-- KHÔNG thêm giải thích hay ghi chú ngoài bài. Chỉ trả về HTML thuần.
-
-Bài báo:
-${input}`
-          }]
+        contents: [{ 
+          parts: [{ 
+            text: `Bạn là biên tập viên thể thao của một tờ báo bóng đá Việt Nam chuyên nghiệp. Dịch bài báo The Athletic sau sang tiếng Việt.\nQuy tắc:\n- Văn phong tự nhiên, giữ nguyên tên riêng, số liệu.\n- Chuyển thẻ [IMAGE: url] thành thẻ HTML: <img src="url" alt="Ảnh minh họa">.\n- Trả về HTML thuần, có tiêu đề h1, byline, thẻ p. KHÔNG thêm giải thích ngoài.\nBài báo:\n${input}` 
+          }] 
         }],
         generationConfig: { temperature: 0.3 },
         safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, 
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, 
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, 
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
         ]
       })
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
-
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
     if (transContent) transContent.innerHTML = ''; 
     let fullHtml = '';
     
@@ -561,17 +637,21 @@ ${input}`
             const data = JSON.parse(line.slice(6));
             const textPart = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
             fullHtml += textPart;
-            if (transContent) transContent.innerHTML = fullHtml.replace(/^```html\s*/i, '').replace(/```\s*$/, '');
+            if (transContent) {
+              transContent.innerHTML = fullHtml.replace(/^```html\s*/i, '').replace(/```\s*$/, '');
+            }
           } catch (e) {}
         }
       }
     }
     
-    if (transContent) cachedTranslations[currentUrl] = transContent.innerHTML;
-
+    if (transContent) {
+      cachedTranslations[currentUrl] = transContent.innerHTML;
+    }
   } catch(e) {
     if (transContent) transContent.innerHTML = `<div class="trans-error">❌ Lỗi dịch: ${esc(e.message)}</div>`;
   }
+  
   if (btnTranslate) btnTranslate.disabled = false;
 }
 
@@ -592,18 +672,16 @@ window.showOriginal = function() {
 };
 
 /* ─── Text extraction ─────────────────────────────── */
-function extractText(html) {
-  return extractFromDoc(new DOMParser().parseFromString(html, 'text/html'));
+function extractText(html) { 
+  return extractFromDoc(new DOMParser().parseFromString(html, 'text/html')); 
 }
 
 function extractFromDoc(doc) {
-  const junkClasses = [
-    'script', 'style', 'nav', 'header', 'footer', 'aside',
-    '.ad-container', '.ad-unit', '.paywall-container', '.newsletter-wrapper'
-  ];
-  
-  junkClasses.forEach(s => { 
-    try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {} 
+  const junkSelectors = ['script','style','nav','header','footer','aside','.ad-container','.ad-unit','.paywall-container','.newsletter-wrapper'];
+  junkSelectors.forEach(s => { 
+    try { 
+      doc.querySelectorAll(s).forEach(e => e.remove()); 
+    } catch (e) {} 
   });
   
   const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || '';
@@ -622,45 +700,19 @@ function extractFromDoc(doc) {
       if (t.length > 30) paras.push(t);
     }
   });
-  
   return [title, byline, ...paras].filter(Boolean).join('\n\n');
 }
 
 function cleanAndStyleHTML(htmlString) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlString, 'text/html');
-
-  // 1. DỌN RÁC
-  const junkSelectors = [
-    'script', 'noscript', 'nav', 'footer', 
-    '.ad-container', '.ad-unit', '.ad-slot', 
-    '.paywall-container', '.newsletter-wrapper',
-    '.share-tools', '[data-testid*="Social"]'
-  ];
+  const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+  const junkSelectors = ['script','noscript','nav','footer','.ad-container','.ad-unit','.ad-slot','.paywall-container','.newsletter-wrapper','.share-tools','[data-testid*="Social"]'];
+  
   junkSelectors.forEach(s => {
-    try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {}
+    try { 
+      doc.querySelectorAll(s).forEach(e => e.remove()); 
+    } catch (e) {}
   });
 
-  // 2. CHUYỂN ĐỔI MÚI GIỜ (GMT+7) TRƯỚC KHI RENDER
-  doc.querySelectorAll('time, span, div, p').forEach(el => {
-    if (el.children.length > 0) return; 
-    
-    const txt = el.textContent.trim();
-    // Bắt mốc thời gian dạng EDT/EST/GMT của bọn Tây
-    if (txt.match(/\d{4}.*(EDT|EST|GMT|UTC)/i)) {
-      try {
-        const d = new Date(txt);
-        if (!isNaN(d)) el.textContent = d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'full', timeStyle: 'short' }) + ' (Giờ VN)';
-      } catch(e) {}
-    } else if (el.tagName.toLowerCase() === 'time' && el.getAttribute('datetime')) {
-      try {
-        const d = new Date(el.getAttribute('datetime'));
-        if (!isNaN(d)) el.textContent = d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'full', timeStyle: 'short' }) + ' (Giờ VN)';
-      } catch(e) {}
-    }
-  });
-
-  // 3. LỘT BÙA REACT
   doc.querySelectorAll('*').forEach(el => {
     if (el.tagName.toLowerCase() !== 'iframe') {
       el.removeAttribute('style');
@@ -669,12 +721,11 @@ function cleanAndStyleHTML(htmlString) {
     }
   });
 
-  // 4. BƠM VIEWPORT + CSS
   let metaViewport = doc.querySelector('meta[name="viewport"]');
-  if (!metaViewport) {
-    metaViewport = doc.createElement('meta');
-    metaViewport.name = 'viewport';
-    doc.head.appendChild(metaViewport);
+  if (!metaViewport) { 
+    metaViewport = doc.createElement('meta'); 
+    metaViewport.name = 'viewport'; 
+    doc.head.appendChild(metaViewport); 
   }
   metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
 
@@ -682,47 +733,30 @@ function cleanAndStyleHTML(htmlString) {
   style.textContent = `
     :root { --bg: #ffffff; --text: #1a1a1a; --link: #205b31; --border: #e2e8f0; }
     *, *::before, *::after { box-sizing: border-box !important; }
-
     html { width: 100% !important; max-width: 100vw !important; overflow-x: hidden !important; margin: 0 !important; background: var(--bg) !important; }
-
-    /* CĂN GIỮA CHUẨN ĐỌC BÁO MÁY TÍNH */
     body { background: var(--bg) !important; color: var(--text) !important; padding: 30px 20px !important; margin: 0 auto !important; max-width: 740px !important; width: 100% !important;}
-
     @media (max-width: 768px) { body { padding: 20px 15px !important; } }
-
-    /* CHỐNG VỠ KHUNG */
-    #__next, #site-content, main, article, header, section,
-    [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] {
-      display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; width: 100% !important; max-width: 100% !important; transform: none !important; margin: 0 !important; padding: 0 !important;
-    }
-
+    #__next, #site-content, main, article, header, section, [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] { display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; width: 100% !important; max-width: 100% !important; transform: none !important; margin: 0 !important; padding: 0 !important; }
     img[src^="data:image"] { display: none !important; }
     img:not([src^="data:image"]), figure, picture { max-width: 100% !important; height: auto !important; display: block !important; margin: 2rem auto !important; position: static !important; }
-
     [class*="Article_ContentContainer"], .article-body, p, li, h1, h2, h3, h4 { position: relative !important; z-index: 9999 !important; opacity: 1 !important; visibility: visible !important; background: transparent !important; word-wrap: break-word !important; overflow-wrap: break-word !important; max-width: 100% !important; }
-
     table { width: 100% !important; border-collapse: collapse !important; margin: 2rem 0 !important; font-family: -apple-system, sans-serif !important; font-size: 0.95rem !important; background: #fff !important; }
     th, td { border-bottom: 1px solid var(--border) !important; padding: 12px 8px !important; text-align: left; }
     th { font-weight: 700 !important; background: #f8f9fa !important; color: #333 !important;}
     tr:hover { background: #f1f5f9 !important; }
-    
     iframe { width: 100% !important; max-width: 100% !important; min-height: 600px !important; border: 1px solid var(--border) !important; border-radius: 6px !important; margin: 2rem 0 !important; display: block !important; resize: vertical !important; background: #f8f9fa !important; }
-    
     aside { display: block !important; background: #f8f9fa !important; padding: 20px !important; margin: 2rem 0 !important; border-left: 4px solid var(--link) !important; font-style: italic; max-width: 100% !important; }
-
     h1 { font-family: "Playfair Display", Georgia, serif !important; font-size: 2.4rem !important; line-height: 1.2 !important; margin-bottom: 1.5rem !important; font-weight: 700 !important; }
     h2, h3, h4 { font-family: -apple-system, sans-serif !important; margin-top: 2.5rem !important; margin-bottom: 1rem !important; line-height: 1.3 !important; }
     p, li { font-family: Georgia, serif !important; font-size: 1.15rem !important; line-height: 1.7 !important; margin-bottom: 1.4rem !important; color: #333 !important; }
     a { color: var(--link) !important; text-decoration: underline !important; text-underline-offset: 3px; word-break: break-all !important; }
   `;
   doc.head.appendChild(style);
-
   return doc.documentElement.outerHTML;
 }
 
-/* ─── Utils ───────────────────────────────────────── */
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function esc(s) { 
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); 
 }
 
 /* ─── Events ──────────────────────────────────────── */
@@ -732,16 +766,23 @@ if ($('btnTranslate')) $('btnTranslate').addEventListener('click', translateArti
 if ($('btnNewTab')) $('btnNewTab').addEventListener('click', openNewTab);
 if ($('btnOriginal')) $('btnOriginal').addEventListener('click', showOriginal);
 
-if (urlInput) {
-  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadArticle(); });
-  urlInput.addEventListener('input', () => { if (btnRead) btnRead.disabled = !urlInput.value.trim(); });
+if (urlInput) { 
+  urlInput.addEventListener('keydown', e => { 
+    if (e.key === 'Enter') loadArticle(); 
+  }); 
+  urlInput.addEventListener('input', () => { 
+    if (btnRead) btnRead.disabled = !urlInput.value.trim(); 
+  }); 
 }
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    if ($('settingsPanel') && $('settingsPanel').classList.contains('on')) closeSettings();
-    else if (viewingTrans) showOriginal();
-  }
+document.addEventListener('keydown', e => { 
+  if (e.key === 'Escape') { 
+    if ($('settingsPanel') && $('settingsPanel').classList.contains('on')) {
+      closeSettings(); 
+    } else if (viewingTrans) {
+      showOriginal(); 
+    }
+  } 
 });
 
 init();
