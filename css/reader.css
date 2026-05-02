@@ -155,13 +155,12 @@ hr.divider{border:none;border-top:1px solid var(--border)}
 @media (max-width: 768px) {
   .mobile-only { display: inline-flex !important; }
   
-  /* Bỏ chia cột grid, gom về 1 cột */
+  /* THÊM 3 DÒNG NÀY: Khóa chặt chiều ngang App, không cho phép trào ra ngoài */
+  .app { width: 100vw; max-width: 100%; overflow-x: hidden; }
+  
   .workspace { display: block; position: relative; }
+  .content-area { height: 100%; }
   
-  /* ---> THÊM DÒNG NÀY ĐỂ CHỐNG TEO IFRAME <--- */
-  .content-area { height: 100%; } 
-  
-  /* Sidebar trượt từ trái sang (Off-canvas) */
   .sidebar {
     position: absolute;
     top: 0; bottom: 0; left: 0;
@@ -173,16 +172,20 @@ hr.divider{border:none;border-top:1px solid var(--border)}
     box-shadow: 4px 0 20px rgba(0,0,0,0.5);
   }
   
-  /* Class kích hoạt trạng thái mở */
   .sidebar.on { transform: translateX(0); }
   .sidebar-backdrop.on { display: block; }
   
-  /* Tinh chỉnh Toolbar cho màn hình hẹp */
-  .toolbar { overflow-x: auto; padding: 8px 12px; scrollbar-width: none; }
+  /* THÊM/SỬA: Ép Toolbar phải nằm gọn trong khung, dư nút thì cho vuốt ngang */
+  .toolbar { 
+    width: 100%; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; /* Bật vuốt ngang mượt mà trên iPhone */
+    padding: 8px 12px; 
+    scrollbar-width: none; 
+  }
   .toolbar::-webkit-scrollbar { display: none; }
   .url-wrap { min-width: 180px; }
   .btn { padding: 6px 10px; font-size: 12px; }
   
-  /* Ẩn bớt text không cần thiết trên mobile */
   .logo-text, .page-label, #statusLabel { display: none; }
 }

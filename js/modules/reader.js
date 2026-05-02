@@ -547,6 +547,16 @@ function cleanAndStyleHTML(htmlString) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, 'text/html');
 
+  // 0. BƠM VIEWPORT META TAG (Chống lỗi Iframe tự zoom hoặc tràn viền trên mobile)
+  let metaViewport = doc.querySelector('meta[name="viewport"]');
+  if (!metaViewport) {
+    metaViewport = doc.createElement('meta');
+    metaViewport.name = 'viewport';
+    doc.head.appendChild(metaViewport);
+  }
+  metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+
+  // 1. DỌN RÁC
   const junkSelectors = [
     'script', 'noscript', 'nav', 'footer', 
     '.ad-container', '.ad-unit', '.ad-slot', 
@@ -558,6 +568,7 @@ function cleanAndStyleHTML(htmlString) {
     try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {}
   });
 
+  // 2. LỘT BÙA REACT (Chừa lại iframe)
   doc.querySelectorAll('*').forEach(el => {
     if (el.tagName.toLowerCase() !== 'iframe') {
       el.removeAttribute('style');
@@ -566,6 +577,7 @@ function cleanAndStyleHTML(htmlString) {
     }
   });
 
+  // 3. BƠM CSS LIỀU CAO ĐỂ ÉP KHUÔN
   const style = doc.createElement('style');
   style.textContent = `
     :root {
@@ -575,17 +587,52 @@ function cleanAndStyleHTML(htmlString) {
       --border: #e2e8f0;
     }
     
-    body { background: var(--bg) !important; color: var(--text) !important; padding: 30px 20px !important; margin: 0 auto !important; max-width: 740px !important; overflow-x: hidden !important; }
+    /* Ép tất cả tuân thủ kích thước hộp, không được phình to ra */
+    *, *::before, *::after { box-sizing: border-box !important; }
 
-    html, body, #__next, #site-content, main, article, header, section,
+    /* Khóa chết chiều ngang, cấm cuộn ngang */
+    html, body { 
+      width: 100% !important; 
+      max-width: 100vw !important; 
+      overflow-x: hidden !important; 
+      margin: 0 !important; 
+    }
+
+    body { 
+      background: var(--bg) !important; 
+      color: var(--text) !important; 
+      padding: 20px 15px !important; 
+    }
+
+    /* DIỆT MARGIN ÂM (negative margin) - thủ phạm kéo chữ sát mép và trào viền */
+    #__next, #site-content, main, article, header, section,
     [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] {
-      display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; width: 100% !important; transform: none !important;
+      display: block !important; 
+      position: static !important; 
+      height: auto !important; 
+      min-height: 0 !important; 
+      max-height: none !important; 
+      width: 100% !important; 
+      max-width: 100% !important; 
+      transform: none !important;
+      margin: 0 !important;  /* Bí quyết là đây */
+      padding: 0 !important;
     }
 
     img[src^="data:image"] { display: none !important; }
     img:not([src^="data:image"]), figure, picture { max-width: 100% !important; height: auto !important; display: block !important; margin: 2rem auto !important; position: static !important; }
 
-    [class*="Article_ContentContainer"], .article-body, p { position: relative !important; z-index: 9999 !important; opacity: 1 !important; visibility: visible !important; background: transparent !important; }
+    /* ÉP CHỮ XUỐNG DÒNG NẾU QUÁ DÀI */
+    [class*="Article_ContentContainer"], .article-body, p, li, h1, h2, h3, h4 { 
+      position: relative !important; 
+      z-index: 9999 !important; 
+      opacity: 1 !important; 
+      visibility: visible !important; 
+      background: transparent !important; 
+      word-wrap: break-word !important; 
+      overflow-wrap: break-word !important; 
+      max-width: 100% !important;
+    }
 
     table { width: 100% !important; border-collapse: collapse !important; margin: 2rem 0 !important; font-family: -apple-system, sans-serif !important; font-size: 0.95rem !important; background: #fff !important; }
     th, td { border-bottom: 1px solid var(--border) !important; padding: 12px 8px !important; text-align: left; }
@@ -594,6 +641,7 @@ function cleanAndStyleHTML(htmlString) {
     
     iframe {
       width: 100% !important;
+      max-width: 100% !important;
       min-height: 600px !important;
       border: 1px solid var(--border) !important;
       border-radius: 6px !important;
@@ -603,12 +651,14 @@ function cleanAndStyleHTML(htmlString) {
       background: #f8f9fa !important;
     }
     
-    aside { display: block !important; background: #f8f9fa !important; padding: 20px !important; margin: 2rem 0 !important; border-left: 4px solid var(--link) !important; font-style: italic; }
+    aside { display: block !important; background: #f8f9fa !important; padding: 20px !important; margin: 2rem 0 !important; border-left: 4px solid var(--link) !important; font-style: italic; max-width: 100% !important; }
 
     h1 { font-family: "Playfair Display", Georgia, serif !important; font-size: 2.4rem !important; line-height: 1.2 !important; margin-bottom: 1.5rem !important; font-weight: 700 !important; }
     h2, h3, h4 { font-family: -apple-system, sans-serif !important; margin-top: 2.5rem !important; margin-bottom: 1rem !important; line-height: 1.3 !important; }
     p, li { font-family: Georgia, serif !important; font-size: 1.15rem !important; line-height: 1.7 !important; margin-bottom: 1.4rem !important; color: #333 !important; }
-    a { color: var(--link) !important; text-decoration: underline !important; text-underline-offset: 3px; }
+    
+    /* Ép link gãy dòng nếu dán link URL quá dài */
+    a { color: var(--link) !important; text-decoration: underline !important; text-underline-offset: 3px; word-break: break-all !important; }
   `;
   doc.head.appendChild(style);
 
