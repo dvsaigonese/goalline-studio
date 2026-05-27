@@ -1,9 +1,8 @@
-import requests
+import cloudscraper
 import json
 import re
-import os
 
-# Danh sách ID cầu thủ trên Understat (Có thể thêm hàng loạt vào đây)
+# Danh sách cầu thủ
 PLAYERS = [
     {"id": 447, "name": "De Bruyne"},
     {"id": 1228, "name": "Bruno Fernandes"},
@@ -11,9 +10,14 @@ PLAYERS = [
 ]
 
 def fetch_understat_data():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+    # Khởi tạo cỗ máy vượt rào Cloudflare
+    scraper = cloudscraper.create_scraper(
+        browser={
+            'browser': 'chrome',
+            'platform': 'windows',
+            'desktop': True
+        }
+    )
 
     for player in PLAYERS:
         pid = player["id"]
@@ -21,8 +25,7 @@ def fetch_understat_data():
         url = f"https://understat.com/player/{pid}"
         
         try:
-            res = requests.get(url, headers=headers)
-            res.raise_for_status()
+            res = scraper.get(url)
             
             # Bóc tách biến groupsData giấu trong HTML
             match = re.search(r"var groupsData\s*=\s*JSON\.parse\('(.*?)'\)", res.text)
@@ -34,13 +37,13 @@ def fetch_understat_data():
                 
                 json_data = json.loads(decoded)
                 
-                # Lưu file ngay tại thư mục gốc để Github Pages và JS dễ đọc
+                # Lưu file json
                 filename = f"data_{pid}.json"
                 with open(filename, "w", encoding="utf-8") as f:
                     json.dump(json_data, f, ensure_ascii=False, indent=4)
                 print(f"✅ Thành công: Đã lưu {filename}")
             else:
-                print(f"❌ Không tìm thấy data cho {player['name']}")
+                print(f"❌ Vẫn không thấy data của {player['name']}. Có thể Cloudflare ép quá chặt.")
                 
         except Exception as e:
             print(f"⚠️ Lỗi kết nối ID {pid}: {e}")

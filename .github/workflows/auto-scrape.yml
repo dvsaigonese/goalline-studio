@@ -2,11 +2,11 @@ name: Tự Động Cào Dữ Liệu Bóng Đá
 
 on:
   schedule:
-    - cron: '0 2 * * *' # Chạy vào 2h sáng UTC mỗi ngày
-  workflow_dispatch: # Nút bấm chạy thủ công trên GitHub
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write # Cấp quyền cho bot được phép push file JSON mới lên
+  contents: write 
 
 jobs:
   scrape-and-deploy:
@@ -30,7 +30,7 @@ jobs:
         run: |
           git config --global user.name "Goal-Line AutoBot"
           git config --global user.email "bot@goallinestudio.com"
-          git add data_*.json
-          # Lệnh này đảm bảo nếu không có thay đổi data, workflow không bị báo lỗi
+          # Thêm || true để không văng lỗi nếu không có file
+          git add data_*.json || true
           git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update chỉ số cầu thủ"
-          git push
+          git push || true
