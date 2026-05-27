@@ -1,8 +1,9 @@
-import cloudscraper
+from curl_cffi import requests
 import json
 import re
+import os
 
-# Danh sách cầu thủ
+# Danh sách ID cầu thủ trên Understat
 PLAYERS = [
     {"id": 447, "name": "De Bruyne"},
     {"id": 1228, "name": "Bruno Fernandes"},
@@ -10,22 +11,15 @@ PLAYERS = [
 ]
 
 def fetch_understat_data():
-    # Khởi tạo cỗ máy vượt rào Cloudflare
-    scraper = cloudscraper.create_scraper(
-        browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'desktop': True
-        }
-    )
-
     for player in PLAYERS:
         pid = player["id"]
         print(f"⏳ Đang lấy data của {player['name']} (ID: {pid})...")
         url = f"https://understat.com/player/{pid}"
         
         try:
-            res = scraper.get(url)
+            # VŨ KHÍ TỐI THƯỢNG: Giả lập trọn vẹn vân tay của Google Chrome 110
+            # Đánh lừa hoàn toàn tường lửa Cloudflare
+            res = requests.get(url, impersonate="chrome110")
             
             # Bóc tách biến groupsData giấu trong HTML
             match = re.search(r"var groupsData\s*=\s*JSON\.parse\('(.*?)'\)", res.text)
@@ -43,7 +37,7 @@ def fetch_understat_data():
                     json.dump(json_data, f, ensure_ascii=False, indent=4)
                 print(f"✅ Thành công: Đã lưu {filename}")
             else:
-                print(f"❌ Vẫn không thấy data của {player['name']}. Có thể Cloudflare ép quá chặt.")
+                print(f"❌ Vẫn không thấy data. Cloudflare gắt quá!")
                 
         except Exception as e:
             print(f"⚠️ Lỗi kết nối ID {pid}: {e}")
