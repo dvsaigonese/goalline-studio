@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Data | Goal-Line Studio</title>
+    <link rel="stylesheet" href="css/chart.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="studio-layout">
+        <aside class="control-panel">
+            <div class="panel-header">
+                <h2>Cài Đặt Ấn Phẩm</h2>
+            </div>
+            
+            <div class="form-group">
+                <label>Tiêu đề chính</label>
+                <input type="text" id="inputTitle" value="Kevin De Bruyne">
+            </div>
+
+            <div class="form-group">
+                <label>Tiêu đề phụ (Context)</label>
+                <input type="text" id="inputSubtitle" value="Hồ sơ Tấn công | Mùa giải mới nhất">
+            </div>
+
+            <div class="form-group">
+                <label>Chọn cầu thủ</label>
+                <select id="selectPlayer">
+                    <option value="447">Kevin De Bruyne</option>
+                    <option value="1228">Bruno Fernandes</option>
+                    <option value="8456">Martin Ødegaard</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Màu sắc chủ đạo (Hex/RGBA)</label>
+                <input type="text" id="inputColor" value="rgba(108, 172, 228, 1)">
+            </div>
+
+            <div class="action-buttons">
+                <button id="btnDownload" class="btn btn-primary">⬇ Tải Ảnh Khung Tranh (PNG)</button>
+            </div>
+        </aside>
+
+        <main class="canvas-wrapper">
+            <div class="artboard" id="artboard-target">
+                <div class="watermark">GOAL-LINE</div>
+                
+                <header class="artboard-header">
+                    <h1 id="renderTitle">Kevin De Bruyne</h1>
+                    <p id="renderSubtitle">Hồ sơ Tấn công | Mùa giải mới nhất</p>
+                </header>
+
+                <div class="artboard-body">
+                    <canvas id="radarChart"></canvas>
+                </div>
+
+                <footer class="artboard-footer">
+                    <div class="source">Nguồn: Dữ liệu thực từ Understat</div>
+                    <div class="branding">Goal-Line Studio</div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script type="module" src="js/modules/chart.js"></script>
+</body>
+</html>
