@@ -28,33 +28,36 @@ function initChart() {
     });
 }
 
+// Thay [tên_username_của_bạn]-goalline-api bằng đúng tên miền trên Hugging Face của bạn
+const API_URL = "https://dvsaigonese-goalline-api.hf.space/api/player";
+
 async function loadPlayerData() {
     const playerId = document.getElementById('selectPlayer').value;
     const colorInput = document.getElementById('inputColor').value;
     
-    // Cập nhật text UI
     document.getElementById('renderTitle').innerText = document.getElementById('inputTitle').value;
     document.getElementById('renderSubtitle').innerText = document.getElementById('inputSubtitle').value;
 
     try {
-        // Đọc thẳng file JSON cùng cấp ở ngoài thư mục gốc
-        const response = await fetch(`../../data_${playerId}.json`); 
-        if (!response.ok) throw new Error("Chưa có data local, hãy chạy file python trước.");
+        console.log(`Đang gọi API lấy data cho ID: ${playerId}...`);
         
-        const data = await response.json();
-        const latestSeason = data.season[data.season.length - 1]; // Lấy mùa gần nhất
+        // Gọi thẳng lên API do chính bạn tự trồng!
+        const response = await fetch(`${API_URL}/${playerId}`); 
         
-        // Bóc tách & scale dữ liệu (nhân nhẹ lên để chart to đều ra)
+        if (!response.ok) throw new Error("Lỗi API hoặc không tìm thấy cầu thủ");
+        
+        // Data trả về giờ đã là mùa giải mới nhất, không cần bóc tách mảng nữa
+        const latestSeason = await response.json(); 
+        
         const xG = parseFloat(latestSeason.xG) * 5; 
         const xA = parseFloat(latestSeason.xA) * 5;
         const kp = parseFloat(latestSeason.key_passes) * 1.5;
         const shots = parseFloat(latestSeason.shots) * 1;
         const xGB = parseFloat(latestSeason.xGChain) * 1.5;
 
-        // Vẽ mảng
         myRadarChart.data.datasets = [{
             data: [xG, xA, kp, shots, xGB],
-            backgroundColor: colorInput.replace('1)', '0.3)'), // Làm trong suốt màu nền 30%
+            backgroundColor: colorInput.replace('1)', '0.3)'), 
             borderColor: colorInput,
             borderWidth: 3,
             pointBackgroundColor: colorInput,
@@ -65,7 +68,7 @@ async function loadPlayerData() {
 
     } catch (error) {
         console.error(error);
-        alert("Lỗi: Không tìm thấy file data. Vui lòng check lại Python.");
+        alert("Lỗi tải dữ liệu. Hãy F12 mở Console để xem chi tiết.");
     }
 }
 
