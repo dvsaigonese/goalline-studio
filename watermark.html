@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goal-Line Watermark Tool</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Goal-Line Collage & Watermark</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="style.css" />
 </head>
@@ -17,21 +16,11 @@
                 <a href="index.html" id="home-btn" class="tool-btn" title="Home">
                     <i class="fa-solid fa-home"></i>
                 </a>
-                <a href="board.html" id="home-btn" class="tool-btn" title="Tactical Board">
-                    <i class="fa-solid fa-chess-board"></i>
-                </a>
                 <a href="watermark.html" class="tool-btn active" title="Watermark Tool" style="color: white; background: var(--primary);">
-                    <i class="fa-solid fa-stamp"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                 </a>
-
-                <input type="checkbox" id="crop-mode-input" class="tool-checkbox" hidden disabled>
-                <label for="crop-mode-input" id="crop-mode-label" class="tool-btn disabled" title="Crop Image (4:5)">
-                    <i class="fa-solid fa-crop-simple"></i>
-                </label>
             </div>
-
             <div class="spacer"></div>
-            
             <div class="tool-group bottom">
                 <button id="export-wm-btn" class="tool-btn primary" title="Export Image">
                     <i class="fa-solid fa-download"></i>
@@ -40,83 +29,85 @@
         </nav>
 
         <main class="canvas-area">
-            <div class="canvas-wrapper" id="wm-wrapper" style="box-shadow: none; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+            <div class="canvas-wrapper" id="wm-wrapper" style="box-shadow: none; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative;">
                 
-                <div id="empty-state" style="color: var(--text-muted); text-align: center; border: 2px dashed var(--border); padding: 50px; border-radius: 12px;">
-                    <i class="fa-solid fa-image" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                    <p>Upload an image to start</p>
+                <div id="empty-state" style="color: var(--text-muted); text-align: center; border: 2px dashed var(--border); padding: 50px; border-radius: 12px; position: absolute; z-index: 2;">
+                    <i class="fa-solid fa-images" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                    <p>Setup layout and upload images</p>
                 </div>
                 
-                <div id="cropper-container" style="display: none; width: 100%; height: 85vh; justify-content: center; align-items: center;">
-                    <img id="image-to-crop" style="display: block; max-width: 100%; max-height: 100%;">
-                </div>
-
-                <canvas id="wm-canvas" style="display: none; max-width: 100%; max-height: 85vh; object-fit: contain; box-shadow: 0 0 30px rgba(0,0,0,0.8);"></canvas>
+                <canvas id="wm-canvas" style="max-width: 100%; max-height: 85vh; object-fit: contain; box-shadow: 0 0 30px rgba(0,0,0,0.8); background: black; display: block; position: relative; z-index: 1;"></canvas>
             </div>
         </main>
 
         <aside class="settings-panel">
-            <h3>Watermark Settings</h3>
+            <h3>Layout & Watermark</h3>
 
-            <div id="crop-controls" class="setting-group" style="display: none; border: 2px solid var(--accent); padding: 15px; border-radius: var(--radius);">
-                <label style="color: var(--accent); font-weight: bold; text-transform: uppercase;">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    Crop Mode: Fixed 4:5
-                </label>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">
-                    Select the area you want to keep. The image will be automatically scaled to high resolution (min. 1200x1500). Hides WTM elements during cropping.
-                </p>
-                <div class="row-input">
-                    <button id="confirm-crop-btn" class="startup-btn accent" style="padding: 10px; flex: 2; flex-direction: row; font-size: 0.9rem;">
-                        <i class="fa-solid fa-check"></i>
-                        <span>Apply & Continue</span>
-                    </button>
-                    <button id="cancel-crop-btn" class="tool-btn" style="padding: 10px; border: 1px solid var(--border); font-size: 0.9rem;">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
+            <div class="wm-workflow-card">
+                <label style="color: white; font-weight: bold; margin-bottom: 10px; display: block;">1. Setup Layout (4:5)</label>
+                
+                <label>Mode:</label>
+                <select id="layout-mode" class="wm-select">
+                    <option value="single">Single Image</option>
+                    <option value="collage">Collage (Split)</option>
+                </select>
+
+                <div id="collage-options" style="display: none;">
+                    <label>Split Direction:</label>
+                    <select id="split-direction" class="wm-select">
+                        <option value="vertical">Vertical (|||)</option>
+                        <option value="horizontal">Horizontal (三)</option>
+                    </select>
+
+                    <label>Number of Splits:</label>
+                    <input type="number" id="split-count" class="form-control" min="2" max="10" value="2" style="margin-bottom: 10px;">
                 </div>
             </div>
 
-            <div id="wtm-settings-panel">
-                <div class="setting-group">
-                    <label>1. Upload Base Image</label>
-                    <input type="file" id="upload-img" accept="image/*" class="form-control" style="padding: 5px;">
-                </div>
+            <div class="setting-group" id="upload-group">
+                <label style="color: white; font-weight: bold;">2. Upload Images</label>
+                <div id="file-inputs-container" style="background: #18181b; padding: 10px; border-radius: 8px; border: 1px solid #333; margin-top: 10px;">
+                    </div>
+            </div>
+            
+            <div class="setting-group collage-controls" id="collage-instructions" style="display: none;">
+                <label style="color: var(--accent);"><i class="fa-solid fa-hand-pointer"></i> Edit Mode Active</label>
+                <p style="font-size: 0.8rem; color: #ccc; margin: 5px 0;">
+                    1. <strong>Click</strong> on a photo to select it.<br>
+                    2. <strong>Drag</strong> to move it.<br>
+                    3. <strong>Scroll mouse</strong> to zoom in/out.
+                </p>
+            </div>
+
+            <hr>
+
+            <div class="setting-group">
+                <label style="color: white; font-weight: bold;">3. Article Title</label>
+                <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter post title here..." style="margin-bottom: 15px;"></textarea>
                 
-                <hr>
-
-                <div class="setting-group">
-                    <label>2. Article Title</label>
-                    <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter post title here..."></textarea>
-
-                    
-                    <label>3. Pattern Intensity (Default: 15%)</label>
-                    <div class="row-input" style="align-items: center;">
-                        <input type="range" id="pattern-opacity" min="0" max="1" step="0.05" value="0.15" style="flex: 1; cursor: pointer;">
-                        <span id="pattern-val" style="color: var(--accent); font-weight: bold; width: 40px; text-align: right;">15%</span>
-                    </div>
-
-                    <label>4. Film Grain (Default: 8%)</label>
-                    <div class="row-input" style="align-items: center;">
-                        <input type="range" id="grain-intensity" min="0" max="0.2" step="0.01" value="0.08" style="flex: 1; cursor: pointer;">
-                        <span id="grain-val" style="color: var(--accent); font-weight: bold; width: 50px; text-align: right;">8%</span>
-                    </div>
-
-                    <label>5. Overall Brightness (Default: 120%)</label>
-                    <div class="row-input" style="align-items: center;">
-                        <input type="range" id="overall-brightness" min="0" max="200" step="10" value="120" style="flex: 1; cursor: pointer;">
-                        <span id="brightness-val" style="color: var(--accent); font-weight: bold; width: 50px; text-align: right;">120%</span>
-                    </div>
-
-                    <small style="color: gray; font-size: 0.8rem;">Use {text} to color it yellow.</small>
-                    <br>
-                    <small style="color: gray; font-size: 0.8rem;">If the title line is too long, it will overflow the image; press Enter if you want to start a new line.</small>
+                <label>4. Pattern Intensity</label>
+                <div class="row-input" style="align-items: center; margin-bottom: 10px;">
+                    <input type="range" id="pattern-opacity" min="0" max="1" step="0.05" value="0.15" style="flex: 1; cursor: pointer;">
+                    <span id="pattern-val" style="color: var(--accent); font-weight: bold; width: 40px; text-align: right;">15%</span>
                 </div>
+
+                <label>5. Film Grain</label>
+                <div class="row-input" style="align-items: center; margin-bottom: 10px;">
+                    <input type="range" id="grain-intensity" min="0" max="0.2" step="0.01" value="0.08" style="flex: 1; cursor: pointer;">
+                    <span id="grain-val" style="color: var(--accent); font-weight: bold; width: 50px; text-align: right;">8%</span>
+                </div>
+
+                <label>6. Overall Brightness</label>
+                <div class="row-input" style="align-items: center; margin-bottom: 10px;">
+                    <input type="range" id="overall-brightness" min="0" max="200" step="10" value="120" style="flex: 1; cursor: pointer;">
+                    <span id="brightness-val" style="color: var(--accent); font-weight: bold; width: 50px; text-align: right;">120%</span>
+                </div>
+
+                <small style="color: gray; font-size: 0.8rem;">Use {text} to color it yellow. Enter for new line.</small>
             </div>
         </aside>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script type="module" src="js/watermark.js"></script>
 </body>
 </html>

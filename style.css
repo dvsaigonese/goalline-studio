@@ -1,6 +1,5 @@
 @font-face {
   font-family: "Albula";
-  /* Đổi đúng tên file .otf và thêm ?v=1 để ép điện thoại tải lại font mới */
   src: url("assets/fonts/AlbulaProBold.otf?v=1") format("opentype");
   font-weight: bold;
   font-style: normal;
@@ -13,16 +12,16 @@
 
 /* --- 1. Variables & Reset --- */
 :root {
-    --bg-dark: #18181b;       /* Nền tổng thể tối hơn */
-    --bg-panel: #27272a;      /* Nền panel */
-    --primary: #3b82f6;       /* Màu chủ đạo (Xanh) */
-    --accent: #f59e0b;        /* Màu nhấn (Vàng) */
-    --danger: #ef4444;        /* Màu đỏ */
+    --bg-dark: #18181b;       
+    --bg-panel: #27272a;      
+    --primary: #3b82f6;       
+    --accent: #f59e0b;        
+    --danger: #ef4444;        
     --text-main: #e4e4e7;
     --text-muted: #a1a1aa;
     --border: #3f3f46;
     --radius: 8px;
-    --header-height: 0px;     /* Chúng ta full màn hình nên không cần header */
+    --header-height: 0px;     
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -31,7 +30,7 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-main);
     height: 100vh;
-    overflow: hidden; /* Cấm scroll body trên Desktop */
+    overflow: hidden; 
 }
 
 /* --- 2. Layout Grid/Flex --- */
@@ -53,11 +52,7 @@ body {
     z-index: 10;
 }
 
-.logo img {
-    width: 40px;
-    height: 40px;
-    margin-bottom: 24px;
-}
+.logo img { width: 40px; height: 40px; margin-bottom: 24px; }
 
 .tool-group {
     display: flex;
@@ -82,12 +77,7 @@ body {
     background: transparent;
 }
 
-.tool-btn:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
-}
-
-/* Trạng thái Active khi Checkbox được chọn */
+.tool-btn:hover { background-color: rgba(255,255,255,0.1); color: white; }
 .tool-checkbox:checked + .tool-btn {
     background-color: var(--primary);
     color: white;
@@ -95,16 +85,13 @@ body {
 }
 
 .spacer { flex-grow: 1; }
-
 .tool-group.bottom { margin-top: auto; }
 .tool-btn.primary { color: var(--primary); }
-.tool-btn.warning { color: var(--accent); }
-.tool-btn.danger { color: var(--danger); }
 
 /* --- 4. Main Canvas Area (Center) --- */
 .canvas-area {
     flex-grow: 1;
-    background-color: #000; /* Nền đen sau sân bóng */
+    background-color: #000; 
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -113,20 +100,7 @@ body {
     overflow: hidden;
 }
 
-.canvas-wrapper {
-    box-shadow: 0 0 50px rgba(0,0,0,0.8);
-    position: relative;
-}
-
-.copyright {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    opacity: 0.5;
-}
+.canvas-wrapper { box-shadow: 0 0 50px rgba(0,0,0,0.8); position: relative; }
 
 /* --- 5. Settings Panel (Right) --- */
 .settings-panel {
@@ -165,296 +139,53 @@ body {
     transition: 0.2s;
 }
 
-.form-control:focus {
-    border-color: var(--primary);
-}
+.form-control:focus { border-color: var(--primary); }
+.row-input { display: flex; gap: 8px; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
 
-.row-input {
-    display: flex;
-    gap: 8px;
-}
+.settings-panel::-webkit-scrollbar { display: none; }
+.settings-panel { -ms-overflow-style: none; scrollbar-width: none; }
 
-.add-btn {
-    background-color: var(--primary);
-    border: none;
-    color: white;
-    border-radius: 6px;
-    width: 36px;
-    cursor: pointer;
-}
-.add-btn:hover { opacity: 0.9; }
-
-.checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    font-size: 0.9rem;
-}
-
-.mt-2 { margin-top: 8px; }
-
-hr {
-    border: 0;
-    border-top: 1px solid var(--border);
-    margin: 16px 0;
-}
-
-.tip {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-style: italic;
-    display: block;
-    margin-top: 8px;
-}
-
-/* --- Startup Modal --- */
-.startup-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background-color: rgba(0, 0, 0, 0.95); /* Nền đen mờ */
-    z-index: 9999; /* Luôn nổi trên cùng */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(5px);
-}
-
-.startup-box {
-    background-color: var(--bg-panel);
-    padding: 40px;
-    border-radius: 16px;
-    text-align: center;
-    border: 1px solid var(--border);
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 0 50px rgba(0,0,0,0.5);
-}
-
-.startup-box h2 { margin-bottom: 10px; color: white; }
-.startup-box p { color: var(--text-muted); margin-bottom: 30px; }
-
-.startup-options {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-}
-
-.startup-btn {
-    flex: 1;
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background-color: rgba(255,255,255,0.05);
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
-
-.startup-btn i { font-size: 2rem; margin-bottom: 5px; }
-.startup-btn span { font-weight: bold; font-size: 1.1rem; }
-.startup-btn small { color: var(--text-muted); font-size: 0.8rem; }
-
-.startup-btn:hover { transform: translateY(-5px); border-color: var(--primary); }
-.startup-btn.primary:hover { background-color: var(--primary); }
-.startup-btn.accent:hover { background-color: var(--accent); color: black; }
-.startup-btn.accent:hover small { color: #333; }
-
-/* Ẩn mũi tên tăng giảm mặc định của input number */
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
-}
-
-input[type=number] {
-  -moz-appearance: textfield; /* Firefox */
-}
-
-/* Style cho ô nhập số khi focus */
-#scale-number:focus {
-    border-color: var(--primary);
-    background-color: #3f3f46;
-}
-
-/* --- Tùy chỉnh thanh cuộn cho Panel bên phải --- */
-
-/* Ẩn thanh cuộn trên Chrome/Safari/Edge */
-.settings-panel::-webkit-scrollbar {
-    display: none;
-}
-
-/* Ẩn thanh cuộn trên Firefox/IE */
-.settings-panel {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-}
 
 /* =========================================
-   LANDING PAGE (HUB) STYLES - XỊN XÒ EDITION
+   6. KHU VỰC CSS RIÊNG CHO WATERMARK COLLAGE
 ========================================= */
-.landing-body {
-    background-color: var(--bg-dark);
-    min-height: 100vh;
-    overflow-y: auto !important; /* Mở khóa cuộn mượt mà */
-    background-image: radial-gradient(#27272a 1px, transparent 1px);
-    background-size: 30px 30px;
-    display: block; /* Gỡ lệnh flex gây kẹt header */
-    padding: 60px 20px;
-}
-
-.landing-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: calc(100vh - 120px);
-}
-
-.landing-header { 
-    text-align: center; 
-    margin-bottom: 60px; 
-    animation: fadeInDown 0.8s ease;
-}
-
-.landing-logo { 
-    width: 90px; 
-    height: 90px; 
-    margin-bottom: 20px; 
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.gradient-text { 
-    font-size: 3.5rem; 
-    margin-bottom: 10px; 
-    font-family: 'Albula', sans-serif; 
-    background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-.subtitle { 
-    color: var(--text-muted); 
-    font-size: 1.1rem; 
-    letter-spacing: 1px;
-}
-
-/* DÙNG CSS GRID: TỰ ĐỘNG CHIA CỘT THÔNG MINH */
-.tool-grid {
-    display: grid;
-    /* Nếu nhét thêm tool, nó tự động xuống dòng và căn chỉnh đều tăm tắp */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
-    width: 100%;
-    max-width: 1000px;
-    margin-bottom: auto; /* Ép footer xuống tận cùng đáy trang */
-}
-
-.tool-card {
-    background-color: var(--bg-panel);
+.wm-workflow-card {
+    background: #1e1e20;
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 35px 25px;
-    text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    z-index: 1;
+    border-radius: var(--radius);
+    padding: 15px;
+    margin-bottom: 15px;
 }
 
-/* Background ánh sáng nhẹ khi hover */
-.tool-card::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+.wm-select {
+    width: 100%;
+    background: #2a2a2d;
+    border: 1px solid #444;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    outline: none;
+    cursor: pointer;
 }
 
-.tool-card:hover {
-    transform: translateY(-8px);
-    border-color: var(--text-muted);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+.collage-controls {
+    background: rgba(0,0,0,0.5);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    border-left: 4px solid var(--accent);
 }
 
-.tool-card:hover::before { opacity: 1; }
+/* Thêm style để biết canvas đang ở chế độ kéo thả */
+#wm-canvas.editing { cursor: move; }
 
-.card-icon { 
-    font-size: 3.5rem; 
-    margin-bottom: 25px; 
-    transition: transform 0.3s ease; 
-}
-
-.tool-card:hover .card-icon { 
-    transform: scale(1.1) translateY(-5px); 
-}
-
-.card-content { flex-grow: 1; margin-bottom: 25px;}
-
-.card-content h3 { 
-    color: white; 
-    font-size: 1.4rem; 
-    margin-bottom: 12px; 
-}
-
-.card-content p { 
-    color: var(--text-muted); 
-    line-height: 1.5; 
-    font-size: 0.95rem;
-}
-
-.card-action { 
-    color: white; 
-    font-weight: bold; 
-    padding: 12px 20px; 
-    border-radius: 8px; 
-    background: rgba(255,255,255,0.05); 
-    width: 100%; 
-    transition: all 0.3s;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-}
-
-.tool-card:hover .card-action { 
-    background: white; 
-    color: black; /* Đổi màu nút khi hover cho nổi bật */
-}
-
-.landing-footer { 
-    margin-top: 60px; 
-    color: #555; 
-    font-size: 0.85rem; 
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
 
 /* =========================================
-   MOBILE RESPONSIVE (Dành cho màn hình nhỏ)
-   Ghi chú: Đã hợp nhất 2 khối @media cũ thành 1 khối duy nhất chuẩn
+   7. MOBILE RESPONSIVE TỐI ƯU
 ========================================= */
 @media screen and (max-width: 768px) {
-    /* 1. MỞ KHÓA CUỘN TRANG (Rất quan trọng) */
     body {
         height: auto;
         overflow-y: auto !important; 
@@ -467,7 +198,6 @@ input[type=number] {
         overflow-y: visible;
     }
 
-    /* 2. TOOLBAR: Ép nằm ngang trên cùng */
     .toolbar {
         width: 100%;
         height: auto;
@@ -477,7 +207,7 @@ input[type=number] {
         border-bottom: 1px solid var(--border);
         justify-content: space-between;
         align-items: center;
-        flex: none; /* Không cho giãn */
+        flex: none; 
     }
 
     .toolbar .tool-group {
@@ -487,34 +217,19 @@ input[type=number] {
         width: auto;
     }
 
-    .toolbar .spacer {
-        display: none; /* Ẩn khoảng trống thừa trên mobile */
-    }
-    
-    .logo { 
-        display: none; /* Ẩn logo ở toolbar cho gọn */
-    }
+    .toolbar .spacer, .logo { display: none; }
 
-    /* 3. CANVAS AREA: Khu vực ảnh ở giữa */
     .canvas-area {
-        flex: none !important; /* QUAN TRỌNG: Gỡ bỏ flex giãn full màn hình của Desktop */
+        flex: none !important; 
         width: 100%;
-        height: 50vh; /* Chốt cứng chiều cao 50% màn hình cho vùng ảnh */
+        height: 50vh; 
         min-height: 350px;
     }
 
-    #cropper-container, 
-    #wm-canvas {
-        max-height: 45vh !important;
-    }
+    #wm-canvas { max-height: 45vh !important; }
 
-    #empty-state {
-        padding: 20px;
-    }
-
-    /* 4. SETTINGS PANEL: Trượt xuống dưới cùng */
     .settings-panel {
-        display: block !important; /* Ép hiển thị, ghi đè lệnh ẩn cũ */
+        display: block !important; 
         flex: none !important; 
         width: 100%;
         height: auto;
@@ -524,15 +239,8 @@ input[type=number] {
         padding-bottom: 50px;
     }
 
-    /* Tối ưu ô nhập Text cho ngón tay dễ bấm */
     textarea#wm-title {
-        font-size: 16px; /* Chống iOS tự động zoom khi gõ */
+        font-size: 16px; /* Chống iOS zoom */
         padding: 12px;
-    }
-    
-    /* Làm nút bấm to ra trên điện thoại */
-    .row-input button {
-        padding: 15px 10px !important;
-        font-size: 1rem !important;
     }
 }

@@ -3,47 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chart Data | Goal-Line Studio</title>
+    <title>FBPlot Clone | Goal-Line Studio</title>
     <link rel="stylesheet" href="css/chart.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="studio-layout">
-        <aside class="control-panel">
-            <div class="panel-header">
-                <h2>Cài Đặt Ấn Phẩm</h2>
-            </div>
+    <header class="top-nav">
+        <div class="logo">⚽ GOAL-LINE <span>Studio</span></div>
+        <div class="nav-actions">
+            <button class="btn btn-outline">Gallery</button>
+            <button class="btn btn-primary">+ Create</button>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
             
-            <div class="form-group">
-                <label>Tiêu đề chính</label>
-                <input type="text" id="inputTitle" value="Kevin De Bruyne">
-            </div>
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-target="step-data"><span>1</span> Select Data</button>
+                <button class="tab-btn" data-target="step-customise"><span>2</span> Customise</button>
+                <button class="tab-btn" data-target="step-appearance"><span>3</span> Appearance</button>
+                <button class="tab-btn" data-target="step-export"><span>4</span> Export</button>
+            </nav>
 
-            <div class="form-group">
-                <label>Tiêu đề phụ (Context)</label>
-                <input type="text" id="inputSubtitle" value="Hồ sơ Tấn công | Mùa giải mới nhất">
-            </div>
+            <div class="tab-content">
+                
+                <div id="step-data" class="tab-pane active">
+                    <div class="form-section">
+                        <h3>Thiết lập Dữ liệu</h3>
+                        <div class="form-group">
+                            <label>Loại biểu đồ (Tương lai sẽ scale thêm)</label>
+                            <select id="selectChartType">
+                                <option value="radar">Radar Chart (Hồ sơ cầu thủ)</option>
+                                <option value="bar" disabled>Bar Chart (Đang phát triển)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Chọn cầu thủ</label>
+                            <select id="selectPlayer">
+                                <option value="447">Kevin De Bruyne</option>
+                                <option value="1228">Bruno Fernandes</option>
+                                <option value="8456">Martin Ødegaard</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mùa giải</label>
+                            <input type="text" value="Mới nhất (Tự động cào)" disabled>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label>Chọn cầu thủ</label>
-                <select id="selectPlayer">
-                    <option value="447">Kevin De Bruyne</option>
-                    <option value="1228">Bruno Fernandes</option>
-                    <option value="8456">Martin Ødegaard</option>
-                </select>
-            </div>
+                <div id="step-customise" class="tab-pane">
+                    <div class="form-section">
+                        <h3>Chỉ số hiển thị (Radar)</h3>
+                        <p class="hint">Tương lai sẽ cho phép tick chọn các chỉ số riêng biệt.</p>
+                        <div class="metric-tags">
+                            <span class="tag">xG (Bàn thắng)</span>
+                            <span class="tag">xA (Kiến tạo)</span>
+                            <span class="tag">Key Passes</span>
+                            <span class="tag">Shots</span>
+                            <span class="tag">xG BuildUp</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label>Màu sắc chủ đạo (Hex/RGBA)</label>
-                <input type="text" id="inputColor" value="rgba(108, 172, 228, 1)">
-            </div>
+                <div id="step-appearance" class="tab-pane">
+                    <div class="form-section">
+                        <h3>Định dạng Văn bản</h3>
+                        <div class="form-group">
+                            <label>Tên cầu thủ (Tiêu đề chính)</label>
+                            <input type="text" id="inputTitle" value="Kevin De Bruyne">
+                        </div>
+                        <div class="form-group">
+                            <label>Context Line (Tiêu đề phụ)</label>
+                            <input type="text" id="inputSubtitle" value="Hồ sơ Tấn công | Mùa giải mới nhất">
+                        </div>
+                        
+                        <h3>Màu sắc</h3>
+                        <div class="form-group">
+                            <label>Màu Line Radar (Hex/RGBA)</label>
+                            <input type="text" id="inputColor" value="rgba(99, 102, 241, 1)">
+                        </div>
+                    </div>
+                </div>
 
-            <div class="action-buttons">
-                <button id="btnDownload" class="btn btn-primary">⬇ Tải Ảnh Khung Tranh (PNG)</button>
+                <div id="step-export" class="tab-pane">
+                    <div class="form-section">
+                        <h3>Xuất Bản</h3>
+                        <p class="hint">Kiểm tra lại hình ảnh ở khung Preview trước khi tải về.</p>
+                        <button id="btnDownload" class="btn btn-primary btn-full">⬇ Tải Ảnh (PNG)</button>
+                    </div>
+                </div>
+
             </div>
         </aside>
 
-        <main class="canvas-wrapper">
+        <main class="preview-area">
             <div class="artboard" id="artboard-target">
                 <div class="watermark">GOAL-LINE</div>
                 
@@ -57,7 +112,7 @@
                 </div>
 
                 <footer class="artboard-footer">
-                    <div class="source">Nguồn: Dữ liệu thực từ Understat</div>
+                    <div class="source">Data: Understat API</div>
                     <div class="branding">Goal-Line Studio</div>
                 </footer>
             </div>
