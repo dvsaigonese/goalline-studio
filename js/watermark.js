@@ -36,7 +36,7 @@ canvas.height = TARGET_HEIGHT;
 
 
 // ==========================================
-// --- TRẠNG THÁI COLLAGE (Đã Fix Lỗi Tỉ Lệ) ---
+// --- TRẠNG THÁI COLLAGE ---
 // ==========================================
 
 let collageState = {
@@ -79,7 +79,6 @@ function applyLayout(keepImages = true) {
         const slotAspectRatio = rect.w * TARGET_WIDTH / (rect.h * TARGET_HEIGHT);
         let imgToKeep = null;
 
-        // Nếu giữ ảnh cũ (Fix Bug 2: Teo ảnh 1/4)
         if (keepImages && oldSlots[i] && oldSlots[i].img) {
             imgToKeep = oldSlots[i].img;
         }
@@ -93,7 +92,6 @@ function applyLayout(keepImages = true) {
             aspectRatio: slotAspectRatio
         };
 
-        // Nếu có ảnh, phải tính lại scale ngay lập tức cho vừa cái khung mới
         if (imgToKeep) {
             const imgAR = imgToKeep.naturalWidth / imgToKeep.naturalHeight;
             if (imgAR > slotAspectRatio) {
@@ -115,7 +113,7 @@ function applyLayout(keepImages = true) {
 
 
 // ==========================================
-// --- XỬ LÝ SỰ KIỆN CHỌN LAYOUT (WORKFLOW) ---
+// --- XỬ LÝ SỰ KIỆN CHỌN LAYOUT ---
 // ==========================================
 
 layoutMode.addEventListener('change', (e) => {
@@ -131,14 +129,14 @@ splitDirection.addEventListener('change', () => applyLayout(true));
 
 splitCount.addEventListener('input', () => {
     let val = parseInt(splitCount.value);
-    if (val < 2) splitCount.value = 2; // Tối thiểu là 2
-    if (val > 10) splitCount.value = 10; // Giới hạn max là 10 cho đỡ lag
+    if (val < 2) splitCount.value = 2; 
+    if (val > 10) splitCount.value = 10; 
     applyLayout(true);
 });
 
 
 // ==========================================
-// --- TƯƠNG TÁC CANVAS (Đã Fix lỗi ảnh 2) ---
+// --- TƯƠNG TÁC CANVAS KÉO THẢ ---
 // ==========================================
 
 function getCanvasCoordinates(e) {
@@ -167,7 +165,6 @@ function handleMouseDown(e) {
         const slotW = slot.w * canvas.width;
         const slotH = slot.h * canvas.height;
         
-        // Kiểm tra tọa độ có nằm trong giới hạn của ô này không
         if (coords.x >= slotX && coords.x <= slotX + slotW && 
             coords.y >= slotY && coords.y <= slotY + slotH) {
             foundIndex = i;
@@ -183,12 +180,6 @@ function handleMouseDown(e) {
         canvas.classList.add('editing');
         collageInstructions.style.display = 'block';
         renderAll(); 
-    } else {
-        collageState.activeSlotIndex = null;
-        collageState.isDragging = false;
-        canvas.classList.remove('editing');
-        collageInstructions.style.display = 'none';
-        renderAll();
     }
 }
 
@@ -213,7 +204,6 @@ function handleMouseMove(e) {
 
 function handleMouseUp() {
     collageState.isDragging = false;
-    canvas.classList.remove('editing');
 }
 
 function handleWheel(e) {
@@ -226,6 +216,21 @@ function handleWheel(e) {
     slot.scale = Math.min(Math.max(0.1, slot.scale + delta), 10);
     renderAll();
 }
+
+// FIX: HÀM BỎ CHỌN KHI CLICK RA NGOÀI CANVAS
+function handleOutsideClick(e) {
+    // Nếu click không trúng canvas và đang có ô được chọn thì bỏ chọn
+    if (e.target !== canvas && collageState.activeSlotIndex !== null) {
+        collageState.activeSlotIndex = null;
+        canvas.classList.remove('editing');
+        collageInstructions.style.display = 'none';
+        renderAll();
+    }
+}
+
+// Lắng nghe sự kiện click/touch trên toàn bộ window để bỏ chọn
+window.addEventListener('mousedown', handleOutsideClick);
+window.addEventListener('touchstart', handleOutsideClick, { passive: false });
 
 canvas.addEventListener('mousedown', handleMouseDown);
 window.addEventListener('mousemove', handleMouseMove);
@@ -266,7 +271,6 @@ function generateFileInputs() {
         input.className = 'form-control';
         input.style.padding = '3px';
 
-        // Fix Bug 1: Ép closure index chặt chẽ ở đây
         input.addEventListener('change', (e) => handleFileSelect(e, i));
 
         group.appendChild(label);
@@ -285,7 +289,6 @@ function handleFileSelect(e, slotIndex) {
                 const slot = collageState.slots[slotIndex];
                 slot.img = img;
                 
-                // Thuật toán Cover (Fit ảnh kín ô)
                 const imgAR = img.naturalWidth / img.naturalHeight;
                 if (imgAR > slot.aspectRatio) {
                     slot.scale = (slot.h * TARGET_HEIGHT) / img.naturalHeight;
@@ -309,7 +312,6 @@ function handleFileSelect(e, slotIndex) {
 // ==========================================
 
 const renderAll = () => {
-    // Luôn luôn Clear Canvas trước để xóa tàn dư của layout cũ
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.filter = 'none'; 
     ctx.fillStyle = 'black';
@@ -338,7 +340,7 @@ function drawCollageBackground() {
         ctx.save();
         ctx.beginPath();
         ctx.rect(slotX, slotY, slotW, slotH);
-        ctx.clip(); // Giới hạn khu vực vẽ của ảnh này
+        ctx.clip(); 
 
         if (slot.img) {
             const imgW = slot.img.naturalWidth * slot.scale;
@@ -372,7 +374,6 @@ function drawCollageBackground() {
             ctx.strokeRect(slotX + 5, slotY + 5, slotW - 10, slotH - 10);
         }
         
-        // Vẽ Border xám mờ để phân tách các slot (nếu > 1 ô)
         if (collageState.slots.length > 1) {
             ctx.strokeStyle = 'rgba(0,0,0,0.8)'; 
             ctx.lineWidth = 4;
@@ -562,7 +563,16 @@ titleInput.addEventListener('input', debounce(() => renderAll()));
 
 exportBtn.addEventListener('click', async () => {
     if (!hasAnyImage()) { alert("Please upload at least one image!"); return; }
+
+    // FIX CHỐT HẠ: ÉP XÓA VIỀN VÀNG TRƯỚC KHI LƯU ẢNH
+    collageState.activeSlotIndex = null;
+    canvas.classList.remove('editing');
+    if (collageInstructions) collageInstructions.style.display = 'none';
+    renderAll();
+
+    // Render xong xuôi mới xuất data
     const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
+    
     if (navigator.canShare && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         try {
             const response = await fetch(dataUrl);
@@ -595,7 +605,6 @@ grainIntensityInput?.addEventListener('input', (e) => {
     debouncedRender();
 });
 
-
 // KHỞI CHẠY APP
 if (document.fonts) {
     document.fonts.load('bold 16px "Albula"').then(() => loadImages()).catch(() => loadImages());
@@ -603,4 +612,4 @@ if (document.fonts) {
     loadImages();
 }
 
-applyLayout(false); // Gọi lệnh này để load UI mặc định (Single)
+applyLayout(false);
