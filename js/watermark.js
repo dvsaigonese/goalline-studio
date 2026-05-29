@@ -44,7 +44,10 @@ let collageState = {
     activeSlotIndex: null, 
     isDragging: false,
     lastMouseX: 0,
-    lastMouseY: 0
+    lastMouseY: 0,
+    //TÍNH NĂNG ZOOM 2 NGÓN (PINCH-TO-ZOOM)
+    isPinching: false,
+    initialPinchDistance: 0
 };
 
 // Hàm sinh ra Config bố cục động
@@ -155,6 +158,21 @@ function getCanvasCoordinates(e) {
 
 function handleMouseDown(e) {
     if (!hasAnyImage()) return;
+
+    // KÍCH HOẠT CHẾ ĐỘ ZOOM NẾU CHẠM 2 NGÓN CÙNG LÚC
+    if (e.touches && e.touches.length === 2) {
+        collageState.isPinching = true;
+        collageState.isDragging = false; // Đang zoom thì cấm kéo
+        collageState.initialPinchDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        return; 
+    }
+
+    // Nếu chạm 1 ngón hoặc dùng chuột (Bắt đầu kéo)
+    if (e.touches && e.touches.length > 1) return;
+
     const coords = getCanvasCoordinates(e);
     
     let foundIndex = -1;
@@ -178,13 +196,47 @@ function handleMouseDown(e) {
         collageState.lastMouseX = coords.x;
         collageState.lastMouseY = coords.y;
         canvas.classList.add('editing');
-        collageInstructions.style.display = 'block';
+        
+        // Hiện text hướng dẫn an toàn
+        const instructions = document.getElementById('collage-instructions');
+        if (instructions) instructions.style.display = 'block';
+        
         renderAll(); 
     }
 }
 
 function handleMouseMove(e) {
+    // NẾU ĐANG CHẠM 2 NGÓN (XỬ LÝ ZOOM)
+    if (e.touches && e.touches.length === 2 && collageState.isPinching) {
+        e.preventDefault(); // Chống cuộn trang web của điện thoại
+        
+        const currentDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+
+        if (collageState.activeSlotIndex !== null) {
+            const slot = collageState.slots[collageState.activeSlotIndex];
+            if (slot.img) {
+                // Tính độ chênh lệch khoảng cách (Hệ số 0.008 để zoom mượt)
+                const distanceDiff = currentDistance - collageState.initialPinchDistance;
+                const delta = distanceDiff * 0.008;
+                
+                // Giới hạn scale từ 0.1x đến 10x
+                slot.scale = Math.min(Math.max(0.1, slot.scale + delta), 10);
+                renderAll();
+            }
+        }
+        
+        // Cập nhật lại điểm neo để zoom liên tục mượt mà
+        collageState.initialPinchDistance = currentDistance;
+        return;
+    }
+
+    // NẾU ĐANG KÉO THẢ BÌNH THƯỜNG
     if (!collageState.isDragging || collageState.activeSlotIndex === null) return;
+    if (e.touches && e.touches.length > 1) return; // Bỏ qua nếu lỡ quẹt > 1 ngón
+
     e.preventDefault(); 
 
     const coords = getCanvasCoordinates(e);
@@ -202,8 +254,15 @@ function handleMouseMove(e) {
     renderAll(); 
 }
 
-function handleMouseUp() {
-    collageState.isDragging = false;
+function handleMouseUp(e) {
+    // Nếu buông 1 trong 2 ngón ra thì tắt chế độ Zoom
+    if (!e || !e.touches || e.touches.length < 2) {
+        collageState.isPinching = false;
+    }
+    // Nếu buông tay hoàn toàn thì tắt chế độ Kéo
+    if (!e || !e.touches || e.touches.length === 0) {
+        collageState.isDragging = false;
+    }
 }
 
 function handleWheel(e) {
@@ -217,26 +276,27 @@ function handleWheel(e) {
     renderAll();
 }
 
-// FIX: HÀM BỎ CHỌN KHI CLICK RA NGOÀI CANVAS
 function handleOutsideClick(e) {
-    // Nếu click không trúng canvas và đang có ô được chọn thì bỏ chọn
     if (e.target !== canvas && collageState.activeSlotIndex !== null) {
         collageState.activeSlotIndex = null;
         canvas.classList.remove('editing');
-        collageInstructions.style.display = 'none';
+        const instructions = document.getElementById('collage-instructions');
+        if (instructions) instructions.style.display = 'none';
         renderAll();
     }
 }
 
-// Lắng nghe sự kiện click/touch trên toàn bộ window để bỏ chọn
+// Bắt sự kiện Window để bỏ chọn khi click ra ngoài
 window.addEventListener('mousedown', handleOutsideClick);
 window.addEventListener('touchstart', handleOutsideClick, { passive: false });
 
+// Sự kiện Chuột PC
 canvas.addEventListener('mousedown', handleMouseDown);
 window.addEventListener('mousemove', handleMouseMove);
 window.addEventListener('mouseup', handleMouseUp);
 canvas.addEventListener('wheel', handleWheel, { passive: false });
 
+// Sự kiện Cảm ứng Mobile
 canvas.addEventListener('touchstart', handleMouseDown, { passive: false });
 canvas.addEventListener('touchmove', handleMouseMove, { passive: false });
 canvas.addEventListener('touchend', handleMouseUp);
