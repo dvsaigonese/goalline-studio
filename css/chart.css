@@ -1,62 +1,67 @@
 :root {
-    --primary: #6366f1; /* Tím indigo của FBPlot */
-    --primary-hover: #4f46e5;
+    --primary: #6366f1; 
     --bg-main: #f3f4f6;
     --bg-panel: #ffffff;
     --border: #e5e7eb;
     --text-main: #111827;
     --text-muted: #6b7280;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden;}
-
-/* TOP NAVBAR */
 .top-nav { height: 60px; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 24px; }
 .logo { font-weight: 800; font-size: 20px; color: var(--primary); letter-spacing: -0.5px;}
 .logo span { color: var(--text-main); font-weight: 600;}
 .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: 0.2s;}
 .btn-primary { background: var(--primary); color: white; }
-.btn-primary:hover { background: var(--primary-hover); }
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); margin-right: 10px;}
 .btn-full { width: 100%; padding: 12px; font-size: 16px; margin-top: 10px;}
 
-/* MAIN LAYOUT */
 .app-container { display: flex; flex: 1; height: calc(100vh - 60px); }
-
-/* SIDEBAR & TABS */
-.sidebar { width: 400px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.sidebar { width: 400px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
 .tab-nav { display: flex; padding: 16px; border-bottom: 1px solid var(--border); gap: 8px; flex-wrap: wrap;}
-.tab-btn { flex: 1; min-width: 45%; padding: 8px; background: transparent; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;}
+.tab-btn { flex: 1; min-width: 45%; padding: 8px; background: transparent; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;}
 .tab-btn span { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #f3f4f6; border-radius: 50%; font-size: 10px; }
 .tab-btn.active { border-color: var(--primary); color: var(--primary); background: #eef2ff; }
 .tab-btn.active span { background: var(--primary); color: white; }
 
-/* FORM ELEMENTS */
 .tab-content { padding: 20px; flex: 1; overflow-y: auto; }
 .tab-pane { display: none; }
 .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-.form-section { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
-.form-section h3 { font-size: 14px; margin-bottom: 16px; color: var(--text-main); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;}
+.form-section { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px;}
+.form-section h3 { font-size: 14px; margin-bottom: 16px; color: var(--text-main); text-transform: uppercase; font-weight: 700;}
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
-.form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 14px; background: #f9fafb; outline: none;}
-.form-group input:focus, .form-group select:focus { border-color: var(--primary); background: white;}
+.form-group input[type="text"], .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 14px; background: #f9fafb;}
 .hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; font-style: italic;}
 
-.metric-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-.tag { padding: 6px 12px; background: #eef2ff; color: var(--primary); font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid #c7d2fe;}
+/* CHECKBOX LIST (Dynamic Metrics) */
+.metric-list { display: flex; flex-direction: column; gap: 10px; }
+.metric-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; cursor: pointer; padding: 6px; border-radius: 6px;}
+.metric-item:hover { background: #f3f4f6; }
+.metric-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 
-/* CANVAS AREA */
+/* COLOR PALETTE */
+.color-palette { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.color-swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: 0.1s;}
+.color-swatch.active { border-color: #111; transform: scale(1.15); }
+.color-picker-native { width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; cursor: pointer; overflow: hidden; }
+.color-picker-native::-webkit-color-swatch-wrapper { padding: 0; }
+.color-picker-native::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+/* KHUNG TRANH ÉP TỈ LỆ 4:5 */
 .preview-area { flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; padding: 40px; background: #e5e7eb;}
-.artboard { width: 800px; height: 800px; background-color: #ffffff; position: relative; padding: 40px 50px; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border-radius: 8px;}
-.watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; font-weight: 800; color: rgba(0, 0, 0, 0.02); pointer-events: none; z-index: 1; }
-.artboard-header { z-index: 2; margin-bottom: 20px; text-align: center; }
-.artboard-header h1 { font-family: 'Merriweather', serif; font-size: 42px; color: #111; margin-bottom: 8px; }
-.artboard-header p { font-size: 14px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.artboard { 
+    width: 800px; 
+    height: 1000px; /* Chốt cứng tỷ lệ 4:5 cho Facebook (800x1000) */
+    background-color: #ffffff; position: relative; padding: 60px; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-radius: 8px; flex-shrink: 0;
+}
+.watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 130px; font-weight: 800; color: rgba(0, 0, 0, 0.02); pointer-events: none; z-index: 1; }
+.artboard-header { z-index: 2; margin-bottom: 30px; text-align: center; }
+.artboard-header h1 { font-family: 'Merriweather', serif; font-size: 48px; color: #111; margin-bottom: 10px; }
+.artboard-header p { font-size: 16px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
 .artboard-body { flex: 1; z-index: 2; position: relative; width: 100%; display: flex; justify-content: center; align-items: center;}
-canvas { max-width: 90%; max-height: 90%; }
-.artboard-footer { z-index: 2; margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border); padding-top: 15px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
-.artboard-footer .branding { font-weight: 800; color: #000; font-size: 16px; letter-spacing: -0.5px; }
+canvas { width: 100% !important; height: 100% !important; }
+.artboard-footer { z-index: 2; margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border); padding-top: 20px; font-size: 14px; color: var(--text-muted); font-weight: 600; }
+.artboard-footer .branding { font-weight: 800; color: #000; font-size: 18px; letter-spacing: -0.5px; }

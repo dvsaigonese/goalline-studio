@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chart | Goal-Line Studio</title>
+    <title>FBPlot Clone | Goal-Line Studio</title>
     <link rel="stylesheet" href="css/chart.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@700&display=swap" rel="stylesheet">
 </head>
@@ -18,7 +18,6 @@
 
     <div class="app-container">
         <aside class="sidebar">
-            
             <nav class="tab-nav">
                 <button class="tab-btn active" data-target="step-data"><span>1</span> Select Data</button>
                 <button class="tab-btn" data-target="step-customise"><span>2</span> Customise</button>
@@ -32,7 +31,7 @@
                     <div class="form-section">
                         <h3>Thiết lập Dữ liệu</h3>
                         <div class="form-group">
-                            <label>Loại biểu đồ (Tương lai sẽ scale thêm)</label>
+                            <label>Loại biểu đồ</label>
                             <select id="selectChartType">
                                 <option value="radar">Radar Chart (Hồ sơ cầu thủ)</option>
                                 <option value="bar" disabled>Bar Chart (Đang phát triển)</option>
@@ -55,42 +54,37 @@
 
                 <div id="step-customise" class="tab-pane">
                     <div class="form-section">
-                        <h3>Chỉ số hiển thị (Radar)</h3>
-                        <p class="hint">Tương lai sẽ cho phép tick chọn các chỉ số riêng biệt.</p>
-                        <div class="metric-tags">
-                            <span class="tag">xG (Bàn thắng)</span>
-                            <span class="tag">xA (Kiến tạo)</span>
-                            <span class="tag">Key Passes</span>
-                            <span class="tag">Shots</span>
-                            <span class="tag">xG BuildUp</span>
+                        <h3>Chọn Chỉ số (Radar)</h3>
+                        <p class="hint">Check vào các chỉ số muốn hiển thị. Dữ liệu sẽ tự động quy đổi về chuẩn Per 90.</p>
+                        <div class="metric-list" id="dynamicMetrics">
+                            <p style="font-size: 13px; color: #999;">Đang tải dữ liệu cầu thủ...</p>
                         </div>
                     </div>
                 </div>
 
                 <div id="step-appearance" class="tab-pane">
                     <div class="form-section">
-                        <h3>Định dạng Văn bản</h3>
+                        <h3>Văn bản</h3>
                         <div class="form-group">
-                            <label>Tên cầu thủ (Tiêu đề chính)</label>
+                            <label>Tên cầu thủ</label>
                             <input type="text" id="inputTitle" value="Kevin De Bruyne">
                         </div>
                         <div class="form-group">
-                            <label>Context Line (Tiêu đề phụ)</label>
+                            <label>Context Line</label>
                             <input type="text" id="inputSubtitle" value="Hồ sơ Tấn công | Mùa giải mới nhất">
                         </div>
                         
-                        <h3>Màu sắc</h3>
-                        <div class="form-group">
-                            <label>Màu Line Radar (Hex/RGBA)</label>
-                            <input type="text" id="inputColor" value="rgba(99, 102, 241, 1)">
+                        <h3>Bảng Màu (Color Palette)</h3>
+                        <div class="color-palette" id="colorPalette">
+                            <div class="color-swatch active" style="background: #6366f1;" data-color="#6366f1"></div> <div class="color-swatch" style="background: #3b82f6;" data-color="#3b82f6"></div> <div class="color-swatch" style="background: #ef4444;" data-color="#ef4444"></div> <div class="color-swatch" style="background: #10b981;" data-color="#10b981"></div> <div class="color-swatch" style="background: #f59e0b;" data-color="#f59e0b"></div> <div class="color-swatch" style="background: #111827;" data-color="#111827"></div> <input type="color" id="customColorPicker" class="color-picker-native" value="#6366f1">
                         </div>
                     </div>
                 </div>
 
                 <div id="step-export" class="tab-pane">
                     <div class="form-section">
-                        <h3>Xuất Bản</h3>
-                        <p class="hint">Kiểm tra lại hình ảnh ở khung Preview trước khi tải về.</p>
+                        <h3>Xuất Bản (Chuẩn 4:5 Facebook)</h3>
+                        <p class="hint">Khung tranh đã được khóa tỷ lệ 4:5. Tải ảnh PNG chất lượng cao.</p>
                         <button id="btnDownload" class="btn btn-primary btn-full">⬇ Tải Ảnh (PNG)</button>
                     </div>
                 </div>
@@ -112,7 +106,7 @@
                 </div>
 
                 <footer class="artboard-footer">
-                    <div class="source">Data: Understat API</div>
+                    <div class="source">Data: Understat API (Per 90 metrics)</div>
                     <div class="branding">Goal-Line Studio</div>
                 </footer>
             </div>
@@ -120,6 +114,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="js/modules/chart.js"></script>
 </body>
