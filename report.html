@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal-Line Studio | Report Tools</title>
+    <link rel="stylesheet" href="css/report.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">Goal-Line<span>.Studio</span></div>
+                <div class="module-name">Report Module</div>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item active" data-target="passmap">
+                    <span class="icon">⚽</span> Passing Network
+                </li>
+                <li class="nav-item" data-target="shotmap">
+                    <span class="icon">🎯</span> Shot Map <span class="badge">Beta</span>
+                </li>
+                <li class="nav-item" data-target="momentum">
+                    <span class="icon">📈</span> Match Momentum <span class="badge">Beta</span>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <a href="index.html" class="back-link">← Back to Dashboard</a>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            
+            <section id="passmap" class="tab-section active">
+                <header class="section-header">
+                    <h2>Passing Network Report</h2>
+                    <p>Render lưới đường chuyền 11 starter theo chuẩn The Athletic.</p>
+                </header>
+
+                <div class="workspace">
+                    <div class="control-panel card">
+                        <form id="uploadForm">
+                            <div class="upload-area">
+                                <label for="htmlFile" class="btn btn-primary">1. Chọn file HTML WhoScored</label>
+                                <input type="file" id="htmlFile" accept=".html" required>
+                                <div id="fileName" class="file-name">Chưa có file nào được chọn</div>
+                            </div>
+                            <button type="submit" class="btn btn-danger" id="submitBtn">2. Phân tích & Render</button>
+                        </form>
+                        <div id="statusMessage" class="status-msg"></div>
+                        <button class="btn btn-success" id="downloadBtn" style="display: none;">⬇️ 3. Export PNG (4:5)</button>
+                    </div>
+
+                    <div class="preview-panel card">
+                        <div class="export-wrapper">
+                            <div id="reportBox">
+                                <div class="report-header">
+                                    <h1>Passing Networks</h1>
+                                    <p>Mạng lưới đường chuyền 11 cầu thủ đá chính (Phút 1 - 90)</p>
+                                </div>
+
+                                <div class="pitches-container">
+                                    <div class="pitch-wrapper">
+                                        <div class="team-title home-title" id="homeName">Home Team</div>
+                                        <canvas id="homePitch" width="380" height="587"></canvas>
+                                    </div>
+                                    <div class="pitch-wrapper">
+                                        <div class="team-title away-title" id="awayName">Away Team</div>
+                                        <canvas id="awayPitch" width="380" height="587"></canvas>
+                                    </div>
+                                </div>
+
+                                <div class="report-footer">
+                                    <div>Data: <strong>WhoScored</strong></div>
+                                    <div>Yêu cầu tối thiểu 3 đường chuyền</div>
+                                    <div>Render by <strong>Goal-Line Studio</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="shotmap" class="tab-section">
+                <header class="section-header">
+                    <h2>Shot Map Report</h2>
+                    <p>Chức năng đang được phát triển...</p>
+                </header>
+            </section>
+
+            <section id="momentum" class="tab-section">
+                <header class="section-header">
+                    <h2>Match Momentum</h2>
+                    <p>Chức năng đang được phát triển...</p>
+                </header>
+            </section>
+
+        </main>
+    </div>
+
+    <script type="module" src="js/report/passmap.js"></script>
+    <script>
+        // Logic chuyển Tab cơ bản
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active from all tabs
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+                
+                // Add active to clicked tab
+                this.classList.add('active');
+                const targetId = this.getAttribute('data-target');
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

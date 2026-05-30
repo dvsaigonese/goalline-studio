@@ -1,5 +1,5 @@
-import { DATA_PROVIDERS, GROUP_COLORS } from './config/chartProviders.js';
-import { ChartEngine, hexToRgba } from './modules/chartEngine.js';
+import { DATA_PROVIDERS, GROUP_COLORS } from './chartProviders.js';
+import { ChartEngine, hexToRgba } from './chartEngine.js';
 
 const API_URL = "https://dvsaigonese-goalline-api.hf.space/api"; 
 const engine = new ChartEngine('radarChart');
