@@ -3,110 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FBPlot Clone | Goal-Line Studio</title>
+    <title>Goal-Line Studio v3</title>
     <link rel="stylesheet" href="css/chart.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="top-nav">
         <div class="logo">⚽ GOAL-LINE <span>Studio</span></div>
-        <div class="nav-actions">
-            <button class="btn btn-outline">Gallery</button>
-            <button class="btn btn-primary">+ Create</button>
-        </div>
     </header>
 
     <div class="app-container">
         <aside class="sidebar">
             <nav class="tab-nav">
-                <button class="tab-btn active" data-target="step-data"><span>1</span> Select Data</button>
-                <button class="tab-btn" data-target="step-customise"><span>2</span> Customise</button>
-                <button class="tab-btn" data-target="step-appearance"><span>3</span> Appearance</button>
+                <button class="tab-btn active" data-target="step-data"><span>1</span> Players</button>
+                <button class="tab-btn" data-target="step-customise"><span>2</span> Metrics</button>
+                <button class="tab-btn" data-target="step-appearance"><span>3</span> Design</button>
                 <button class="tab-btn" data-target="step-export"><span>4</span> Export</button>
             </nav>
 
             <div class="tab-content">
-                
                 <div id="step-data" class="tab-pane active">
                     <div class="form-section">
                         <h3>Thiết lập Dữ liệu</h3>
-                        <div class="form-group">
-                            <label>Loại biểu đồ</label>
-                            <select id="selectChartType">
-                                <option value="radar">Radar Chart (Hồ sơ cầu thủ)</option>
-                                <option value="bar" disabled>Bar Chart (Đang phát triển)</option>
+        
+                            <div class="form-group">
+                                <label>Nguồn Dữ Liệu (Provider)</label>
+                                <select id="selectDataSource" class="season-select">
+                                    <option value="understat">Understat (Chuyên sâu xG/xA)</option>
+                                    <option value="fotmob" disabled>FotMob API (Đang phát triển...)</option>
+                                    <option value="sofascore" disabled>SofaScore (Đang phát triển...)</option>
+                                </select>
+                            </div>
+                        
+                            <div class="form-group">
+                                <label>Loại biểu đồ</label>
+                                <select id="selectChartType" class="season-select">
+                                    <option value="radar">Radar Chart (Hồ sơ cầu thủ)</option>
+                                    <option value="bar" disabled>Bar Chart</option>
+                                </select>
+                            </div>
+
+                        <h3>Thiết lập Cầu thủ (Max 3)</h3>
+                        
+                        <div class="player-slot active-slot" id="slot-0">
+                            <label>Cầu thủ 1 (Màu chủ đạo)</label>
+                            <div class="search-wrapper">
+                                <input type="text" class="player-search" data-slot="0" placeholder="Gõ tên cầu thủ...">
+                                <div class="autocomplete-list" id="autocomplete-0"></div>
+                            </div>
+                            <select class="season-select" data-slot="0">
+                                <option value="">Chọn mùa giải...</option>
                             </select>
+                            <div class="player-info-box" id="info-0"></div>
                         </div>
-                        <div class="form-group">
-                            <label>Chọn cầu thủ</label>
-                            <select id="selectPlayer">
-                                <option value="447">Kevin De Bruyne</option>
-                                <option value="1228">Bruno Fernandes</option>
-                                <option value="8456">Martin Ødegaard</option>
-                            </select>
+
+                        <div class="player-slot" id="slot-1">
+                            <label>Cầu thủ 2 (Màu Đỏ - So sánh)</label>
+                            <div class="search-wrapper">
+                                <input type="text" class="player-search" data-slot="1" placeholder="Gõ để thêm người t2...">
+                                <div class="autocomplete-list" id="autocomplete-1"></div>
+                            </div>
+                            <select class="season-select" data-slot="1" disabled><option>Chọn mùa giải...</option></select>
+                            <div class="player-info-box" id="info-1"></div>
                         </div>
-                        <div class="form-group">
-                            <label>Mùa giải</label>
-                            <input type="text" value="Mới nhất (Tự động cào)" disabled>
+
+                        <div class="player-slot" id="slot-2">
+                            <label>Cầu thủ 3 (Màu Xanh lá - So sánh)</label>
+                            <div class="search-wrapper">
+                                <input type="text" class="player-search" data-slot="2" placeholder="Gõ để thêm người t3...">
+                                <div class="autocomplete-list" id="autocomplete-2"></div>
+                            </div>
+                            <select class="season-select" data-slot="2" disabled><option>Chọn mùa giải...</option></select>
+                            <div class="player-info-box" id="info-2"></div>
                         </div>
                     </div>
                 </div>
 
                 <div id="step-customise" class="tab-pane">
                     <div class="form-section">
-                        <h3>Chọn Chỉ số (Radar)</h3>
-                        <p class="hint">Check vào các chỉ số muốn hiển thị. Dữ liệu sẽ tự động quy đổi về chuẩn Per 90.</p>
+                        <h3>Hệ thống Quy chuẩn</h3>
+                        <select id="dataModeToggle" class="form-group" style="width: 100%; margin-bottom:15px; padding:8px;">
+                            <option value="p90">Tính theo Per 90 (Chuẩn hóa)</option>
+                            <option value="absolute">Tính theo Tổng thực tế (Absolute)</option>
+                        </select>
+
+                        <h3>Chỉ số hiển thị</h3>
+                        <p class="hint">Các chỉ số được phân loại màu Tấn công (Đỏ), Chuyền bóng (Xanh), Triển khai (Vàng).</p>
                         <div class="metric-list" id="dynamicMetrics">
-                            <p style="font-size: 13px; color: #999;">Đang tải dữ liệu cầu thủ...</p>
-                        </div>
+                            </div>
                     </div>
                 </div>
 
                 <div id="step-appearance" class="tab-pane">
                     <div class="form-section">
                         <h3>Văn bản</h3>
-                        <div class="form-group">
-                            <label>Tên cầu thủ</label>
-                            <input type="text" id="inputTitle" value="Kevin De Bruyne">
-                        </div>
-                        <div class="form-group">
-                            <label>Context Line</label>
-                            <input type="text" id="inputSubtitle" value="Hồ sơ Tấn công | Mùa giải mới nhất">
-                        </div>
+                        <input type="text" id="inputTitle" class="form-group" value="Player Comparison" style="width:100%; padding:8px; margin-bottom:10px;">
+                        <input type="text" id="inputSubtitle" class="form-group" value="Top 5 Leagues Radar" style="width:100%; padding:8px; margin-bottom:10px;">
                         
-                        <h3>Bảng Màu (Color Palette)</h3>
+                        <h3>Màu Cầu thủ 1</h3>
                         <div class="color-palette" id="colorPalette">
-                            <div class="color-swatch active" style="background: #6366f1;" data-color="#6366f1"></div> <div class="color-swatch" style="background: #3b82f6;" data-color="#3b82f6"></div> <div class="color-swatch" style="background: #ef4444;" data-color="#ef4444"></div> <div class="color-swatch" style="background: #10b981;" data-color="#10b981"></div> <div class="color-swatch" style="background: #f59e0b;" data-color="#f59e0b"></div> <div class="color-swatch" style="background: #111827;" data-color="#111827"></div> <input type="color" id="customColorPicker" class="color-picker-native" value="#6366f1">
+                            <div class="color-swatch active" style="background: #6366f1;" data-color="#6366f1"></div>
+                            <div class="color-swatch" style="background: #111827;" data-color="#111827"></div>
+                            <div class="color-swatch" style="background: #f59e0b;" data-color="#f59e0b"></div>
                         </div>
                     </div>
                 </div>
 
                 <div id="step-export" class="tab-pane">
-                    <div class="form-section">
-                        <h3>Xuất Bản (Chuẩn 4:5 Facebook)</h3>
-                        <p class="hint">Khung tranh đã được khóa tỷ lệ 4:5. Tải ảnh PNG chất lượng cao.</p>
-                        <button id="btnDownload" class="btn btn-primary btn-full">⬇ Tải Ảnh (PNG)</button>
-                    </div>
+                    <button id="btnDownload" class="btn btn-primary btn-full">⬇ Tải Ảnh (PNG)</button>
                 </div>
-
             </div>
         </aside>
 
         <main class="preview-area">
             <div class="artboard" id="artboard-target">
                 <div class="watermark">GOAL-LINE</div>
-                
                 <header class="artboard-header">
-                    <h1 id="renderTitle">Kevin De Bruyne</h1>
-                    <p id="renderSubtitle">Hồ sơ Tấn công | Mùa giải mới nhất</p>
+                    <h1 id="renderTitle">Player Comparison</h1>
+                    <p id="renderSubtitle">Top 5 Leagues Radar</p>
                 </header>
 
-                <div class="artboard-body">
-                    <canvas id="radarChart"></canvas>
+                <div class="artboard-body" style="flex-direction: column;">
+                    <div style="flex: 1; width: 100%; min-height: 0; position: relative;">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+
+                    <div class="comparison-table-container" id="comparisonTableContainer">
+                        </div>
                 </div>
+            
+                <div id="matchesLegend" style="text-align:center; font-size:12px; font-weight:600; color:#555; margin-top:10px;"></div>
 
                 <footer class="artboard-footer">
-                    <div class="source">Data: Understat API (Per 90 metrics)</div>
+                    <div class="source">Data: <span id="renderDataSource">Understat</span> | <span id="renderModeSource">Per 90</span></div>
                     <div class="branding">Goal-Line Studio</div>
                 </footer>
             </div>

@@ -46,22 +46,111 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(
 .color-palette { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .color-swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: 0.1s;}
 .color-swatch.active { border-color: #111; transform: scale(1.15); }
-.color-picker-native { width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; cursor: pointer; overflow: hidden; }
-.color-picker-native::-webkit-color-swatch-wrapper { padding: 0; }
-.color-picker-native::-webkit-color-swatch { border: none; border-radius: 50%; }
 
-/* KHUNG TRANH ÉP TỈ LỆ 4:5 */
+/* KHUNG TRANH ÉP TỈ LỆ 4:5 NHƯNG KHÔNG BỊ TRÀN MÀN HÌNH */
 .preview-area { flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; padding: 40px; background: #e5e7eb;}
+
 .artboard { 
-    width: 800px; 
-    height: 1000px; /* Chốt cứng tỷ lệ 4:5 cho Facebook (800x1000) */
-    background-color: #ffffff; position: relative; padding: 60px; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-radius: 8px; flex-shrink: 0;
+    width: 100%; 
+    max-width: 550px; /* Không để nó to vượt quá 550px chiều ngang */
+    aspect-ratio: 4 / 5; /* Ép cứng tỷ lệ 4:5 */
+    height: auto;
+    background-color: #ffffff; 
+    position: relative; 
+    padding: 6%; /* Dùng % để padding co giãn theo khung */
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
+    border-radius: 8px; 
 }
+
 .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 130px; font-weight: 800; color: rgba(0, 0, 0, 0.02); pointer-events: none; z-index: 1; }
-.artboard-header { z-index: 2; margin-bottom: 30px; text-align: center; }
-.artboard-header h1 { font-family: 'Merriweather', serif; font-size: 48px; color: #111; margin-bottom: 10px; }
-.artboard-header p { font-size: 16px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
-.artboard-body { flex: 1; z-index: 2; position: relative; width: 100%; display: flex; justify-content: center; align-items: center;}
+.artboard-header { z-index: 2; margin-bottom: 20px; text-align: center; }
+.artboard-header h1 { font-family: 'Merriweather', serif; font-size: 2.5rem; color: #111; margin-bottom: 8px; }
+.artboard-header p { font-size: 0.9rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+.artboard-body { flex: 1; z-index: 2; position: relative; width: 100%; display: flex; justify-content: center; align-items: center; min-height: 0;}
 canvas { width: 100% !important; height: 100% !important; }
-.artboard-footer { z-index: 2; margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border); padding-top: 20px; font-size: 14px; color: var(--text-muted); font-weight: 600; }
-.artboard-footer .branding { font-weight: 800; color: #000; font-size: 18px; letter-spacing: -0.5px; }
+
+.artboard-footer { z-index: 2; margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border); padding-top: 15px; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+.artboard-footer .branding { font-weight: 800; color: #000; font-size: 1rem; letter-spacing: -0.5px; }
+
+/* AUTOCOMPLETE SEARCH */
+.player-slot { padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; background: #fafafa;}
+.player-slot.active-slot { border-color: var(--primary); background: #fff;}
+.search-wrapper { position: relative; margin-bottom: 8px; }
+.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 6px; z-index: 100; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.ac-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
+.ac-item:hover { background: #eef2ff; }
+.ac-team { font-size: 11px; color: #888; display: block; }
+.season-select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+.player-info-box { font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 8px; }
+
+/* METRIC GROUPS */
+.group-label { font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 6px 0; border-bottom: 1px solid #ddd; margin-top: 10px; }
+.group-shooting { color: #ef4444; border-bottom-color: #ef4444; }
+.group-passing { color: #3b82f6; border-bottom-color: #3b82f6; }
+.group-possession { color: #f59e0b; border-bottom-color: #f59e0b; }
+
+/* CHỮA BỆNH INPUT VUÔNG - STYLE CHUẨN SAAS */
+.player-search, .season-select, .form-group input, .form-group select { 
+    width: 100%; 
+    padding: 10px 12px; 
+    border: 1px solid var(--border); 
+    border-radius: 6px; /* Bo tròn mượt */
+    font-family: inherit; 
+    font-size: 13px; 
+    background: #f9fafb; 
+    outline: none; 
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+}
+.player-search:focus, .season-select:focus, .form-group input:focus { 
+    border-color: var(--primary); 
+    background: #fff; 
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* Hiệu ứng glow khi bấm vào */
+}
+
+/* STYLE BẢNG DỮ LIỆU SO SÁNH (NẰM DƯỚI RADAR) */
+.comparison-table-container { 
+    width: 100%; 
+    margin-top: 15px; 
+    padding: 10px 0;
+    z-index: 5; 
+}
+.compare-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    font-size: 11px; 
+    text-align: center; 
+    background: rgba(255,255,255,0.8);
+    border-radius: 8px;
+}
+.compare-table th { 
+    border-bottom: 2px solid #eee; 
+    padding: 8px 4px; 
+    color: #666; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+}
+.compare-table td { 
+    padding: 8px 4px; 
+    border-bottom: 1px dashed #eee; 
+    font-weight: 700; 
+    color: #111; 
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table .player-name-col { 
+    text-align: left; 
+    max-width: 120px; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+.compare-table .color-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
