@@ -64,7 +64,7 @@ function generateLayoutConfig() {
     
     // Tỉ lệ vùng hiển thị: Original là 100% (1.0). 
     // WC26 do có phần đệm text che đáy nên vùng cắt lưới thực tế chỉ chiếm khoảng 80% (0.8)
-    const visibleRatio = isWC26 ? 0.8 : 1.0; 
+    const visibleRatio = isWC26 ? 0.87 : 1.0; 
 
     if (mode === 'single') {
         config.push({ x: 0, y: 0, w: 1, h: 1 });
