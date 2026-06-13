@@ -14,6 +14,10 @@ const collageOptions = document.getElementById('collage-options');
 const splitDirection = document.getElementById('split-direction');
 const splitCount = document.getElementById('split-count');
 
+//Chỉnh template
+const templateMode = document.getElementById('template-mode');
+let wcFrameImage = null;
+
 // Logo & Assets
 let logoImage = null;
 let logoTxtImage = null;
@@ -383,9 +387,18 @@ const renderAll = () => {
         emptyState.style.display = 'block';
     }
 
+    // 1. Vẽ ảnh gốc (và layout chia ô) ở lớp dưới cùng
     drawCollageBackground();
+    
+    // 2. Áp dụng filter sáng/tối cho ảnh gốc
     applyGlobalFilters();
-    drawWatermarkLayers();
+
+    // 3. RẼ NHÁNH: Vẽ lớp phủ (Overlay) dựa trên Template được chọn
+    if (templateMode.value === 'wc26') {
+        drawWC26Template();
+    } else {
+        drawWatermarkLayers(); // Logic cũ của bạn
+    }
 };
 
 function drawCollageBackground() {
@@ -573,6 +586,94 @@ function drawComplexTitle(width, height) {
     ctx.restore();
 }
 
+// ==========================================
+// --- BẮT ĐẦU CÁC HÀM CHO WC26 ---
+// ==========================================
+function drawWC26Template() {
+    if (!hasAnyImage()) return; 
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // 1. Vẽ thẳng khung PNG trong suốt đè lên ảnh
+    if (wcFrameImage) {
+        ctx.drawImage(wcFrameImage, 0, 0, width, height);
+    }
+
+    // 2. Thêm hiệu ứng hạt nhiễu (nếu muốn áp dụng lên cả khung)
+    const grainIntensity = grainIntensityInput ? parseFloat(grainIntensityInput.value) : 0.08;
+    if (grainIntensity > 0) {
+        addFilmGrain(ctx, width, height, grainIntensity);
+    }
+
+    // 3. Vẽ Text căn giữa ở vùng xanh đậm
+    drawWC26Title(width, height);
+}
+
+// HÀM VẼ TEXT CĂN GIỮA ĐẶC TRỊ CHO WC26 
+function drawWC26Title(width, height) {
+    const rawTitle = titleInput.value || "Hãy nhập {title}"; 
+    const lines = rawTitle.split('\n');
+    let titleFontSize = width * 0.045; 
+
+    ctx.save();
+    ctx.textAlign = 'left'; 
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${titleFontSize}px Albula, Arial, sans-serif`;
+    
+    const lineHeight = titleFontSize * 1.3; 
+    
+    // ĐIỂM SỬA 1: Đẩy tâm Y xuống 88.5% chiều cao để lọt thỏm vào giữa vùng xanh đậm
+    // Bạn có thể tinh chỉnh con số 0.885 này (ví dụ 0.88 hoặc 0.89) nếu thấy chưa ưng mắt
+    const centerY = height * 0.885; 
+    const startY = centerY - ((lines.length - 1) * lineHeight) / 2;
+
+    const spacingPx = Math.round(titleFontSize * -0.05); // Kerning chữ
+
+    lines.forEach((line, index) => {
+        const currentY = startY + (index * lineHeight); 
+        const textParts = line.split(/({[^}]+})/g); 
+
+        // Tính tổng chiều dài của dòng text
+        let totalWidth = 0;
+        textParts.forEach(part => {
+            if (part.length > 0) {
+                const cleanText = part.startsWith('{') && part.endsWith('}') ? part.slice(1, -1) : part;
+                const chars = Array.from(cleanText.normalize('NFC'));
+                for (let i = 0; i < chars.length; i++) {
+                    totalWidth += ctx.measureText(chars[i]).width + spacingPx;
+                }
+            }
+        });
+        if (totalWidth > 0) totalWidth -= spacingPx; 
+
+        // Tọa độ X để đẩy text vào giữa Canvas (ngang)
+        let currentX = (width - totalWidth) / 2;
+
+        textParts.forEach(part => {
+            if (part.length === 0) return;
+            const isHighlight = part.startsWith('{') && part.endsWith('}');
+            const cleanText = isHighlight ? part.slice(1, -1) : part;
+            
+            // ĐIỂM SỬA 2: Đổi màu chữ highlight thành Cyan #4dd0e2
+            ctx.fillStyle = isHighlight ? '#4dd0e2' : 'white';
+
+            const chars = Array.from(cleanText.normalize('NFC'));
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i];
+                ctx.fillText(char, currentX, currentY);
+                currentX += ctx.measureText(char).width + spacingPx;
+            }
+        });
+    });
+    ctx.restore();
+}
+
+
+// ==========================================
+// --- KẾT THÚC CÁC HÀM CHO WC26 ---
+// ==========================================
+
 
 // ==========================================
 // --- CÁC HÀM BỔ TRỢ & SỰ KIỆN KHÁC ---
@@ -582,7 +683,8 @@ const loadImages = () => {
     const imagesToLoad = [
         { name: 'logoImage', src: 'assets/img/GL_logo.jpg' }, 
         { name: 'logoTxtImage', src: 'assets/img/GL_text_logo.png' },
-        { name: 'patternImage', src: 'assets/img/pattern.png' }
+        { name: 'patternImage', src: 'assets/img/pattern.png' },
+        { name: 'wcFrameImage', src: 'assets/img/wc26_frame.png' }
     ];
     let loadedCount = 0;
     imagesToLoad.forEach(imageData => {
@@ -592,6 +694,7 @@ const loadImages = () => {
             if (imageData.name === 'logoImage') logoImage = img;
             if (imageData.name === 'logoTxtImage') logoTxtImage = img;
             if (imageData.name === 'patternImage') patternImage = img;
+            if (imageData.name === 'wcFrameImage') wcFrameImage = img;
             if (loadedCount === imagesToLoad.length) renderAll();
         };
         img.onerror = () => { loadedCount++; if (loadedCount === imagesToLoad.length) renderAll(); };
@@ -648,6 +751,10 @@ exportBtn.addEventListener('click', async () => {
     link.download = 'Goal-Line_Collage.jpg';
     link.href = dataUrl;
     link.click();
+});
+
+templateMode.addEventListener('change', () => {
+    renderAll();
 });
 
 const debouncedRender = debounce(() => renderAll(), 100);
