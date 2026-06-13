@@ -58,6 +58,13 @@ let collageState = {
 function generateLayoutConfig() {
     const mode = layoutMode.value;
     const config = [];
+    
+    // Kiểm tra xem có đang ở mode WC26 không
+    const isWC26 = templateMode.value === 'wc26';
+    
+    // Tỉ lệ vùng hiển thị: Original là 100% (1.0). 
+    // WC26 do có phần đệm text che đáy nên vùng cắt lưới thực tế chỉ chiếm khoảng 80% (0.8)
+    const visibleRatio = isWC26 ? 0.8 : 1.0; 
 
     if (mode === 'single') {
         config.push({ x: 0, y: 0, w: 1, h: 1 });
@@ -67,9 +74,20 @@ function generateLayoutConfig() {
         
         for (let i = 0; i < count; i++) {
             if (direction === 'vertical') {
+                // Chia dọc (|||) thì trục Y không bị ảnh hưởng, giữ nguyên 1.0
                 config.push({ x: i / count, y: 0, w: 1 / count, h: 1 });
             } else {
-                config.push({ x: 0, y: i / count, w: 1, h: 1 / count });
+                // Chia ngang (三) thì phải tính toán dựa trên visibleRatio
+                let startY = i * (visibleRatio / count);
+                let slotH = visibleRatio / count;
+                
+                // QUAN TRỌNG: Với slot ảnh cuối cùng (nằm dưới cùng), 
+                // ta phải cho nó giãn thẳng kịch kim xuống 1.0 để không bị hụt đáy lòi viền đen.
+                if (i === count - 1) {
+                    slotH = 1.0 - startY; 
+                }
+                
+                config.push({ x: 0, y: startY, w: 1, h: slotH });
             }
         }
     }
@@ -753,10 +771,6 @@ exportBtn.addEventListener('click', async () => {
     link.click();
 });
 
-templateMode.addEventListener('change', () => {
-    renderAll();
-});
-
 const debouncedRender = debounce(() => renderAll(), 100);
 
 patternOpacityInput?.addEventListener('input', (e) => {
@@ -771,6 +785,12 @@ grainIntensityInput?.addEventListener('input', (e) => {
     grainValDisplay.textContent = Math.round(e.target.value * 100) + '%';
     debouncedRender();
 });
+
+templateMode.addEventListener('change', () => {
+    renderAll();
+    applyLayout(true); 
+});
+
 
 // KHỞI CHẠY APP
 if (document.fonts) {
