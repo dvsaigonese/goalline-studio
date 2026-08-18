@@ -28,8 +28,8 @@ export default {
             
             // Kích thước chữ và Toạ độ của Tên Giải (Có thể tinh chỉnh)
             let topFontSize = width * 0.016; 
-            const topTextY = height * 0.050; // Chỉnh lên xuống (8.3% chiều cao)
-            const topTextX = width * 0.915;  // Lề phải (cách lề 8.5%)
+            const topTextY = height * 0.050; // Chỉnh lên xuống (% chiều cao)
+            const topTextX = width * 0.915;  // Lề phải (cách lề %)
 
             ctx.font = `bold ${topFontSize}px Albula, Arial, sans-serif`;
             ctx.fillStyle = '#a4a1a1';
@@ -39,10 +39,9 @@ export default {
 
         if (assets.dynamicLeagueLogo) {
             // B. Vẽ Logo xuống dưới logo Goal-Line
-            // Bạn thay đổi thông số này cho vừa khít với ô vuông màu tím trong ảnh của bạn
             const logoSize = width * 0.0875; // chiều rộng ảnh tính bằng %
             const logoX = 0;                // Nằm sát mép trái
-            const logoY = height * 0.191;   // Chỉnh đẩy lên xuống dưới logo Goal-Line
+            const logoY = height * 0.1915;   // Chỉnh đẩy lên xuống dưới logo Goal-Line
 
             ctx.drawImage(assets.dynamicLeagueLogo, logoX, logoY, logoSize, logoSize);
         }
