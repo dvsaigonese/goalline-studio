@@ -5,7 +5,7 @@ export default {
     name: 'Season 26/27',
     
     assetsToLoad: [
-        { name: 'frameImage', src: 'assets/img/watermarkFrame/Season26_27.png' }
+        { name: 'FrameImage2627', src: 'assets/img/watermarkFrame/Season26_27.png' }
     ],
 
     render: function(ctx, canvasInfo, globalState) {
@@ -13,8 +13,8 @@ export default {
         const { assets, settings } = globalState;
 
         // 1. Vẽ cái Frame có sẵn vạch line lên trước
-        if (assets.frameImage) {
-            ctx.drawImage(assets.frameImage, 0, 0, width, height);
+        if (assets.FrameImage2627) {
+            ctx.drawImage(assets.FrameImage2627, 0, 0, width, height);
         }
 
         // ==========================================

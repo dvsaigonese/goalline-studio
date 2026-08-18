@@ -1,19 +1,19 @@
 import { addFilmGrain } from '../utils.js';
 
 export default {
-    id: 'Season26_27UCL',
-    name: 'Season 26/27 UCL',
+    id: 'Season26_27UEL',
+    name: 'Season 26/27 UEL',
     
     assetsToLoad: [
-        { name: 'FrameImage', src: 'assets/img/watermarkFrame/Season26_27UCL.png' }
+        { name: 'FrameImage2627UEL', src: 'assets/img/watermarkFrame/Season26_27UEL.png' }
     ],
 
     render: function(ctx, canvasInfo, globalState) {
         const { width, height } = canvasInfo;
         const { assets, settings } = globalState;
 
-        if (assets.FrameImage) {
-            ctx.drawImage(assets.FrameImage, 0, 0, width, height);
+        if (assets.FrameImage2627UEL) {
+            ctx.drawImage(assets.FrameImage2627UEL, 0, 0, width, height);
         }
 
         if (settings.grainIntensity > 0) {

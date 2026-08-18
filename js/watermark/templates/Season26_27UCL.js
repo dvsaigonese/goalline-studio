@@ -5,15 +5,15 @@ export default {
     name: 'Season 26/27 UCL',
     
     assetsToLoad: [
-        { name: 'FrameImage', src: 'assets/img/watermarkFrame/Season26_27UCL.png' }
+        { name: 'FrameImage2627UCL', src: 'assets/img/watermarkFrame/Season26_27UCL.png' }
     ],
 
     render: function(ctx, canvasInfo, globalState) {
         const { width, height } = canvasInfo;
         const { assets, settings } = globalState;
 
-        if (assets.FrameImage) {
-            ctx.drawImage(assets.FrameImage, 0, 0, width, height);
+        if (assets.FrameImage2627UCL) {
+            ctx.drawImage(assets.FrameImage2627UCL, 0, 0, width, height);
         }
 
         if (settings.grainIntensity > 0) {
