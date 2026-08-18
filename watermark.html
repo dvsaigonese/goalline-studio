@@ -46,8 +46,8 @@
                 <label class="section-label">Template Mode</label>
                 <select id="template-mode" class="wm-select">
                     <option value="Season26_27">Season 2026/2027</option>
-                    <option value="original">Original Standard</option>
-                    <option value="wc26">World Cup 26 Mode</option>
+                    <option value="original">Original</option>
+                    <option value="wc26">World Cup 26</option>
                 </select>
             </div>
 
@@ -100,24 +100,15 @@
                 <label class="section-label">Article Title</label>
                 <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter post title here..."></textarea>
                 
-                <label>Pattern Intensity</label>
-                <div class="row-input">
-                    <input type="range" id="pattern-opacity" min="0" max="1" step="0.05" value="0.15">
-                    <span id="pattern-val" class="range-val">15%</span>
-                </div>
+                <label>Pattern Intensity <small style="color: var(--text-muted); font-weight: normal;">(0 - 500)</small></label>
+                <input type="number" id="pattern-opacity" min="0" max="500" step="5" value="100" class="form-control" style="margin-bottom: 15px;">
 
-                <label>Film Grain</label>
-                <div class="row-input">
-                    <input type="range" id="grain-intensity" min="0" max="0.2" step="0.01" value="0.08">
-                    <span id="grain-val" class="range-val">8%</span>
-                </div>
+                <label>Film Grain <small style="color: var(--text-muted); font-weight: normal;">(0 - 300)</small></label>
+                <input type="number" id="grain-intensity" min="0" max="300" step="5" value="100" class="form-control" style="margin-bottom: 15px;">
 
-                <label>Overall Brightness</label>
-                <div class="row-input">
-                    <input type="range" id="overall-brightness" min="0" max="200" step="10" value="120">
-                    <span id="brightness-val" class="range-val">120%</span>
-                </div>
-
+                <label>Overall Brightness <small style="color: var(--text-muted); font-weight: normal;">(0 - 200)</small></label>
+                <input type="number" id="overall-brightness" min="0" max="200" step="5" value="100" class="form-control" style="margin-bottom: 15px;">
+                            
                 <small class="tip-text">Use {text} to color it yellow. Enter for new line.</small>
             </div>
         </aside>
