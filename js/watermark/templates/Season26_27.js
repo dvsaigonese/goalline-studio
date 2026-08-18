@@ -42,7 +42,7 @@ export default {
             // Bạn thay đổi thông số này cho vừa khít với ô vuông màu tím trong ảnh của bạn
             const logoSize = width * 0.0875; // chiều rộng ảnh tính bằng %
             const logoX = 0;                // Nằm sát mép trái
-            const logoY = height * 0.202;   // Chỉnh đẩy lên xuống dưới logo Goal-Line
+            const logoY = height * 0.191;   // Chỉnh đẩy lên xuống dưới logo Goal-Line
 
             ctx.drawImage(assets.dynamicLeagueLogo, logoX, logoY, logoSize, logoSize);
         }
