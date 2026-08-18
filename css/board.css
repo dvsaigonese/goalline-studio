@@ -1,0 +1,175 @@
+.canvas-area {
+    flex-grow: 1;
+    background-color: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.canvas-wrapper {
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#canvas {
+    max-width: 100%;
+    max-height: 85vh;
+    object-fit: contain;
+    display: block;
+}
+
+.zoom-controls {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.copyright {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+/* --- Settings Panel (Right) --- */
+.settings-panel {
+    width: 280px;
+    background-color: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+    /* Ẩn thanh cuộn */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.settings-panel::-webkit-scrollbar {
+    display: none;
+}
+
+.settings-panel h3 {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.setting-group { 
+    margin-bottom: 16px; 
+}
+
+.setting-group label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+}
+
+/* Ép kiểu đè lên Bootstrap */
+.form-control {
+    width: 100%;
+    background-color: #18181b !important;
+    border: 1px solid var(--border) !important;
+    color: white !important;
+    padding: 8px 12px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+
+.form-control:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+}
+
+.row-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.add-btn {
+    background-color: var(--primary);
+    border: none;
+    color: white;
+    border-radius: 6px;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.2s;
+}
+
+.add-btn:hover { 
+    opacity: 0.8; 
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 0.9rem;
+}
+
+.checkbox-row label {
+    margin-bottom: 0;
+}
+
+.small-label {
+    width: 80px;
+    margin-bottom: 0 !important;
+}
+
+.mt-2 { 
+    margin-top: 8px; 
+}
+
+.tip {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    display: block;
+    margin-top: 8px;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+}
+
+/* Ẩn mũi tên tăng giảm mặc định của input number */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Responsive cơ bản cho Mobile */
+@media screen and (max-width: 768px) {
+    .settings-panel {
+        width: 100%;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        padding-bottom: 50px;
+    }
+    
+    .canvas-area {
+        min-height: 400px;
+    }
+}

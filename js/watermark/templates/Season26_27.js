@@ -32,7 +32,7 @@ export default {
             const topTextX = width * 0.915;  // Lề phải (cách lề 8.5%)
 
             ctx.font = `bold ${topFontSize}px Albula, Arial, sans-serif`;
-            ctx.fillStyle = '#c8c8c8';
+            ctx.fillStyle = '#a4a1a1';
             ctx.fillText(settings.leagueName, topTextX, topTextY);
             ctx.restore();
         }
