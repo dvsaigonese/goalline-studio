@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Watermark | Goal-Line Studio</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="./css/watermark.css" />
+    <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-    <div style="font-family: 'Albula'; font-weight: bold; position: absolute; left: -9999px; top: -9999px;">HACK FONT</div>
+    <!-- <div class="font-preload">HACK FONT</div> -->
 
     <div class="app-container">
         <nav class="toolbar">
@@ -16,7 +17,7 @@
                 <a href="index.html" id="home-btn" class="tool-btn" title="Home">
                     <i class="fa-solid fa-home"></i>
                 </a>
-                <a href="watermark.html" class="tool-btn active" title="Watermark Tool" style="color: white; background: var(--primary);">
+                <a href="watermark.html" class="tool-btn active" title="Watermark Tool">
                     <i class="fa-solid fa-layer-group"></i>
                 </a>
             </div>
@@ -29,29 +30,37 @@
         </nav>
 
         <main class="canvas-area">
-            <div class="canvas-wrapper" id="wm-wrapper" style="box-shadow: none; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative;">
-                
-                <div id="empty-state" style="color: var(--text-muted); text-align: center; border: 2px dashed var(--border); padding: 50px; border-radius: 12px; position: absolute; z-index: 2;">
-                    <i class="fa-solid fa-images" style="font-size: 3rem; margin-bottom: 15px;"></i>
+            <div id="wm-wrapper">
+                <div id="empty-state">
+                    <i class="fa-solid fa-images"></i>
                     <p>Setup layout and upload images</p>
                 </div>
                 
-                <canvas id="wm-canvas" style="max-width: 100%; max-height: 85vh; object-fit: contain; box-shadow: 0 0 30px rgba(0,0,0,0.8); background: black; display: block; position: relative; z-index: 1;"></canvas>
+                <canvas id="wm-canvas"></canvas>
             </div>
         </main>
 
         <aside class="settings-panel">
             <h3>Layout & Watermark</h3>
-            <div class="wm-workflow-card" style="margin-bottom: 15px;">
-                <label style="color: white; font-weight: bold; margin-bottom: 10px; display: block;">Template Mode</label>
+            <div class="wm-workflow-card">
+                <label class="section-label">Template Mode</label>
                 <select id="template-mode" class="wm-select">
+                    <option value="Season26_27">Season 2026/2027</option>
                     <option value="original">Original Standard</option>
                     <option value="wc26">World Cup 26 Mode</option>
                 </select>
             </div>
 
+            <div class="setting-group" id="league-section" style="display: block;">
+                <label class="section-label">Select League / Club</label>
+                <div class="search-container">
+                    <input type="text" id="league-search-input" class="form-control" placeholder="Type to search (e.g. PREMIER)..." autocomplete="off">
+                    <ul id="league-search-results"></ul>
+                </div>
+            </div>
+
             <div class="wm-workflow-card">
-                <label style="color: white; font-weight: bold; margin-bottom: 10px; display: block;">1. Setup Layout (4:5)</label>
+                <label class="section-label">Setup Layout (4:5)</label>
                 
                 <label>Mode:</label>
                 <select id="layout-mode" class="wm-select">
@@ -59,7 +68,7 @@
                     <option value="collage">Collage (Split)</option>
                 </select>
 
-                <div id="collage-options" style="display: none;">
+                <div id="collage-options">
                     <label>Split Direction:</label>
                     <select id="split-direction" class="wm-select">
                         <option value="vertical">Vertical (|||)</option>
@@ -67,19 +76,18 @@
                     </select>
 
                     <label>Number of Splits:</label>
-                    <input type="number" id="split-count" class="form-control" min="2" max="10" value="2" style="margin-bottom: 10px;">
+                    <input type="number" id="split-count" class="form-control" min="2" max="10" value="2">
                 </div>
             </div>
 
             <div class="setting-group" id="upload-group">
-                <label style="color: white; font-weight: bold;">2. Upload Images</label>
-                <div id="file-inputs-container" style="background: #18181b; padding: 10px; border-radius: 8px; border: 1px solid #333; margin-top: 10px;">
-                    </div>
+                <label class="section-label">Upload Images</label>
+                <div id="file-inputs-container"></div>
             </div>
             
-            <div class="setting-group collage-controls" id="collage-instructions" style="display: none;">
-                <label style="color: var(--accent);"><i class="fa-solid fa-hand-pointer"></i> Edit Mode Active</label>
-                <p style="font-size: 0.8rem; color: #ccc; margin: 5px 0;">
+            <div class="setting-group collage-controls" id="collage-instructions">
+                <label class="instruction-title"><i class="fa-solid fa-hand-pointer"></i> Edit Mode Active</label>
+                <p>
                     1. <strong>Click</strong> on a photo to select it.<br>
                     2. <strong>Drag</strong> to move it.<br>
                     3. <strong>Scroll mouse</strong> to zoom in/out.
@@ -89,32 +97,32 @@
             <hr>
 
             <div class="setting-group">
-                <label style="color: white; font-weight: bold;">3. Article Title</label>
-                <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter post title here..." style="margin-bottom: 15px;"></textarea>
+                <label class="section-label">Article Title</label>
+                <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter post title here..."></textarea>
                 
-                <label>4. Pattern Intensity</label>
-                <div class="row-input" style="align-items: center; margin-bottom: 10px;">
-                    <input type="range" id="pattern-opacity" min="0" max="1" step="0.05" value="0.15" style="flex: 1; cursor: pointer;">
-                    <span id="pattern-val" style="color: var(--accent); font-weight: bold; width: 40px; text-align: right;">15%</span>
+                <label>Pattern Intensity</label>
+                <div class="row-input">
+                    <input type="range" id="pattern-opacity" min="0" max="1" step="0.05" value="0.15">
+                    <span id="pattern-val" class="range-val">15%</span>
                 </div>
 
-                <label>5. Film Grain</label>
-                <div class="row-input" style="align-items: center; margin-bottom: 10px;">
-                    <input type="range" id="grain-intensity" min="0" max="0.2" step="0.01" value="0.08" style="flex: 1; cursor: pointer;">
-                    <span id="grain-val" style="color: var(--accent); font-weight: bold; width: 50px; text-align: right;">8%</span>
+                <label>Film Grain</label>
+                <div class="row-input">
+                    <input type="range" id="grain-intensity" min="0" max="0.2" step="0.01" value="0.08">
+                    <span id="grain-val" class="range-val">8%</span>
                 </div>
 
-                <label>6. Overall Brightness</label>
-                <div class="row-input" style="align-items: center; margin-bottom: 10px;">
-                    <input type="range" id="overall-brightness" min="0" max="200" step="10" value="120" style="flex: 1; cursor: pointer;">
-                    <span id="brightness-val" style="color: var(--accent); font-weight: bold; width: 50px; text-align: right;">120%</span>
+                <label>Overall Brightness</label>
+                <div class="row-input">
+                    <input type="range" id="overall-brightness" min="0" max="200" step="10" value="120">
+                    <span id="brightness-val" class="range-val">120%</span>
                 </div>
 
-                <small style="color: gray; font-size: 0.8rem;">Use {text} to color it yellow. Enter for new line.</small>
+                <small class="tip-text">Use {text} to color it yellow. Enter for new line.</small>
             </div>
         </aside>
     </div>
 
-    <script type="module" src="js/watermark.js"></script>
+    <script type="module" src="js/watermark/watermark.js"></script>
 </body>
 </html>
