@@ -1,174 +1,189 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>The Athletic | Goal-Line Studio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet"/>
-<!-- Link CSS ra file ngoài -->
-<link rel="stylesheet" href="css/reader.css?v=2" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>The Athletic | Goal-Line Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/reader.css?v=3" />
 </head>
 <body>
 <div class="app">
 
-<!-- Header -->
-<header>
-  <!-- Nút toggle sidebar cho mobile -->
-  <button class="btn-icon mobile-only" id="btnToggleSidebar" style="border:none; font-size:20px; margin-right:10px; cursor:pointer; background:none; color:var(--text)">☰</button>
-  
-  <a class="logo" href="index.html">
-    <img src="assets/img/GL_text_logo.png" alt="GL" onerror="this.style.display='none'"/>
-    <span class="logo-text">Goal<em>-</em>Line <em>Studio</em></span>
-  </a>
-  <div class="pipe"></div>
-  <span class="page-label">GL Reader</span>
-  <div class="hdr-right">
-    <div id="statusDot" class="status-dot"></div>
-    <span id="statusLabel">Chưa cấu hình</span>
-    <div class="pipe"></div>
-    <button class="btn btn-icon" id="btnSettings" title="Cài đặt">⚙️</button>
-  </div>
-</header>
-
-<!-- Toolbar -->
-<div class="toolbar">
-  <div id="notConfiguredBanner" class="hidden"
-    style="flex:1;display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:var(--r);font-size:12px;color:var(--warn-c);cursor:pointer"
-    onclick="openSettings()">
-    ⚠️ Chưa cấu hình server — nhấn để thiết lập
-  </div>
-  <div class="url-wrap" id="urlWrap" style="display:none">
-    <span class="url-icon">🔗</span>
-    <input type="url" id="articleUrl" spellcheck="false" autocomplete="off"
-      placeholder="Dán link bài báo The Athletic vào đây..."/>
-  </div>
-  <button class="btn btn-primary hidden" id="btnRead" disabled>⚡ Đọc</button>
-  <button class="btn btn-vi hidden" id="btnTranslate" disabled>🌐 Tiếng Việt</button>
-  <div class="sep hidden" id="sepTab"></div>
-  <button class="btn btn-ghost hidden" id="btnNewTab">↗ Tab mới</button>
-  <button class="btn btn-ghost hidden" id="btnOriginal" style="color:var(--g)">← Gốc</button>
-</div>
-
-<!-- Workspace -->
-<div class="workspace">
-  <!-- Lớp màng đen khi mở menu mobile -->
-  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-hdr">
-      <span class="sidebar-title">📰 The Athletic</span>
-      <button class="btn-refresh" id="btnRefreshHL" onclick="refreshCurrentTab()" title="Tải lại">↻</button>
-    </div>
+  <!-- Header -->
+  <header>
+    <button class="btn-icon mobile-only" id="btnToggleSidebar" aria-label="Menu">☰</button>
     
-    <!-- Thanh Menu Tabs Chính -->
-    <div class="sidebar-tabs">
-      <button class="tab-btn active" data-tab="football">Football</button>
-      <button class="tab-btn" data-tab="nba">NBA</button>
-      <button class="tab-btn" data-tab="f1">F1</button>
-      <button class="tab-btn" data-tab="tennis">Tennis</button>
-    </div>
+    <a class="logo" href="index.html">
+      <div class="logo-box">GL</div>
+      <span class="logo-text">GOAL-LINE <em>READER</em></span>
+    </a>
 
-    <!-- Thanh Menu Tabs Phụ (Chỉ hiện khi ở tab Bóng đá) -->
-    <div class="sidebar-sub-tabs" id="subTabsFootball">
-      <button class="sub-tab-btn active" data-tab="football-all">ALL</button>
-      <button class="sub-tab-btn" data-tab="football-epl">EPL</button>
-      <button class="sub-tab-btn" data-tab="football-ucl">UCL</button>
-      <button class="sub-tab-btn" data-tab="football-laliga">LaLiga</button>
-      <button class="sub-tab-btn" data-tab="football-bundesliga">Bundesliga</button>
-      <button class="sub-tab-btn" data-tab="football-seriea">Serie A</button>
-      <button class="sub-tab-btn" data-tab="football-wildcard">World Cup</button>
-    </div>
+    <div class="header-badge">PRESS FEED</div>
 
-    <!-- 10 cái Hộp (List) chứa bài viết riêng biệt (10 bộ nhớ độc lập) -->
-    <div class="hl-container">
-      <div class="hl-list active" id="list-football-all"></div>
-      <div class="hl-list" id="list-football-epl"></div>
-      <div class="hl-list" id="list-football-ucl"></div>
-      <div class="hl-list" id="list-football-laliga"></div>
-      <div class="hl-list" id="list-football-bundesliga"></div>
-      <div class="hl-list" id="list-football-seriea"></div>
-      <div class="hl-list" id="list-football-wildcard"></div>
-      <div class="hl-list" id="list-nba"></div>
-      <div class="hl-list" id="list-f1"></div>
-      <div class="hl-list" id="list-tennis"></div>
-    </div>
-  </aside>
-
-  <!-- Content -->
-  <div class="content-area">
-    <div class="loading-overlay" id="loadingOverlay">
-      <div class="spinner"></div>
-      <div class="loading-text" id="loadingText">Đang tải…</div>
-    </div>
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">📖</div>
-      <div class="empty-title">GL Reader</div>
-      <div class="empty-desc">Chọn bài từ sidebar hoặc dán link vào ô tìm kiếm.<br/>Nhấn <kbd class="kbd">Enter</kbd> hoặc <kbd class="kbd">⚡ Đọc</kbd>.</div>
-    </div>
-    <iframe id="viewerFrame" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
-    <div class="trans-panel" id="transPanel">
-      <div class="trans-inner">
-        <div class="trans-bar">
-          <span class="trans-bar-title">🌐 Bản dịch tiếng Việt</span>
-          <span style="font-size:11px;color:var(--muted);margin-left:4px">bởi Gemini AI</span>
-        </div>
-        <div id="transContent" class="trans-content"></div>
+    <div class="hdr-right">
+      <div class="status-pill">
+        <div id="statusDot" class="status-dot"></div>
+        <span id="statusLabel">DISCONNECTED</span>
       </div>
+      <button class="btn btn-icon btn-neo" id="btnSettings" title="Cài đặt">⚙️</button>
     </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div id="notConfiguredBanner" class="banner-neo hidden" onclick="openSettings()">
+      <span class="badge-alert">WARNING</span>
+      <span>Chưa kết nối Ladder Server — Nhấn vào đây để thiết lập API!</span>
+    </div>
+
+    <div class="url-wrap" id="urlWrap">
+      <span class="url-icon">URL:</span>
+      <input type="url" id="articleUrl" spellcheck="false" autocomplete="off"
+        placeholder="Dán URL bài viết The Athletic (https://www.nytimes.com/athletic/...)" />
+    </div>
+
+    <button class="btn btn-neo btn-primary hidden" id="btnRead" disabled>⚡ ĐỌC BÀI</button>
+    <button class="btn btn-neo btn-vi hidden" id="btnTranslate" disabled>🌐 DỊCH AI</button>
+    <div class="sep hidden" id="sepTab"></div>
+    <button class="btn btn-neo btn-ghost hidden" id="btnNewTab">↗ TAB MỚI</button>
+    <button class="btn btn-neo btn-ghost hidden" id="btnOriginal">← BẢN GỐC</button>
+  </div>
+
+  <!-- Workspace -->
+  <div class="workspace">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-hdr">
+        <div class="sidebar-tag">NEWS DESK</div>
+        <button class="btn-neo btn-refresh" id="btnRefreshHL" onclick="refreshCurrentTab()" title="Làm mới">↻</button>
+      </div>
+      
+      <!-- Main Category Tabs -->
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="football">BÓNG ĐÁ</button>
+        <button class="tab-btn" data-tab="nba">NBA</button>
+        <button class="tab-btn" data-tab="f1">F1</button>
+        <button class="tab-btn" data-tab="tennis">TENNIS</button>
+      </div>
+
+      <!-- Football League Sub-tabs -->
+      <div class="sidebar-sub-tabs" id="subTabsFootball">
+        <button class="sub-tab-btn active" data-tab="football-all">ALL</button>
+        <button class="sub-tab-btn" data-tab="football-epl">EPL</button>
+        <button class="sub-tab-btn" data-tab="football-ucl">UCL</button>
+        <button class="sub-tab-btn" data-tab="football-laliga">LALIGA</button>
+        <button class="sub-tab-btn" data-tab="football-bundesliga">BUNDES</button>
+        <button class="sub-tab-btn" data-tab="football-seriea">SERIE A</button>
+        <button class="sub-tab-btn" data-tab="football-wildcard">WC 2026</button>
+      </div>
+
+      <!-- Headlines Containers -->
+      <div class="hl-container">
+        <div class="hl-list active" id="list-football-all"></div>
+        <div class="hl-list" id="list-football-epl"></div>
+        <div class="hl-list" id="list-football-ucl"></div>
+        <div class="hl-list" id="list-football-laliga"></div>
+        <div class="hl-list" id="list-football-bundesliga"></div>
+        <div class="hl-list" id="list-football-seriea"></div>
+        <div class="hl-list" id="list-football-wildcard"></div>
+        <div class="hl-list" id="list-nba"></div>
+        <div class="hl-list" id="list-f1"></div>
+        <div class="hl-list" id="list-tennis"></div>
+      </div>
+    </aside>
+
+    <!-- Reading Workspace -->
+    <main class="content-area">
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="neo-spinner"></div>
+        <div class="loading-text" id="loadingText">DISPATCHING DATA…</div>
+      </div>
+
+      <div class="empty-state" id="emptyState">
+        <div class="empty-box">
+          <div class="empty-icon">📰</div>
+          <div class="empty-title">CHƯA CHỌN BÀI BÁO</div>
+          <div class="empty-desc">
+            Chọn một bài từ danh sách tin tức bên trái hoặc dán URL vào thanh điều hướng bên trên.<br/>
+            Nhấn phím <kbd class="kbd">ENTER</kbd> để render bài viết.
+          </div>
+        </div>
+      </div>
+
+      <iframe id="viewerFrame" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+
+      <!-- Gemini AI Translation Box -->
+      <div class="trans-panel" id="transPanel">
+        <div class="trans-inner">
+          <div class="trans-bar">
+            <span class="badge-gemini">GEMINI AI ENGINE</span>
+            <span class="trans-bar-title">BẢN DỊCH TIẾNG VIỆT ĐỘC QUYỀN</span>
+          </div>
+          <div id="transContent" class="trans-content"></div>
+        </div>
+      </div>
+    </main>
   </div>
 </div>
-</div>
 
-<!-- Settings -->
+<!-- Modal Settings (Neobrutalism Dialog) -->
 <div class="backdrop" id="backdrop" onclick="closeSettings()"></div>
 <div class="sp" id="settingsPanel">
   <div class="sp-hdr">
-    <span class="sp-title">⚙️ Cài đặt</span>
+    <span class="sp-title">⚡ CẤU HÌNH HỆ THỐNG</span>
     <button class="btn-x" onclick="closeSettings()">✕</button>
   </div>
   <div class="sp-body">
     <div class="alert alert-warn">
-      <span>⚠️</span>
-      <div>Thông tin lưu trong <code style="font-size:11px;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:3px">localStorage</code> của trình duyệt. Không chia sẻ API key.</div>
+      <span class="alert-icon">⚠️</span>
+      <div>Dữ liệu lưu độc quyền trên <code>localStorage</code> máy bạn. Không lưu trữ trên cloud trung gian.</div>
     </div>
+    
     <div class="field">
-      <label class="field-label" for="cfgServer">URL Ladder Server</label>
-      <input type="url" id="cfgServer" placeholder="https://dvsaigonese-goal-line-ladder.hf.space"/>
+      <label class="field-label" for="cfgServer">LADDER SERVER URL</label>
+      <input type="url" id="cfgServer" class="neo-input" placeholder="https://dvsaigonese-goal-line-ladder.hf.space"/>
     </div>
+
     <div class="field">
-      <label class="field-label" for="cfgUser">Username (Basic Auth)</label>
-      <input type="text" id="cfgUser" placeholder="goalline" autocomplete="off"/>
+      <label class="field-label" for="cfgUser">HTTP AUTH USERNAME</label>
+      <input type="text" id="cfgUser" class="neo-input" placeholder="goalline" autocomplete="off"/>
     </div>
+
     <div class="field">
-      <label class="field-label" for="cfgPass">Password (Basic Auth)</label>
-      <input type="password" id="cfgPass" placeholder="••••••••" autocomplete="off"/>
-      <div class="field-hint">Để trống nếu không đặt <code>USERPASS</code> trên HF Space.</div>
+      <label class="field-label" for="cfgPass">HTTP AUTH PASSWORD</label>
+      <input type="password" id="cfgPass" class="neo-input" placeholder="••••••••" autocomplete="off"/>
+      <div class="field-hint">Để trống nếu HF Space không cấu hình mật khẩu.</div>
     </div>
+
     <div class="field">
-      <button class="btn btn-ghost" style="align-self:flex-start;font-size:12px" onclick="testConn()">🔌 Kiểm tra kết nối</button>
+      <button class="btn btn-neo btn-ghost" style="align-self:flex-start" onclick="testConn()">🔌 TEST KẾT NỐI</button>
       <div id="testResult" class="test-result"></div>
     </div>
+
     <hr class="divider"/>
+
     <div class="field">
-      <label class="field-label" for="cfgApiKey">🤖 Gemini API Key</label>
-      <input type="password" id="cfgApiKey" placeholder="AIzaSy..." autocomplete="off"/>
-      <div class="field-hint">Cần có để dùng tính năng dịch tiếng Việt.<br/>Lấy key tại <a href="https://aistudio.google.com" target="_blank" style="color:var(--g)">aistudio.google.com</a></div>
+      <label class="field-label" for="cfgApiKey">🔑 GEMINI API KEY</label>
+      <input type="password" id="cfgApiKey" class="neo-input" placeholder="AIzaSy..." autocomplete="off"/>
+      <div class="field-hint">Cần thiết cho tính năng dịch. Lấy key tại <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></div>
     </div>
+
     <div class="alert alert-info">
-      <span>💡</span>
-      <div>Nếu bài hiển thị trắng/đen, thêm <code>ruleset.yaml</code> vào HF Space để xoá header X-Frame-Options.</div>
+      <span class="alert-icon">💡</span>
+      <div>Nếu frame bị trắng, thêm file cấu hình <code>ruleset.yaml</code> trên server Ladder để gỡ bỏ header X-Frame-Options.</div>
     </div>
   </div>
   <div class="sp-footer">
-    <button class="btn btn-ghost" onclick="closeSettings()">Huỷ</button>
-    <button class="btn btn-primary" onclick="saveSettings()">💾 Lưu</button>
+    <button class="btn btn-neo btn-ghost" onclick="closeSettings()">HUỶ</button>
+    <button class="btn btn-neo btn-primary" onclick="saveSettings()">💾 LƯU CẤU HÌNH</button>
   </div>
 </div>
 
-<!-- Link JS ra file ngoài -->
-<script type="module" src="js/reader.js?v=2"></script>
+<script type="module" src="js/reader.js?v=3"></script>
 </body>
 </html>

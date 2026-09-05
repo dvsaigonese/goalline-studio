@@ -1,4 +1,3 @@
-/* ─── State ──────────────────────────────────────── */
 const STORE = 'gl_reader_v3';
 let cfg = { server: '', user: '', pass: '', apiKey: '' };
 let currentUrl = '';
@@ -8,7 +7,6 @@ let corsOk = null;
 let viewingTrans = false;
 let cachedTranslations = {}; 
 
-// TRÍ NHỚ MỚI: 10 Kho dữ liệu độc lập, không đụng hàng
 const TABS = {
   'football-all': { url: 'https://www.nytimes.com/athletic/football/', page: 1, loaded: false, urls: new Set(), icon: '⚽' },
   'football-epl': { url: 'https://www.nytimes.com/athletic/football/premier-league/', page: 1, loaded: false, urls: new Set(), icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
@@ -16,7 +14,7 @@ const TABS = {
   'football-laliga': { url: 'https://www.nytimes.com/athletic/football/la-liga/', page: 1, loaded: false, urls: new Set(), icon: '🇪🇸' },
   'football-bundesliga': { url: 'https://www.nytimes.com/athletic/football/bundesliga/', page: 1, loaded: false, urls: new Set(), icon: '🇩🇪' },
   'football-seriea': { url: 'https://www.nytimes.com/athletic/football/serie-a/', page: 1, loaded: false, urls: new Set(), icon: '🇮🇹' },
-  'football-wildcard': { url: 'https://www.nytimes.com/athletic/football/world-cup/', page: 1, loaded: false, urls: new Set(), icon: '' },
+  'football-wildcard': { url: 'https://www.nytimes.com/athletic/football/world-cup/', page: 1, loaded: false, urls: new Set(), icon: '🌍' },
   'nba': { url: 'https://www.nytimes.com/athletic/nba/', page: 1, loaded: false, urls: new Set(), icon: '🏀' },
   'f1': { url: 'https://www.nytimes.com/athletic/formula-1/', page: 1, loaded: false, urls: new Set(), icon: '🏎️' },
   'tennis': { url: 'https://www.nytimes.com/athletic/tennis/', page: 1, loaded: false, urls: new Set(), icon: '🎾' }
@@ -26,7 +24,7 @@ let currentMainTab = 'football';
 let currentTab = 'football-all';
 let isLoadingMore = false;
 
-/* ─── DOM ─────────────────────────────────────────── */
+/* ─── DOM Helpers ─────────────────────────────────── */
 const $ = id => document.getElementById(id);
 const statusDot = $('statusDot');
 const statusLabel = $('statusLabel');
@@ -59,7 +57,6 @@ window.toggleSidebar = function() {
 if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
 if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', toggleSidebar);
 
-// Xử lý chuyển Tab Chính
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const mainTab = btn.dataset.tab;
@@ -76,14 +73,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       currentTab = activeSubBtn ? activeSubBtn.dataset.tab : 'football-all';
     } else {
       subTabsContainer.classList.add('hidden-sub-tabs');
-      currentTab = mainTab; // nba, f1, tennis
+      currentTab = mainTab;
     }
 
     switchList(currentTab);
   });
 });
 
-// Xử lý chuyển Sub-tab (Giải đấu)
 document.querySelectorAll('.sub-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const subTab = btn.dataset.tab;
@@ -123,7 +119,7 @@ function syncUI() {
   if (btnRead && urlInput) btnRead.disabled = !urlInput.value.trim();
   if (btnTranslate) btnTranslate.disabled = !currentUrl || !cfg.apiKey;
   if (statusDot) statusDot.className = !ok ? 'status-dot' : (corsOk === false ? 'status-dot err' : 'status-dot on');
-  if (statusLabel) statusLabel.textContent = ok ? cfg.server.replace(/^https?:\/\//, '').slice(0, 38) : 'Chưa cấu hình';
+  if (statusLabel) statusLabel.textContent = ok ? cfg.server.replace(/^https?:\/\//, '').slice(0, 24).toUpperCase() : 'OFFLINE';
 }
 
 function fillSettings() {
@@ -138,7 +134,7 @@ window.closeSettings = function() { if ($('settingsPanel')) $('settingsPanel').c
 
 window.saveSettings = function() {
   const server = $('cfgServer').value.trim().replace(/\/$/, '');
-  if (!server) { alert('Nhập URL Ladder server.'); return; }
+  if (!server) { alert('Vui lòng nhập URL Ladder server.'); return; }
   cfg = { server: server, user: $('cfgUser').value.trim(), pass: $('cfgPass').value, apiKey: $('cfgApiKey').value.trim() };
   localStorage.setItem(STORE, JSON.stringify(cfg));
   corsOk = null; syncUI(); closeSettings();
@@ -153,6 +149,7 @@ window.saveSettings = function() {
 
 /* ─── Networking ──────────────────────────────────── */
 function authHdr() { return (cfg.user && cfg.pass) ? { 'Authorization': 'Basic ' + btoa(`${cfg.user}:${cfg.pass}`) } : {}; }
+
 async function fetchLadder(url) {
   const res = await fetch(`${cfg.server}/api/${url}`, { headers: authHdr(), signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -160,10 +157,36 @@ async function fetchLadder(url) {
   try { const data = JSON.parse(text); if (data && data.body) return data.body; } catch (e) {}
   return text;
 }
-async function pingCors() { try { await fetch(`${cfg.server}/ruleset`, { headers: authHdr(), signal: AbortSignal.timeout(6000) }); corsOk = true; } catch (e) { corsOk = false; } syncUI(); }
-window.testConn = async function() { /* ... Giữ nguyên như cũ ... */ };
 
-/* ─── Headlines & Infinite Scroll ─────────────────── */
+async function pingCors() { 
+  try { 
+    await fetch(`${cfg.server}/ruleset`, { headers: authHdr(), signal: AbortSignal.timeout(6000) }); 
+    corsOk = true; 
+  } catch (e) { 
+    corsOk = false; 
+  } 
+  syncUI(); 
+}
+
+window.testConn = async function() {
+  const tr = $('testResult');
+  tr.style.display = 'block';
+  tr.className = 'test-result';
+  tr.textContent = 'ĐANG KIỂM TRA…';
+  const server = $('cfgServer').value.trim().replace(/\/$/, '');
+  const u = $('cfgUser').value.trim();
+  const p = $('cfgPass').value;
+  const hdrs = (u && p) ? { 'Authorization': 'Basic ' + btoa(`${u}:${p}`) } : {};
+  try {
+    const res = await fetch(`${server}/ruleset`, { headers: hdrs, signal: AbortSignal.timeout(6000) });
+    if (res.ok) { tr.className = 'test-result ok'; tr.textContent = '✓ KẾT NỐI SERVER THÀNH CÔNG!'; }
+    else { tr.className = 'test-result err'; tr.textContent = `LỖI: HTTP ${res.status}`; }
+  } catch(e) {
+    tr.className = 'test-result err'; tr.textContent = `THẤT BẠI: ${e.message}`;
+  }
+};
+
+/* ─── Headlines Parsing & Infinite Scroll ─────────── */
 window.refreshCurrentTab = function() {
   TABS[currentTab].loaded = false;
   loadHeadlines(currentTab, 1);
@@ -176,14 +199,18 @@ window.loadHeadlines = async function(tabId, page = 1) {
   
   if (page === 1) {
     tabData.page = 1; tabData.urls.clear();
-    if (listEl) listEl.innerHTML = `<div class="hl-empty"><div class="spinner" style="width:20px;height:20px;margin:0 auto 10px"></div>Đang tải ${tabId.replace('football-','').toUpperCase()}…</div>`;
+    if (listEl) listEl.innerHTML = `<div class="hl-empty"><div class="neo-spinner" style="width:28px;height:28px;margin:0 auto 12px"></div>FETCHING ${tabId.replace('football-','').toUpperCase()}…</div>`;
     if (btnRefreshHL) btnRefreshHL.classList.add('spin');
     if (corsOk === null) await pingCors();
-    if (!corsOk) { if (listEl) listEl.innerHTML = `<div class="cors-notice"><strong>⚠️ CORS bị chặn</strong></div>`; if (btnRefreshHL) btnRefreshHL.classList.remove('spin'); return; }
+    if (!corsOk) { 
+      if (listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">⚠️ CORS BỊ CHẶN</div>`; 
+      if (btnRefreshHL) btnRefreshHL.classList.remove('spin'); 
+      return; 
+    }
   } else {
     if (listEl) {
       const loader = document.createElement('div'); loader.id = `hlLoader-${tabId}`;
-      loader.innerHTML = `<div class="spinner" style="width:20px;height:20px;margin:15px auto"></div>`;
+      loader.innerHTML = `<div class="neo-spinner" style="width:24px;height:24px;margin:15px auto"></div>`;
       listEl.appendChild(loader);
     }
   }
@@ -193,9 +220,7 @@ window.loadHeadlines = async function(tabId, page = 1) {
     const html = await fetchLadder(fetchUrl);
     const items = parseAthletic(html, tabData);
     
-    // BẮT BUỘC: Sắp xếp bài viết mới lên trên, cũ xuống dưới bằng Timestamp
     items.sort((a, b) => b.timestamp - a.timestamp);
-    
     tabData.loaded = true;
 
     if (page === 1) {
@@ -204,10 +229,10 @@ window.loadHeadlines = async function(tabId, page = 1) {
       const loader = document.getElementById(`hlLoader-${tabId}`);
       if (loader) loader.remove();
       if (items.length > 0) appendHeadlines(items, listEl);
-      else if (listEl) listEl.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; color:#6e7681; font-size:11px">Đã hết bài viết!</div>`);
+      else if (listEl) listEl.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; font-weight:800; font-size:11px">HẾT DỮ LIỆU.</div>`);
     }
   } catch(e) {
-    if (page === 1 && listEl) listEl.innerHTML = `<div class="hl-empty">❌ Lỗi tải<br/><span style="font-size:11px">${esc(e.message)}</span></div>`; 
+    if (page === 1 && listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">❌ LỖI DỮ LIỆU<br/><span style="font-size:10px">${esc(e.message)}</span></div>`; 
     const loader = document.getElementById(`hlLoader-${tabId}`); if (loader) loader.remove(); 
   }
   if (page === 1 && btnRefreshHL) btnRefreshHL.classList.remove('spin');
@@ -244,7 +269,7 @@ function parseAthletic(html, tabData) {
 
     const container = a.closest('article, [data-testid="story-card"]') || a;
     let finalDate = '';
-    let timestamp = 0; // Thêm biến timestamp để làm thước đo sorting
+    let timestamp = 0;
     
     const dateMatch = orig.match(/\/(\d{4})\/(\d{2})\/(\d{2})\//);
     if (dateMatch) {
@@ -269,7 +294,6 @@ function parseAthletic(html, tabData) {
         }
       }
     }
-    // Lấp liếm nếu có bài không kiếm được ngày giờ
     if (timestamp === 0) timestamp = Date.now() - Math.random() * 10000;
 
     const temp = container.cloneNode(true);
@@ -315,8 +339,9 @@ function parseAthletic(html, tabData) {
 
 function renderHeadlines(items, listEl, icon) {
   if (!listEl) return;
-  if (!items.length) { listEl.innerHTML = `<div class="hl-empty"><div class="hl-empty-icon">${icon}</div>Không tìm thấy bài viết.</div>`; return; }
-  listEl.innerHTML = ''; appendHeadlines(items, listEl);
+  if (!items.length) { listEl.innerHTML = `<div class="hl-empty">${icon} KHÔNG CÓ BÀI VIẾT</div>`; return; }
+  listEl.innerHTML = ''; 
+  appendHeadlines(items, listEl);
 }
 
 function appendHeadlines(items, listEl) {
@@ -326,10 +351,10 @@ function appendHeadlines(items, listEl) {
     <div class="hl-item" data-url="${esc(a.url)}" data-i="${currentCount + i}" onclick="pickHL(this)">
       <div class="hl-title">${esc(a.title)}</div>
       ${a.excerpt ? `<div class="hl-excerpt">${esc(a.excerpt)}</div>` : ''}
-      <div class="hl-footer" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px;">
-        ${a.author ? `<span class="hl-author">✍️ ${esc(a.author)}</span>` : '<span style="display:none"></span>'}
-        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 6px;">
-          ${a.date ? `<span style="font-size:10px; color:#8b949e;">📅 ${a.date}</span>` : '<span></span>'}
+      <div class="hl-footer">
+        ${a.author ? `<span class="hl-author">BY: ${esc(a.author)}</span>` : ''}
+        <div class="hl-meta-row">
+          ${a.date ? `<span class="hl-date">${a.date}</span>` : '<span></span>'}
           ${a.comments ? `<span class="hl-comments">💬 ${esc(a.comments)}</span>` : ''}
         </div>
       </div>
@@ -342,18 +367,21 @@ window.pickHL = function(el) {
   el.classList.add('active');
   if (urlInput) urlInput.value = el.dataset.url;
   if (btnRead) btnRead.disabled = false;
-  if (window.innerWidth <= 768) { if (sidebar) sidebar.classList.remove('on'); if (sidebarBackdrop) sidebarBackdrop.classList.remove('on'); }
+  if (window.innerWidth <= 768) { 
+    if (sidebar) sidebar.classList.remove('on'); 
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('on'); 
+  }
   loadArticle(el.dataset.url);
 };
 
-/* ─── Article loader & Utils (Giữ Nguyên Như Cũ) ─── */
+/* ─── Reader Engine & Neobrutalism Frame Styling ─── */
 async function loadArticle(url) {
   if (!url) { url = urlInput ? urlInput.value.trim() : ''; }
   if (!url) return;
   try { new URL(url); } catch (e) { alert('URL không hợp lệ.'); return; }
   currentUrl = url; viewingTrans = false;
   if (emptyState) emptyState.style.display = 'none';
-  if (loadTxt) loadTxt.textContent = 'Đang tải bài viết…';
+  if (loadTxt) loadTxt.textContent = 'FETCHING INTEL…';
   if (loadOvl) loadOvl.classList.add('on');
   if (frame) frame.classList.remove('on');
   if (transPanel) transPanel.classList.remove('on');
@@ -364,7 +392,7 @@ async function loadArticle(url) {
 
   if (corsOk !== false) {
     try {
-      if (loadTxt) loadTxt.textContent = 'Đang fetch qua Ladder…';
+      if (loadTxt) loadTxt.textContent = 'BYPASSING VIA LADDER…';
       currentHtml = await fetchLadder(url);
       currentHtml = cleanAndStyleHTML(currentHtml);
       setBlobFrame(currentHtml);
@@ -375,47 +403,95 @@ async function loadArticle(url) {
     } catch(e) { corsOk = false; syncUI(); }
   }
 
-  if (loadTxt) loadTxt.textContent = 'Đang mở qua proxy…';
+  if (loadTxt) loadTxt.textContent = 'PROXY FALLBACK…';
   currentHtml = ''; if (btnTranslate) btnTranslate.disabled = true;
   let proxyUrl = `${cfg.server}/${encodeURIComponent(url)}`;
-  if (cfg.user && cfg.pass) { try { const u = new URL(cfg.server); u.username = cfg.user; u.password = cfg.pass; proxyUrl = `${u.toString().replace(/\/$/, '')}/${encodeURIComponent(url)}`; } catch (e) {} }
-  if (frame) { frame.onload = () => { if (loadOvl) loadOvl.classList.remove('on'); frame.classList.add('on'); }; frame.onerror = showFrameErr; frame.src = proxyUrl; }
+  if (cfg.user && cfg.pass) { 
+    try { 
+      const u = new URL(cfg.server); 
+      u.username = cfg.user; 
+      u.password = cfg.pass; 
+      proxyUrl = `${u.toString().replace(/\/$/, '')}/${encodeURIComponent(url)}`; 
+    } catch (e) {} 
+  }
+  if (frame) { 
+    frame.onload = () => { if (loadOvl) loadOvl.classList.remove('on'); frame.classList.add('on'); }; 
+    frame.onerror = showFrameErr; 
+    frame.src = proxyUrl; 
+  }
   setTimeout(() => { if (loadOvl && loadOvl.classList.contains('on')) { loadOvl.classList.remove('on'); if (frame) frame.classList.add('on'); } }, 18000);
 }
 
-function setBlobFrame(html) { if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); const blob = new Blob([html], { type: 'text/html' }); currentBlobUrl = URL.createObjectURL(blob); if (frame) { frame.onload = null; frame.onerror = null; frame.src = currentBlobUrl; } }
-function showFrameErr() { if (loadOvl) loadOvl.classList.remove('on'); if (emptyState) { emptyState.style.display = 'flex'; const title = emptyState.querySelector('.empty-title'); const desc = emptyState.querySelector('.empty-desc'); if (title) title.textContent = 'Không hiển thị được'; if (desc) desc.innerHTML = `X-Frame-Options đang chặn iframe.<br/>Dùng <strong>↗ Tab mới</strong> để đọc.`; } }
+function setBlobFrame(html) { 
+  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); 
+  const blob = new Blob([html], { type: 'text/html' }); 
+  currentBlobUrl = URL.createObjectURL(blob); 
+  if (frame) { frame.onload = null; frame.onerror = null; frame.src = currentBlobUrl; } 
+}
+
+function showFrameErr() { 
+  if (loadOvl) loadOvl.classList.remove('on'); 
+  if (emptyState) { 
+    emptyState.style.display = 'flex'; 
+    const title = emptyState.querySelector('.empty-title'); 
+    const desc = emptyState.querySelector('.empty-desc'); 
+    if (title) title.textContent = 'X-FRAME BLOCKED'; 
+    if (desc) desc.innerHTML = `Nguồn cấp dữ liệu chặn Iframe.<br/>Dùng nút <strong>↗ TAB MỚI</strong> để đọc trực tiếp.`; 
+  } 
+}
+
 window.openNewTab = function() { if (currentUrl) window.open(`${cfg.server}/${encodeURIComponent(currentUrl)}`, '_blank'); };
 
-/* ─── Translation ─────────────────────────────────── */
+/* ─── Gemini AI Translation ───────────────────────── */
 async function translateArticle() {
   if (!cfg.apiKey) { openSettings(); return; }
   if (!currentUrl) return;
-  if (cachedTranslations[currentUrl]) { if (transContent) transContent.innerHTML = cachedTranslations[currentUrl]; showTransPanel(); return; }
+  if (cachedTranslations[currentUrl]) { 
+    if (transContent) transContent.innerHTML = cachedTranslations[currentUrl]; 
+    showTransPanel(); 
+    return; 
+  }
 
   let text = '';
-  if (currentHtml) { text = extractText(currentHtml); } else { try { const doc = frame.contentDocument || frame.contentWindow?.document; if (doc) text = extractFromDoc(doc); } catch (e) {} }
-  if (!text || text.length < 100) { if (transContent) transContent.innerHTML = `<div class="trans-error">❌ Không đọc được nội dung bài.</div>`; showTransPanel(); return; }
+  if (currentHtml) { text = extractText(currentHtml); } 
+  else { 
+    try { 
+      const doc = frame.contentDocument || frame.contentWindow?.document; 
+      if (doc) text = extractFromDoc(doc); 
+    } catch (e) {} 
+  }
+  if (!text || text.length < 100) { 
+    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ Không thể trích xuất nội dung văn bản.</div>`; 
+    showTransPanel(); 
+    return; 
+  }
 
   if (btnTranslate) btnTranslate.disabled = true;
-  if (transContent) transContent.innerHTML = `<div class="trans-loading"><div class="spinner"></div><p>Gemini đang chuẩn bị dịch...</p></div>`;
+  if (transContent) transContent.innerHTML = `
+    <div style="text-align:center; padding: 60px 0;">
+      <div class="neo-spinner" style="margin: 0 auto 20px;"></div>
+      <div style="font-family:var(--font-cond); font-weight:900; font-size:18px;">GEMINI AI ĐANG DỊCH BÀI VIẾT…</div>
+    </div>`;
   showTransPanel();
 
-  const maxC = 25000; const input = text.slice(0, maxC) + (text.length > maxC ? '\n\n[...bài viết được rút gọn]' : '');
+  const maxC = 25000; 
+  const input = text.slice(0, maxC) + (text.length > maxC ? '\n\n[...bài viết được rút gọn]' : '');
+  
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${cfg.apiKey}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: `Bạn là biên tập viên thể thao của một tờ báo bóng đá Việt Nam chuyên nghiệp. Dịch bài báo The Athletic sau sang tiếng Việt.\nQuy tắc:\n- Văn phong tự nhiên, giữ nguyên tên riêng, số liệu.\n- Chuyển thẻ [IMAGE: url] thành thẻ HTML: <img src="url" alt="Ảnh minh họa">.\n- Trả về HTML thuần, có tiêu đề h1, byline, thẻ p. KHÔNG thêm giải thích ngoài.\nBài báo:\n${input}` }] }],
-        generationConfig: { temperature: 0.3 },
-        safetySettings: [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" } ]
+        generationConfig: { temperature: 0.3 }
       })
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (transContent) transContent.innerHTML = ''; 
     let fullHtml = '';
-    const reader = res.body.getReader(); const decoder = new TextDecoder("utf-8");
+    const reader = res.body.getReader(); 
+    const decoder = new TextDecoder("utf-8");
 
     while (true) {
       const { done, value } = await reader.read();
@@ -428,28 +504,54 @@ async function translateArticle() {
             const data = JSON.parse(line.slice(6));
             const textPart = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
             fullHtml += textPart;
-            if (transContent) { transContent.innerHTML = fullHtml.replace(/^```html\s*/i, '').replace(/```\s*$/, ''); }
+            if (transContent) { 
+              transContent.innerHTML = fullHtml.replace(/^```html\s*/i, '').replace(/```\s*$/, ''); 
+            }
           } catch (e) {}
         }
       }
     }
     if (transContent) { cachedTranslations[currentUrl] = transContent.innerHTML; }
-  } catch(e) { if (transContent) transContent.innerHTML = `<div class="trans-error">❌ Lỗi dịch: ${esc(e.message)}</div>`; }
+  } catch(e) { 
+    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ LỖI DỊCH: ${esc(e.message)}</div>`; 
+  }
   if (btnTranslate) btnTranslate.disabled = false;
 }
 
-window.showTransPanel = function() { viewingTrans = true; if (transPanel) transPanel.classList.add('on'); if (frame) frame.classList.remove('on'); if (btnOriginal) btnOriginal.classList.remove('hidden'); if (btnTranslate) btnTranslate.classList.add('active'); };
-window.showOriginal = function() { viewingTrans = false; if (transPanel) transPanel.classList.remove('on'); if (currentUrl && frame) frame.classList.add('on'); if (btnOriginal) btnOriginal.classList.add('hidden'); if (btnTranslate) btnTranslate.classList.remove('active'); };
+window.showTransPanel = function() { 
+  viewingTrans = true; 
+  if (transPanel) transPanel.classList.add('on'); 
+  if (frame) frame.classList.remove('on'); 
+  if (btnOriginal) btnOriginal.classList.remove('hidden'); 
+  if (btnTranslate) btnTranslate.classList.add('active'); 
+};
 
-/* ─── Text extraction ─────────────────────────────── */
+window.showOriginal = function() { 
+  viewingTrans = false; 
+  if (transPanel) transPanel.classList.remove('on'); 
+  if (currentUrl && frame) frame.classList.add('on'); 
+  if (btnOriginal) btnOriginal.classList.add('hidden'); 
+  if (btnTranslate) btnTranslate.classList.remove('active'); 
+};
+
+/* ─── Extraction & Brutalist Injector ─────────────── */
 function extractText(html) { return extractFromDoc(new DOMParser().parseFromString(html, 'text/html')); }
+
 function extractFromDoc(doc) {
   const junkSelectors = ['script','style','nav','header','footer','aside','.ad-container','.ad-unit','.paywall-container','.newsletter-wrapper'];
   junkSelectors.forEach(s => { try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {} });
-  const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || ''; const byline = doc.querySelector('[class*="byline"],[class*="author"]')?.textContent?.trim() || ''; const body = doc.querySelector('article,[class*="article-body"],[class*="post-body"],main') || doc.body; const paras = [];
+  const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || ''; 
+  const byline = doc.querySelector('[class*="byline"],[class*="author"]')?.textContent?.trim() || ''; 
+  const body = doc.querySelector('article,[class*="article-body"],[class*="post-body"],main') || doc.body; 
+  const paras = [];
   body.querySelectorAll('p,h2,h3,blockquote,img').forEach(el => {
-    if (el.tagName.toLowerCase() === 'img') { const src = el.src || el.getAttribute('data-src'); if (src && !src.startsWith('data:image') && !src.includes('avatar')) { paras.push(`[IMAGE: ${src}]`); } } 
-    else { const t = el.textContent.trim(); if (t.length > 30) paras.push(t); }
+    if (el.tagName.toLowerCase() === 'img') { 
+      const src = el.src || el.getAttribute('data-src'); 
+      if (src && !src.startsWith('data:image') && !src.includes('avatar')) paras.push(`[IMAGE: ${src}]`); 
+    } else { 
+      const t = el.textContent.trim(); 
+      if (t.length > 30) paras.push(t); 
+    }
   });
   return [title, byline, ...paras].filter(Boolean).join('\n\n');
 }
@@ -458,25 +560,52 @@ function cleanAndStyleHTML(htmlString) {
   const doc = new DOMParser().parseFromString(htmlString, 'text/html');
   const junkSelectors = ['script','noscript','nav','footer','.ad-container','.ad-unit','.ad-slot','.paywall-container','.newsletter-wrapper','.share-tools','[data-testid*="Social"]'];
   junkSelectors.forEach(s => { try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {} });
-  doc.querySelectorAll('*').forEach(el => { if (el.tagName.toLowerCase() !== 'iframe') { el.removeAttribute('style'); } else { el.setAttribute('scrolling', 'yes'); } });
-  let metaViewport = doc.querySelector('meta[name="viewport"]'); if (!metaViewport) { metaViewport = doc.createElement('meta'); metaViewport.name = 'viewport'; doc.head.appendChild(metaViewport); }
+  doc.querySelectorAll('*').forEach(el => { if (el.tagName.toLowerCase() !== 'iframe') el.removeAttribute('style'); });
+  
+  let metaViewport = doc.querySelector('meta[name="viewport"]'); 
+  if (!metaViewport) { 
+    metaViewport = doc.createElement('meta'); 
+    metaViewport.name = 'viewport'; 
+    doc.head.appendChild(metaViewport); 
+  }
   metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+
+  // Chích phong cách Neobrutalism vào trang đọc báo nội bộ
   const style = doc.createElement('style');
   style.textContent = `
-    :root { --bg: #ffffff; --text: #1a1a1a; --link: #205b31; --border: #e2e8f0; } *, *::before, *::after { box-sizing: border-box !important; } html { width: 100% !important; max-width: 100vw !important; overflow-x: hidden !important; margin: 0 !important; background: var(--bg) !important; } body { background: var(--bg) !important; color: var(--text) !important; padding: 30px 20px !important; margin: 0 auto !important; max-width: 740px !important; width: 100% !important;} @media (max-width: 768px) { body { padding: 20px 15px !important; } } #__next, #site-content, main, article, header, section, [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] { display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; width: 100% !important; max-width: 100% !important; transform: none !important; margin: 0 !important; padding: 0 !important; } img[src^="data:image"] { display: none !important; } img:not([src^="data:image"]), figure, picture { max-width: 100% !important; height: auto !important; display: block !important; margin: 2rem auto !important; position: static !important; } [class*="Article_ContentContainer"], .article-body, p, li, h1, h2, h3, h4 { position: relative !important; z-index: 9999 !important; opacity: 1 !important; visibility: visible !important; background: transparent !important; word-wrap: break-word !important; overflow-wrap: break-word !important; max-width: 100% !important; } table { width: 100% !important; border-collapse: collapse !important; margin: 2rem 0 !important; font-family: -apple-system, sans-serif !important; font-size: 0.95rem !important; background: #fff !important; } th, td { border-bottom: 1px solid var(--border) !important; padding: 12px 8px !important; text-align: left; } th { font-weight: 700 !important; background: #f8f9fa !important; color: #333 !important;} tr:hover { background: #f1f5f9 !important; } iframe { width: 100% !important; max-width: 100% !important; min-height: 600px !important; border: 1px solid var(--border) !important; border-radius: 6px !important; margin: 2rem 0 !important; display: block !important; resize: vertical !important; background: #f8f9fa !important; } aside { display: block !important; background: #f8f9fa !important; padding: 20px !important; margin: 2rem 0 !important; border-left: 4px solid var(--link) !important; font-style: italic; max-width: 100% !important; } h1 { font-family: "Playfair Display", Georgia, serif !important; font-size: 2.4rem !important; line-height: 1.2 !important; margin-bottom: 1.5rem !important; font-weight: 700 !important; } h2, h3, h4 { font-family: -apple-system, sans-serif !important; margin-top: 2.5rem !important; margin-bottom: 1rem !important; line-height: 1.3 !important; } p, li { font-family: Georgia, serif !important; font-size: 1.15rem !important; line-height: 1.7 !important; margin-bottom: 1.4rem !important; color: #333 !important; } a { color: var(--link) !important; text-decoration: underline !important; text-underline-offset: 3px; word-break: break-all !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Playfair+Display:wght@700;900&display=swap');
+    :root { --neo-black: #000; --neo-bg: #fffdf5; --neo-yellow: #ffe600; }
+    *, *::before, *::after { box-sizing: border-box !important; }
+    html { width: 100% !important; background: var(--neo-bg) !important; }
+    body { background: var(--neo-bg) !important; color: var(--neo-black) !important; padding: 40px 24px !important; margin: 0 auto !important; max-width: 820px !important; font-family: 'Space Grotesk', sans-serif !important; }
+    h1 { font-family: 'Playfair Display', serif !important; font-size: 2.8rem !important; line-height: 1.15 !important; font-weight: 900 !important; margin-bottom: 1.5rem !important; border-bottom: 5px solid var(--neo-yellow) !important; padding-bottom: 15px !important; }
+    h2, h3, h4 { font-family: 'Space Grotesk', sans-serif !important; font-weight: 900 !important; text-transform: uppercase !important; margin-top: 2.5rem !important; margin-bottom: 1rem !important; }
+    p, li { font-size: 1.2rem !important; line-height: 1.75 !important; margin-bottom: 1.5rem !important; color: #111 !important; }
+    img { max-width: 100% !important; height: auto !important; display: block !important; margin: 2rem auto !important; border: 3px solid var(--neo-black) !important; box-shadow: 6px 6px 0px var(--neo-black) !important; }
+    blockquote, aside { background: #fff !important; border: 3px solid var(--neo-black) !important; box-shadow: 4px 4px 0px var(--neo-black) !important; padding: 20px !important; margin: 2rem 0 !important; font-style: italic !important; }
+    a { color: var(--neo-black) !important; background: var(--neo-yellow) !important; padding: 1px 4px !important; text-decoration: none !important; border: 1px solid var(--neo-black) !important; font-weight: 700 !important; }
   `;
-  doc.head.appendChild(style); return doc.documentElement.outerHTML;
+  doc.head.appendChild(style); 
+  return doc.documentElement.outerHTML;
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-/* ─── Events ──────────────────────────────────────── */
+/* ─── Event Binding ───────────────────────────────── */
 if ($('btnSettings')) $('btnSettings').addEventListener('click', openSettings);
 if ($('btnRead')) $('btnRead').addEventListener('click', () => loadArticle());
 if ($('btnTranslate')) $('btnTranslate').addEventListener('click', translateArticle);
 if ($('btnNewTab')) $('btnNewTab').addEventListener('click', openNewTab);
 if ($('btnOriginal')) $('btnOriginal').addEventListener('click', showOriginal);
-if (urlInput) { urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadArticle(); }); urlInput.addEventListener('input', () => { if (btnRead) btnRead.disabled = !urlInput.value.trim(); }); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('settingsPanel') && $('settingsPanel').classList.contains('on')) { closeSettings(); } else if (viewingTrans) { showOriginal(); } } });
+if (urlInput) { 
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadArticle(); }); 
+  urlInput.addEventListener('input', () => { if (btnRead) btnRead.disabled = !urlInput.value.trim(); }); 
+}
+document.addEventListener('keydown', e => { 
+  if (e.key === 'Escape') { 
+    if ($('settingsPanel') && $('settingsPanel').classList.contains('on')) closeSettings(); 
+    else if (viewingTrans) showOriginal(); 
+  } 
+});
 
 init();
