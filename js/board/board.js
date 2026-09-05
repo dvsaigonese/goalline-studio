@@ -554,5 +554,43 @@ window.addEventListener("wheel", (e) => {
     }
 });
 
+// =========================================================================
+// --- MOBILE TOUCH BRIDGE (KHÔNG LÀM ẢNH HƯỞNG CODE CHUỘT PC) ---
+// =========================================================================
+
+// 1. Chạm ngón tay xuống sân (Tương đương Mousedown)
+canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length > 1) return; // Bỏ qua nếu chạm 2 ngón cùng lúc
+    e.preventDefault(); // Ngăn zoom / giật màn hình trên Safari iOS
+    
+    // Kích hoạt lại toàn bộ logic mousedown sẵn có
+    const fakeEvent = {
+        clientX: e.touches[0].clientX,
+        clientY: e.touches[0].clientY,
+        preventDefault: () => {}
+    };
+    canvas.dispatchEvent(new MouseEvent("mousedown", fakeEvent));
+}, { passive: false });
+
+// 2. Kéo ngón tay di chuyển (Tương đương Mousemove)
+canvas.addEventListener("touchmove", (e) => {
+    if (e.touches.length > 1) return;
+    e.preventDefault();
+    
+    const fakeEvent = {
+        clientX: e.touches[0].clientX,
+        clientY: e.touches[0].clientY,
+        preventDefault: () => {}
+    };
+    canvas.dispatchEvent(new MouseEvent("mousemove", fakeEvent));
+}, { passive: false });
+
+// 3. Nhấc ngón tay lên (Tương đương Mouseup)
+canvas.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    canvas.dispatchEvent(new MouseEvent("mouseup", {}));
+}, { passive: false });
+
+
 // Start App
 init();

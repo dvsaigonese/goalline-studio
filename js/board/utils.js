@@ -6,21 +6,30 @@ export function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     
-    // Tọa độ logic thực của Canvas (do ctx.scale(dpr, dpr) xử lý)
     const logicalWidth = canvas.width / dpr;
     const logicalHeight = canvas.height / dpr;
     
-    // Chiều rộng/cao hiển thị CSS hiện tại trên màn hình
     const renderedWidth = canvas.clientWidth || logicalWidth;
     const renderedHeight = canvas.clientHeight || logicalHeight;
     
-    // Trừ chính xác viền DOM để chuột chạm pixel (0,0) luôn chuẩn xác
-    const clientX = evt.clientX - rect.left - (canvas.clientLeft || 0);
-    const clientY = evt.clientY - rect.top - (canvas.clientTop || 0);
+    // Tự động bóc tách tọa độ: Nếu là Touch (Mobile) thì lấy ngón đầu tiên, nếu là Mouse (PC) thì lấy clientX/Y
+    let clientX = evt.clientX;
+    let clientY = evt.clientY;
+
+    if (evt.touches && evt.touches.length > 0) {
+        clientX = evt.touches[0].clientX;
+        clientY = evt.touches[0].clientY;
+    } else if (evt.changedTouches && evt.changedTouches.length > 0) {
+        clientX = evt.changedTouches[0].clientX;
+        clientY = evt.changedTouches[0].clientY;
+    }
+    
+    const x = clientX - rect.left - (canvas.clientLeft || 0);
+    const y = clientY - rect.top - (canvas.clientTop || 0);
     
     return {
-        x: clientX * (logicalWidth / renderedWidth),
-        y: clientY * (logicalHeight / renderedHeight)
+        x: x * (logicalWidth / renderedWidth),
+        y: y * (logicalHeight / renderedHeight)
     };
 }
 

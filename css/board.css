@@ -116,6 +116,7 @@ html, body {
 }
 
 #canvas {
+  touch-action: none;
   max-width: 95%;
   max-height: calc(100vh - 120px);
   object-fit: contain;
