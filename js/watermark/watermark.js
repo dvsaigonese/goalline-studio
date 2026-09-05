@@ -13,7 +13,12 @@ const ctx = canvas.getContext('2d');
 const titleInput = document.getElementById('wm-title');
 const exportBtn = document.getElementById('export-wm-btn');
 const emptyState = document.getElementById('empty-state');
+
+// Các select elements (Dual-select pattern bảo toàn layout.js)
 const templateMode = document.getElementById('template-mode');
+const activeSelect = document.getElementById('active-template');
+const retroSelect = document.getElementById('retro-template');
+
 const leagueSection = document.getElementById('league-section');
 const collageInstructions = document.getElementById('collage-instructions');
 
@@ -38,7 +43,9 @@ const renderAll = () => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    emptyState.style.display = hasAnyImage() ? 'none' : 'block';
+    if (emptyState) {
+        emptyState.style.display = hasAnyImage() ? 'none' : 'block';
+    }
 
     drawCollageBackground();
     applyGlobalFilters();
@@ -51,7 +58,7 @@ const renderAll = () => {
         const globalState = {
             assets: globalAssets,
             settings: {
-                title: titleInput.value,
+                title: titleInput ? titleInput.value : '',
                 patternOpacity: patternOpacityInput ? (parseFloat(patternOpacityInput.value) / 100) * 0.15 : 0.15,
                 grainIntensity: grainIntensityInput ? (parseFloat(grainIntensityInput.value) / 100) * 0.08 : 0.08,
                 leagueName: getSelectedLeague() 
@@ -88,25 +95,26 @@ function drawCollageBackground() {
                 imgH
             );
         } else {
-            ctx.fillStyle = '#222';
+            ctx.fillStyle = '#111';
             ctx.fillRect(slotX, slotY, slotW, slotH);
-            ctx.fillStyle = '#444';
-            ctx.font = 'bold 80px Arial';
+            ctx.fillStyle = '#fff';
+            ctx.font = '900 80px "Space Grotesk", Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(index + 1, slotX + slotW / 2, slotY + slotH / 2);
         }
         ctx.restore();
 
+        // Viền theo phong cách Neobrutalism cho slot đang active
         if (index === collageState.activeSlotIndex) {
-            ctx.strokeStyle = '#e2f90e'; 
-            ctx.lineWidth = 10;
-            ctx.strokeRect(slotX + 5, slotY + 5, slotW - 10, slotH - 10);
+            ctx.strokeStyle = '#ffe600'; 
+            ctx.lineWidth = 12;
+            ctx.strokeRect(slotX + 6, slotY + 6, slotW - 12, slotH - 12);
         }
 
         if (collageState.slots.length > 1) {
-            ctx.strokeStyle = 'rgba(0,0,0,0.8)'; 
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#000000'; 
+            ctx.lineWidth = 6;
             ctx.strokeRect(slotX, slotY, slotW, slotH);
         }
     });
@@ -114,13 +122,9 @@ function drawCollageBackground() {
 }
 
 function applyGlobalFilters() {
-    // Lấy số UI (mặc định 100)
     const uiBrightness = overallBrightnessInput ? parseFloat(overallBrightnessInput.value) : 100;
-    
-    // Mốc 100 = 120% độ sáng thực tế | Ví dụ gõ 150 -> 150 * 1.2 = 180%
     const realBrightness = uiBrightness * 1.2; 
 
-    // Nếu độ sáng thực tế khác 100% (nghĩa là có filter) thì áp dụng
     if (realBrightness !== 100) {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = canvas.width;
@@ -166,37 +170,43 @@ function loadAssetsForCurrentTemplate() {
 // ==========================================
 // --- KẾT NỐI (WIRING) CÁC MODULE LẠI ---
 // ==========================================
-
-// Nhúng hàm renderAll vào các module để mỗi khi thao tác, canvas sẽ tự vẽ lại
 initCanvasEvents(canvas, renderAll);
 const { applyLayout } = initLayoutManager(renderAll);
 initLeagueManager(renderAll);
-
 
 // ==========================================
 // --- SỰ KIỆN GIAO DIỆN CHUNG & EXPORT ---
 // ==========================================
 const debouncedRender = debounce(() => renderAll(), 100);
 
-titleInput.addEventListener('input', debouncedRender);
-
+if (titleInput) titleInput.addEventListener('input', debouncedRender);
 patternOpacityInput?.addEventListener('input', debouncedRender);
 overallBrightnessInput?.addEventListener('input', debouncedRender);
 grainIntensityInput?.addEventListener('input', debouncedRender);
+
+function handleTemplateSwitch(val, otherSelect) {
+    if (otherSelect) otherSelect.value = '';
+    templateMode.value = val;
+    templateMode.dispatchEvent(new Event('change'));
+}
+
+activeSelect?.addEventListener('change', (e) => handleTemplateSwitch(e.target.value, retroSelect));
+retroSelect?.addEventListener('change', (e) => handleTemplateSwitch(e.target.value, activeSelect));
 
 templateMode.addEventListener('change', () => {
     applyLayout(true); 
     loadAssetsForCurrentTemplate();
 
-    if(templateMode.value === 'Season26_27') {
-        leagueSection.style.display = 'block';
-    } else {
-        leagueSection.style.display = 'none';
+    if (leagueSection) {
+        leagueSection.style.display = templateMode.value === 'Season26_27' ? 'block' : 'none';
     }
 });
 
 exportBtn.addEventListener('click', async () => {
-    if (!hasAnyImage()) { alert("Please upload at least one image!"); return; }
+    if (!hasAnyImage()) { 
+        alert("PLEASE UPLOAD AT LEAST ONE IMAGE!"); 
+        return; 
+    }
 
     collageState.activeSlotIndex = null;
     canvas.classList.remove('editing');

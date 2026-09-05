@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Watermark | Goal-Line Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="./css/watermark.css" />
     <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./css/watermark.css" />
 </head>
 <body>
-    <!-- <div class="font-preload">HACK FONT</div> -->
-
     <div class="app-container">
+        <!-- TOOLBAR -->
         <nav class="toolbar">
             <div class="tool-group">
                 <a href="index.html" id="home-btn" class="tool-btn" title="Home">
-                    <i class="fa-solid fa-home"></i>
+                    <i class="fa-solid fa-house"></i>
                 </a>
                 <a href="watermark.html" class="tool-btn active" title="Watermark Tool">
                     <i class="fa-solid fa-layer-group"></i>
@@ -25,26 +27,54 @@
             <div class="tool-group bottom">
                 <button id="export-wm-btn" class="tool-btn primary" title="Export Image">
                     <i class="fa-solid fa-download"></i>
+                    <span>EXPORT</span>
                 </button>
             </div>
         </nav>
 
+        <!-- CANVAS WORKSPACE -->
         <main class="canvas-area">
             <div id="wm-wrapper">
                 <div id="empty-state">
-                    <i class="fa-solid fa-images"></i>
-                    <p>Setup layout and upload images</p>
+                    <div class="empty-icon-box">
+                        <i class="fa-solid fa-images"></i>
+                    </div>
+                    <p class="empty-title">WORKSPACE EMPTY</p>
+                    <p class="empty-sub">Setup your layout & feed images on the right panel.</p>
                 </div>
                 
                 <canvas id="wm-canvas"></canvas>
             </div>
         </main>
 
+        <!-- SIDEBAR CONTROLS -->
         <aside class="settings-panel">
-            <h3>Layout & Watermark</h3>
-            <div class="wm-workflow-card">
-                <label class="section-label">Template Mode</label>
-                <select id="template-mode" class="wm-select">
+            <div class="panel-header">
+                <h3>SETTINGS</h3>
+                <span class="badge-tag">v2.0</span>
+            </div>
+
+            <!-- TÁCH SELECT: ACTIVE & RETRO TEMPLATES -->
+            <div class="wm-workflow-card card-accent-yellow">
+                <div class="card-badge">TEMPLATES</div>
+                
+                <label class="section-label">Active Template</label>
+                <select id="active-template" class="wm-select">
+                    <option value="Season26_27" selected>Season 2026/2027</option>
+                    <option value="Season26_27Stories">Season 2026/2027 Stories</option>
+                    <option value="Season26_27UCL">Season 2026/2027 (UCL)</option>
+                    <option value="Season26_27UEL">Season 2026/2027 (UEL)</option>
+                </select>
+
+                <label class="section-label">Retro Template</label>
+                <select id="retro-template" class="wm-select">
+                    <option value="" disabled selected hidden>-- Select Retro --</option>
+                    <option value="original">Original</option>
+                    <option value="wc26">World Cup 26</option>
+                </select>
+
+                <!-- Thẻ gốc ẩn để layout.js không bị lỗi -->
+                <select id="template-mode" style="display: none;">
                     <option value="Season26_27">Season 2026/2027</option>
                     <option value="Season26_27Stories">Season 2026/2027 Stories</option>
                     <option value="Season26_27UCL">Season 2026/2027 (UCL)</option>
@@ -54,65 +84,75 @@
                 </select>
             </div>
 
-            <div class="setting-group" id="league-section" style="display: block;">
-                <label class="section-label">Select League / Club</label>
+            <!-- LEAGUE PICKER -->
+            <div class="wm-workflow-card card-accent-blue" id="league-section" style="display: block;">
+                <div class="card-badge">CLUB / LEAGUE</div>
+                <label class="section-label">Search League</label>
                 <div class="search-container">
-                    <input type="text" id="league-search-input" class="form-control" placeholder="Type to search (e.g. PREMIER)..." autocomplete="off">
+                    <input type="text" id="league-search-input" class="form-control" placeholder="Type name (e.g. PREMIER)..." autocomplete="off">
                     <ul id="league-search-results"></ul>
                 </div>
             </div>
 
-            <div class="wm-workflow-card">
-                <label class="section-label">Setup Layout (4:5)</label>
+            <!-- LAYOUT CONTROLS -->
+            <div class="wm-workflow-card card-accent-pink">
+                <div class="card-badge">GRID CONFIG</div>
+                <label class="section-label">Aspect Ratio (4:5)</label>
                 
-                <label>Mode:</label>
+                <label class="input-label">Mode</label>
                 <select id="layout-mode" class="wm-select">
                     <option value="single">Single Image</option>
                     <option value="collage">Collage (Split)</option>
                 </select>
 
                 <div id="collage-options">
-                    <label>Split Direction:</label>
+                    <label class="input-label">Split Direction</label>
                     <select id="split-direction" class="wm-select">
                         <option value="vertical">Vertical (|||)</option>
                         <option value="horizontal">Horizontal (三)</option>
                     </select>
 
-                    <label>Number of Splits:</label>
+                    <label class="input-label">Splits Count</label>
                     <input type="number" id="split-count" class="form-control" min="2" max="10" value="2">
                 </div>
             </div>
 
-            <div class="setting-group" id="upload-group">
-                <label class="section-label">Upload Images</label>
+            <!-- UPLOAD GROUP -->
+            <div class="wm-workflow-card card-accent-green" id="upload-group">
+                <div class="card-badge">ASSETS</div>
+                <label class="section-label">Source Images</label>
                 <div id="file-inputs-container"></div>
             </div>
             
+            <!-- COLLAGE INSTRUCTIONS -->
             <div class="setting-group collage-controls" id="collage-instructions">
-                <label class="instruction-title"><i class="fa-solid fa-hand-pointer"></i> Edit Mode Active</label>
-                <p>
-                    1. <strong>Click</strong> on a photo to select it.<br>
-                    2. <strong>Drag</strong> to move it.<br>
-                    3. <strong>Scroll mouse</strong> to zoom in/out.
-                </p>
+                <label class="instruction-title"><i class="fa-solid fa-arrow-pointer"></i> EDIT MODE</label>
+                <p>1. <strong>Click</strong> image to pick slot.</p>
+                <p>2. <strong>Drag</strong> to move framing.</p>
+                <p>3. <strong>Wheel</strong> to zoom in / out.</p>
             </div>
 
-            <hr>
+            <!-- POST METADATA & FX -->
+            <div class="wm-workflow-card card-accent-orange">
+                <div class="card-badge">POST FX</div>
+                <label class="section-label">Post Title</label>
+                <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter headline text..."></textarea>
+                <small class="tip-text">Format: Use {word} to highlight yellow.</small>
 
-            <div class="setting-group">
-                <label class="section-label">Article Title</label>
-                <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter post title here..."></textarea>
-                
-                <label>Pattern Intensity <small style="color: var(--text-muted); font-weight: normal;">(0 - 500)</small></label>
-                <input type="number" id="pattern-opacity" min="0" max="500" step="5" value="100" class="form-control" style="margin-bottom: 15px;">
+                <div class="slider-box">
+                    <label class="input-label">Pattern Intensity</label>
+                    <input type="number" id="pattern-opacity" min="0" max="500" step="5" value="100" class="form-control">
+                </div>
 
-                <label>Film Grain <small style="color: var(--text-muted); font-weight: normal;">(0 - 300)</small></label>
-                <input type="number" id="grain-intensity" min="0" max="300" step="5" value="100" class="form-control" style="margin-bottom: 15px;">
+                <div class="slider-box">
+                    <label class="input-label">Film Grain</label>
+                    <input type="number" id="grain-intensity" min="0" max="300" step="5" value="100" class="form-control">
+                </div>
 
-                <label>Overall Brightness <small style="color: var(--text-muted); font-weight: normal;">(0 - 200)</small></label>
-                <input type="number" id="overall-brightness" min="0" max="200" step="5" value="100" class="form-control" style="margin-bottom: 15px;">
-                            
-                <small class="tip-text">Use {text} to color it yellow. Enter for new line.</small>
+                <div class="slider-box">
+                    <label class="input-label">Overall Brightness</label>
+                    <input type="number" id="overall-brightness" min="0" max="200" step="5" value="100" class="form-control">
+                </div>
             </div>
         </aside>
     </div>
