@@ -1,3 +1,4 @@
+/* ─── State ──────────────────────────────────────── */
 const STORE = 'gl_reader_v3';
 let cfg = { server: '', user: '', pass: '', apiKey: '' };
 let currentUrl = '';
@@ -14,7 +15,7 @@ const TABS = {
   'football-laliga': { url: 'https://www.nytimes.com/athletic/football/la-liga/', page: 1, loaded: false, urls: new Set(), icon: '🇪🇸' },
   'football-bundesliga': { url: 'https://www.nytimes.com/athletic/football/bundesliga/', page: 1, loaded: false, urls: new Set(), icon: '🇩🇪' },
   'football-seriea': { url: 'https://www.nytimes.com/athletic/football/serie-a/', page: 1, loaded: false, urls: new Set(), icon: '🇮🇹' },
-  'football-wildcard': { url: 'https://www.nytimes.com/athletic/football/world-cup/', page: 1, loaded: false, urls: new Set(), icon: '🌍' },
+  'football-wildcard': { url: 'https://www.nytimes.com/athletic/football/international-football/', page: 1, loaded: false, urls: new Set(), icon: '🌍' },
   'nba': { url: 'https://www.nytimes.com/athletic/nba/', page: 1, loaded: false, urls: new Set(), icon: '🏀' },
   'f1': { url: 'https://www.nytimes.com/athletic/formula-1/', page: 1, loaded: false, urls: new Set(), icon: '🏎️' },
   'tennis': { url: 'https://www.nytimes.com/athletic/tennis/', page: 1, loaded: false, urls: new Set(), icon: '🎾' }
@@ -374,7 +375,7 @@ window.pickHL = function(el) {
   loadArticle(el.dataset.url);
 };
 
-/* ─── Reader Engine & Neobrutalism Frame Styling ─── */
+/* ─── Reader Engine & Clean/Style Injection ─── */
 async function loadArticle(url) {
   if (!url) { url = urlInput ? urlInput.value.trim() : ''; }
   if (!url) return;
@@ -538,7 +539,13 @@ window.showOriginal = function() {
 function extractText(html) { return extractFromDoc(new DOMParser().parseFromString(html, 'text/html')); }
 
 function extractFromDoc(doc) {
-  const junkSelectors = ['script','style','nav','header','footer','aside','.ad-container','.ad-unit','.paywall-container','.newsletter-wrapper'];
+  const junkSelectors = [
+    'script','style','nav','header','footer','aside','button','svg','form','input',
+    '.ad-container','.ad-unit','.paywall-container','.newsletter-wrapper',
+    '[class*="audio"]','[class*="Audio"]','[class*="listen"]','[class*="Listen"]',
+    '[class*="share"]','[class*="Share"]','[class*="social"]','[class*="Social"]',
+    '[class*="bookmark"]','[class*="Bookmark"]','[data-testid*="audio"]','[data-testid*="share"]'
+  ];
   junkSelectors.forEach(s => { try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {} });
   const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || ''; 
   const byline = doc.querySelector('[class*="byline"],[class*="author"]')?.textContent?.trim() || ''; 
@@ -550,7 +557,9 @@ function extractFromDoc(doc) {
       if (src && !src.startsWith('data:image') && !src.includes('avatar')) paras.push(`[IMAGE: ${src}]`); 
     } else { 
       const t = el.textContent.trim(); 
-      if (t.length > 30) paras.push(t); 
+      if (t.length > 30 && !t.includes('Connections:') && !t.includes('Spot the pattern')) {
+        paras.push(t); 
+      }
     }
   });
   return [title, byline, ...paras].filter(Boolean).join('\n\n');
@@ -558,10 +567,90 @@ function extractFromDoc(doc) {
 
 function cleanAndStyleHTML(htmlString) {
   const doc = new DOMParser().parseFromString(htmlString, 'text/html');
-  const junkSelectors = ['script','noscript','nav','footer','.ad-container','.ad-unit','.ad-slot','.paywall-container','.newsletter-wrapper','.share-tools','[data-testid*="Social"]'];
-  junkSelectors.forEach(s => { try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {} });
-  doc.querySelectorAll('*').forEach(el => { if (el.tagName.toLowerCase() !== 'iframe') el.removeAttribute('style'); });
   
+  // 1. XOÁ CÁC ELEMENT GÂY RÁC VÀ QUẢNG CÁO
+  const junkSelectors = [
+    'script', 'noscript', 'nav', 'footer', 'button', 'svg', 'form', 'input', 'aside',
+    '.ad-container', '.ad-unit', '.ad-slot', '.paywall-container', '.newsletter-wrapper',
+    '.share-tools', '[data-testid*="Social"]', '[data-testid*="audio"]', '[data-testid*="Audio"]',
+    '[class*="audio"]', '[class*="Audio"]', '[class*="listen"]', '[class*="Listen"]',
+    '[class*="podcast"]', '[class*="Podcast"]', '[class*="player"]', '[class*="Player"]',
+    '[class*="share"]', '[class*="Share"]', '[class*="social"]', '[class*="Social"]',
+    '[class*="bookmark"]', '[class*="Bookmark"]', '[class*="tooltip"]', '[class*="Tooltip"]',
+    '[class*="action-bar"]', '[class*="ActionBar"]', '[class*="byline-tools"]', '[class*="BylineTools"]',
+    '[data-testid*="share"]', '[data-testid*="bookmark"]',
+    // Cụm banner quảng cáo game Connections
+    '[class*="game"]', '[class*="Game"]', '[class*="puzzle"]', '[class*="Connections"]'
+  ];
+  junkSelectors.forEach(s => { 
+    try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch(e) {} 
+  });
+
+  // 2. XOÁ TEXT CONNECTIONS & CÁC DẤU NGOẶC VUÔNG RÁC [ ]
+  doc.querySelectorAll('h2, h3, h4, p, a, span').forEach(el => {
+    const text = el.textContent.trim().toLowerCase();
+    if (text === 'connections: sports edition' || 
+        text.includes('spot the pattern. connect the terms') ||
+        text.includes('find the hidden link between sports terms') ||
+        text === 'play the mini' ||
+        text === '[' || text === ']' || text === '[]' || text === '[ ]' || text === 'share article') {
+      el.remove();
+    }
+  });
+
+  // 3. XỬ LÝ IFRAME: CHỈ GIỮ LẠI VIDEO THẬT (YOUTUBE, VIMEO), XOÁ IFRAME RỖNG/QUẢNG CÁO
+  doc.querySelectorAll('iframe').forEach(ifr => {
+    const src = (ifr.src || ifr.getAttribute('data-src') || '').toLowerCase();
+    if (!src || src === 'about:blank' || src.includes('google') || src.includes('doubleclick') || src.includes('adnxs')) {
+      ifr.remove();
+    }
+  });
+
+  // 4. LỌC ẢNH AN TOÀN: XOÁ ICON / AVATAR / PIXEL NHỎ BỊ KẸT LẠI
+  doc.querySelectorAll('img').forEach(img => {
+    const src = img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.src || '';
+    const lower = src.toLowerCase();
+
+    if (!src || 
+        lower.startsWith('data:image') || 
+        lower.includes('avatar') || 
+        lower.includes('icon') || 
+        lower.includes('logo') || 
+        lower.includes('pixel') || 
+        lower.includes('spacer') || 
+        lower.endsWith('.svg') || 
+        lower.endsWith('.gif')) {
+      img.remove();
+      return;
+    }
+
+    img.src = src;
+    img.removeAttribute('srcset');
+    img.removeAttribute('sizes');
+    img.removeAttribute('loading');
+    img.removeAttribute('width');
+    img.removeAttribute('height');
+    img.removeAttribute('style');
+    img.setAttribute('onerror', "this.remove();");
+  });
+
+  // 5. DỌN SẠCH CÁC THẺ DIV / CONTAINER HOÀN TOÀN RỖNG (XOÁ BỎ KHOẢNG TRẮNG VÔ HÌNH)
+  for (let pass = 0; pass < 3; pass++) {
+    doc.querySelectorAll('div, section, figure, p, span').forEach(el => {
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'body' || tag === 'html' || tag === 'main' || tag === 'article') return;
+      
+      const hasMedia = el.querySelector('img, video, iframe');
+      const text = el.textContent.trim();
+      
+      // Nếu không có ảnh/video và không có chữ -> Xoá ngay
+      if (!hasMedia && !text) {
+        el.remove();
+      }
+    });
+  }
+
+  // 6. TẠO VIEWPORT
   let metaViewport = doc.querySelector('meta[name="viewport"]'); 
   if (!metaViewport) { 
     metaViewport = doc.createElement('meta'); 
@@ -570,20 +659,168 @@ function cleanAndStyleHTML(htmlString) {
   }
   metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
 
-  // Chích phong cách Neobrutalism vào trang đọc báo nội bộ
+  // 7. INJECT CSS BẢN GỐC (COLLAPSE MỌI KHOẢNG TRỐNG CHIỀU CAO THỪA THÃI)
   const style = doc.createElement('style');
   style.textContent = `
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Playfair+Display:wght@700;900&display=swap');
-    :root { --neo-black: #000; --neo-bg: #fffdf5; --neo-yellow: #ffe600; }
-    *, *::before, *::after { box-sizing: border-box !important; }
-    html { width: 100% !important; background: var(--neo-bg) !important; }
-    body { background: var(--neo-bg) !important; color: var(--neo-black) !important; padding: 40px 24px !important; margin: 0 auto !important; max-width: 820px !important; font-family: 'Space Grotesk', sans-serif !important; }
-    h1 { font-family: 'Playfair Display', serif !important; font-size: 2.8rem !important; line-height: 1.15 !important; font-weight: 900 !important; margin-bottom: 1.5rem !important; border-bottom: 5px solid var(--neo-yellow) !important; padding-bottom: 15px !important; }
-    h2, h3, h4 { font-family: 'Space Grotesk', sans-serif !important; font-weight: 900 !important; text-transform: uppercase !important; margin-top: 2.5rem !important; margin-bottom: 1rem !important; }
-    p, li { font-size: 1.2rem !important; line-height: 1.75 !important; margin-bottom: 1.5rem !important; color: #111 !important; }
-    img { max-width: 100% !important; height: auto !important; display: block !important; margin: 2rem auto !important; border: 3px solid var(--neo-black) !important; box-shadow: 6px 6px 0px var(--neo-black) !important; }
-    blockquote, aside { background: #fff !important; border: 3px solid var(--neo-black) !important; box-shadow: 4px 4px 0px var(--neo-black) !important; padding: 20px !important; margin: 2rem 0 !important; font-style: italic !important; }
-    a { color: var(--neo-black) !important; background: var(--neo-yellow) !important; padding: 1px 4px !important; text-decoration: none !important; border: 1px solid var(--neo-black) !important; font-weight: 700 !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&display=swap');
+    :root { 
+      --neo-black: #000000; 
+      --neo-bg: #fffdf5; 
+      --neo-yellow: #ffe600; 
+      --neo-border: 3px solid #000000;
+    }
+    *, *::before, *::after { 
+      box-sizing: border-box !important; 
+    }
+    html { 
+      width: 100% !important; 
+      max-width: 100vw !important; 
+      overflow-x: hidden !important; 
+      margin: 0 !important; 
+      background: var(--neo-bg) !important; 
+    }
+    body { 
+      background: var(--neo-bg) !important; 
+      color: var(--neo-black) !important; 
+      padding: 30px 20px !important; 
+      margin: 0 auto !important; 
+      max-width: 820px !important; 
+      width: 100% !important;
+      font-family: 'Space Grotesk', system-ui, sans-serif !important; 
+    }
+
+    /* GỠ BỎ TOÀN BỘ MIN-HEIGHT / HEIGHT TỪ STYLESHEET CŨ CỦA THE ATHLETIC */
+    #__next, #site-content, main, article, header, section, [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] { 
+      display: block !important; 
+      position: static !important; 
+      height: auto !important; 
+      min-height: 0 !important; 
+      max-height: none !important; 
+      width: 100% !important; 
+      max-width: 100% !important; 
+      transform: none !important; 
+      margin: 0 !important; 
+      padding: 0 !important; 
+    }
+
+    /* TRIỆT TIÊU KHOẢNG TRỐNG GIẢ TẠO Ở TẤT CẢ DIV & SECTION */
+    div, section {
+      min-height: 0 !important;
+      height: auto !important;
+    }
+
+    [class*="Article_ContentContainer"], .article-body, p, li, h1, h2, h3, h4 { 
+      position: relative !important; 
+      z-index: 9999 !important; 
+      opacity: 1 !important; 
+      visibility: visible !important; 
+      background: transparent !important; 
+      word-wrap: break-word !important; 
+      overflow-wrap: break-word !important; 
+      max-width: 100% !important; 
+    }
+
+    /* TIÊU ĐỀ BẢN GỐC: CO GIÃN 100% FULL WIDTH */
+    h1 { 
+      font-family: 'Space Grotesk', system-ui, sans-serif !important; 
+      font-size: 2.3rem !important; 
+      line-height: 1.15 !important; 
+      font-weight: 900 !important; 
+      text-transform: uppercase !important; 
+      letter-spacing: -0.02em !important; 
+      margin: 0 0 1.2rem 0 !important; 
+      background: var(--neo-yellow) !important; 
+      border: var(--neo-border) !important; 
+      box-shadow: 6px 6px 0px var(--neo-black) !important; 
+      padding: 18px 20px !important; 
+      color: var(--neo-black) !important; 
+      display: block !important;
+      width: 100% !important;
+    }
+
+    h2, h3, h4 { 
+      font-family: 'Space Grotesk', sans-serif !important; 
+      font-weight: 900 !important; 
+      text-transform: uppercase !important; 
+      letter-spacing: -0.01em !important;
+      margin-top: 2rem !important; 
+      margin-bottom: 0.8rem !important; 
+    }
+
+    p, li { 
+      font-size: 1.15rem !important; 
+      line-height: 1.8 !important; 
+      margin-bottom: 1.4rem !important; 
+      color: #111 !important; 
+    }
+
+    /* HÌNH ẢNH: KÉO SÁT NHAU, BỎ PADDING CỐ ĐỊNH */
+    figure, picture, [class*="image"], [class*="Image"] {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      margin: 18px 0 !important;
+      padding: 0 !important;
+      position: static !important;
+      overflow: visible !important;
+    }
+
+    img { 
+      width: 100% !important; 
+      max-width: 100% !important; 
+      height: auto !important; 
+      max-height: none !important;
+      display: block !important; 
+      object-fit: contain !important;
+      margin: 12px auto !important; 
+      border: var(--neo-border) !important; 
+      box-shadow: 6px 6px 0px var(--neo-black) !important; 
+    }
+
+    img:not([src]), img[src=""], img[src^="data:"] {
+      display: none !important;
+    }
+
+    figcaption {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: 0.82rem !important;
+      font-weight: 600 !important;
+      color: #444 !important;
+      margin-top: 6px !important;
+      text-align: center !important;
+    }
+
+    /* IFRAME VIDEO (NẾU CÓ YOUTUBE) */
+    iframe {
+      width: 100% !important;
+      aspect-ratio: 16 / 9 !important;
+      height: auto !important;
+      border: var(--neo-border) !important;
+      box-shadow: 6px 6px 0px var(--neo-black) !important;
+      margin: 20px 0 !important;
+      display: block !important;
+    }
+
+    blockquote { 
+      background: #fff !important; 
+      border: var(--neo-border) !important; 
+      border-left: 8px solid var(--neo-black) !important; 
+      box-shadow: 4px 4px 0px var(--neo-black) !important; 
+      padding: 16px 20px !important; 
+      margin: 1.8rem 0 !important; 
+      font-style: italic !important; 
+      font-weight: 700 !important;
+    }
+
+    a { 
+      color: var(--neo-black) !important; 
+      background: var(--neo-yellow) !important; 
+      padding: 2px 4px !important; 
+      text-decoration: none !important; 
+      border: 1px solid var(--neo-black) !important; 
+      font-weight: 800 !important; 
+    }
   `;
   doc.head.appendChild(style); 
   return doc.documentElement.outerHTML;

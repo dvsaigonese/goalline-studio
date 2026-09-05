@@ -2,90 +2,182 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goal-Line Tools Suite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Goal-Line Studio | Production Suite</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="style.css" /> 
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body class="landing-body">
+
+    <!-- Ticker Bar -->
+    <div class="neo-ticker">
+        <div class="ticker-track">
+            <span>⚡ GOAL-LINE STUDIO PRODUCTION SUITE</span>
+            <span>•</span>
+            <span>CANVAS ENGINES OPERATIONAL</span>
+            <span>•</span>
+            <span>PRESS FEED TRANSLATION ACTIVE</span>
+            <span>•</span>
+            <span>FOOTBALL TACTICS DECK V2.0</span>
+            <span>•</span>
+            <span>⚡ GOAL-LINE STUDIO PRODUCTION SUITE</span>
+            <span>•</span>
+            <span>CANVAS ENGINES OPERATIONAL</span>
+        </div>
+    </div>
+
     <div class="landing-wrapper">
-        <header class="landing-header">
-            <img src="assets/img/GL_logo.jpg" alt="Goal-Line Logo" class="landing-logo">
-            <h1 class="gradient-text">Goal-Line Studio</h1>
-            <p class="subtitle">Select a tool to start your workflow</p>
+        <!-- Top Status Bar -->
+        <header class="top-nav">
+            <div class="brand-badge">
+                <div class="logo-box">GL</div>
+                <div class="brand-text">
+                    <span class="studio-title">GOAL-LINE <em>STUDIO</em></span>
+                    <span class="system-tag">INTERNAL WORKFLOW SUITE</span>
+                </div>
+            </div>
+
+            <div class="header-status">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span id="live-clock">SYSTEM 100% READY</span>
+                </div>
+                <div class="pill-badge">2026 EDITION</div>
+            </div>
         </header>
 
+        <!-- Main Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="tag-label">WORKSPACE SELECTOR</div>
+                <h1 class="hero-headline">PICK YOUR WEAPON<span class="dot-accent">.</span></h1>
+                <p class="hero-sub">Production-grade toolkit for match graphics, tactical analysis, and international sports journalism.</p>
+            </div>
+        </section>
+
+        <!-- 3 Main Tool Cards Grid (Beta Tools Hidden) -->
         <main class="tool-grid">
-            <a href="watermark.html" class="tool-card">
-                <div class="card-icon" style="color: var(--accent);"> <i class="fa-solid fa-stamp"></i>
+            
+            <!-- TOOL 1: WATERMARK & TITLE -->
+            <a href="watermark.html" class="tool-card card-yellow">
+                <div class="card-top">
+                    <span class="card-num">01</span>
+                    <span class="card-tag">POST PRODUCTION</span>
                 </div>
-                <div class="card-content">
-                    <h3>Watermark & Title</h3>
-                    <p>Quickly attach the Goal-Line logo and article titles to your match images.</p>
+                <div class="card-icon-box">
+                    <i class="fa-solid fa-stamp"></i>
                 </div>
-                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-body">
+                    <h3 class="card-title">WATERMARK & TITLE</h3>
+                    <p class="card-desc">Overlay Goal-Line watermarks, format article headlines, tweak film grain & patterns, and export social-ready match graphics.</p>
+                </div>
+                <div class="card-footer-btn">
+                    <span>LAUNCH ENGINE</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
             </a>
 
-            <a href="board.html" class="tool-card">
-                <div class="card-icon" style="color: var(--primary);">
-                    <i class="fa-solid fa-chess-board"></i>
+            <!-- TOOL 2: TACTICAL BOARD -->
+            <a href="board.html" class="tool-card card-green">
+                <div class="card-top">
+                    <span class="card-num">02</span>
+                    <span class="card-tag">FORMATION ENGINE</span>
                 </div>
-                <div class="card-content">
-                    <h3>Tactical Board</h3>
-                    <p>Design tactics, draw zones, and plan your strategy with our advanced pitch tool.</p>
+                <div class="card-icon-box">
+                    <i class="fa-solid fa-chalkboard-user"></i>
                 </div>
-                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-body">
+                    <h3 class="card-title">TACTICAL BOARD</h3>
+                    <p class="card-desc">Design 2D tactical setups, drag-and-drop passing lanes, map pitch zones, and import custom tactical pitch boards.</p>
+                </div>
+                <div class="card-footer-btn">
+                    <span>LAUNCH ENGINE</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
             </a>
 
-            <a href="reader.html" class="tool-card">
-                <div class="card-icon" style="color: whitesmoke">
-                    <i class="fa-solid fa-book"></i>
+            <!-- TOOL 3: THE ATHLETIC READER -->
+            <a href="reader.html" class="tool-card card-pink">
+                <div class="card-top">
+                    <span class="card-num">03</span>
+                    <span class="card-tag">NEWS DESK & AI</span>
                 </div>
-                <div class="card-content">
-                    <h3>The Athletic</h3>
-                    <p>Read The Athletic, translate it directly with AI without spending a single penny.</p>
+                <div class="card-icon-box">
+                    <i class="fa-solid fa-newspaper"></i>
                 </div>
-                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-body">
+                    <h3 class="card-title">THE ATHLETIC READER</h3>
+                    <p class="card-desc">Ad-free international sports press reader with real-time, journalism-grade translation powered by Gemini AI.</p>
+                </div>
+                <div class="card-footer-btn">
+                    <span>LAUNCH ENGINE</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
             </a>
 
-            <a href="chart.html" class="tool-card">
-                <div class="card-icon" style="color: #10b981;">
-                    <i class="fa-solid fa-pie-chart"></i>
+            <!-- ==============================================
+                 BETA TOOLS (ĐÃ ĐƯỢC ẨN BẰNG CLASS hidden-beta)
+                 ============================================== -->
+            <a href="chart.html" class="tool-card card-blue hidden-beta">
+                <div class="card-top">
+                    <span class="card-num">04</span>
+                    <span class="card-tag beta-tag">BETA</span>
                 </div>
-                <div class="card-content">
-                    <h3>Chart</h3>
-                    <p>Beta version, supports basic charts only.</p>
+                <div class="card-icon-box"><i class="fa-solid fa-chart-pie"></i></div>
+                <div class="card-body">
+                    <h3 class="card-title">CHART</h3>
+                    <p class="card-desc">Beta version, supports basic charts only.</p>
                 </div>
-                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-footer-btn"><span>LAUNCH TOOL</span><i class="fa-solid fa-arrow-right"></i></div>
             </a>
 
-            <a href="report.html" class="tool-card">
-                <div class="card-icon" style="color: yellow;">
-                    <i class="fa-solid fa-file"></i>
+            <a href="report.html" class="tool-card card-orange hidden-beta">
+                <div class="card-top">
+                    <span class="card-num">05</span>
+                    <span class="card-tag beta-tag">BETA</span>
                 </div>
-                <div class="card-content">
-                    <h3>Report</h3>
-                    <p>Beta version, supports WhoScored passmap only.</p>
+                <div class="card-icon-box"><i class="fa-solid fa-file-invoice"></i></div>
+                <div class="card-body">
+                    <h3 class="card-title">REPORT</h3>
+                    <p class="card-desc">Beta version, supports WhoScored passmap only.</p>
                 </div>
-                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-footer-btn"><span>LAUNCH TOOL</span><i class="fa-solid fa-arrow-right"></i></div>
             </a>
 
-            <a href="ai-news.html" class="tool-card">
-                <div class="card-icon" style="color: var(--danger);">
-                    <i class="fa-solid fa-robot"></i>
+            <a href="ai-news.html" class="tool-card card-purple hidden-beta">
+                <div class="card-top">
+                    <span class="card-num">06</span>
+                    <span class="card-tag beta-tag">BETA</span>
                 </div>
-                <div class="card-content">
-                    <h3>AI Newsroom</h3>
-                    <p>Stay updated with breaking news from major outlets, and let the AI assistant suggest unique angles and craft posts.</p>
+                <div class="card-icon-box"><i class="fa-solid fa-robot"></i></div>
+                <div class="card-body">
+                    <h3 class="card-title">AI NEWSROOM</h3>
+                    <p class="card-desc">Stay updated with breaking news and draft social posts.</p>
                 </div>
-                <div class="card-action">Launch Tool <i class="fa-solid fa-arrow-right"></i></div>
+                <div class="card-footer-btn"><span>LAUNCH TOOL</span><i class="fa-solid fa-arrow-right"></i></div>
             </a>
         </main>
-        
+
+        <!-- Footer -->
         <footer class="landing-footer">
-            © 2026 Goal-Line Team. All Systems Operational.
+            <div class="footer-left">
+                <span>© 2026 GOAL-LINE MEDIA.</span>
+                <span class="footer-dim">ALL ENGINES STANDALONE.</span>
+            </div>
+            <div class="footer-right">
+                <span class="keyboard-tip"><kbd>1</kbd> WATERMARK</span>
+                <span class="keyboard-tip"><kbd>2</kbd> TACTICS</span>
+                <span class="keyboard-tip"><kbd>3</kbd> READER</span>
+            </div>
         </footer>
     </div>
+
+    <script type="module" src="js/landing.js"></script>
 </body>
 </html>

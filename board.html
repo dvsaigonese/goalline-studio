@@ -2,55 +2,53 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Board | Goal-Line Studio</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-      integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-      crossorigin="anonymous"
-    ></script>
-    <link rel="stylesheet" href="style.css" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="./css/board.css" />
   </head>
   <body>
+
+    <!-- PRELOAD FONT -->
+    <div class="font-preloader" aria-hidden="true">
+      <span style="font-family: 'Albula'; font-weight: bold;">PRELOAD</span>
+      <span style="font-family: 'Seriguela';">10</span>
+    </div>
+
+    <!-- STARTUP MODAL DIALOG -->
     <div id="startup-modal" class="startup-overlay">
       <div class="startup-box">
-        <div id="continue-section" style="display:none; margin-bottom: 15px;">
-          <button id="btn-continue" class="startup-btn success" style="width:100%; background-color: #10b981;">
+        <div class="modal-badge">TACTICAL DESK</div>
+
+        <div id="continue-section" style="display:none;">
+          <button id="btn-continue" class="startup-btn btn-success-neo">
             <i class="fa-solid fa-play"></i>
-            <span>Continue Previous Session</span>
-            <small>Restore your last work</small>
+            <span>CONTINUE PREVIOUS WORK</span>
+            <small>Restore your cached tactical board</small>
           </button>
-          <div style="color: #666; margin: 10px 0;">— OR —</div>
+          <div class="divider-text">— OR NEW TACTIC —</div>
         </div>
-        <h2>Welcome to Goal-Line Board</h2>
-        <p>Choose your workspace mode:</p>
+
+        <h2>GOAL-LINE BOARD</h2>
+        <p class="modal-desc">Pick your workspace canvas layout:</p>
         
         <div class="startup-options">
-          <button id="btn-template-mode" class="startup-btn primary">
+          <button id="btn-template-mode" class="startup-btn btn-primary-neo">
             <i class="fa-solid fa-layer-group"></i>
-            <span>Standard Pitch</span>
-            <small>Use built-in templates</small>
+            <span>STANDARD PITCH</span>
+            <small>Built-in 2D football pitches</small>
           </button>
 
-          <button id="btn-custom-mode" class="startup-btn accent">
+          <button id="btn-custom-mode" class="startup-btn btn-accent-neo">
             <i class="fa-solid fa-upload"></i>
-            <span>Custom Image</span>
-            <small>Upload your own tactical board</small>
+            <span>CUSTOM IMAGE</span>
+            <small>Upload your own formation / photo</small>
           </button>
           
           <input type="file" id="custom-img-input" accept="image/*" hidden>
@@ -58,153 +56,190 @@
       </div>
     </div>
 
+    <!-- MAIN APP WRAPPER -->
     <div class="app-container">
       
-      <nav class="toolbar">
-        <div class="logo">
-          <img src="assets/img/GL_logo.jpg" alt="Logo">
-        </div>
-        
-        <div class="tool-group">
-          <input type="checkbox" id="draw-arrow-input" class="tool-checkbox" hidden>
-          <label for="draw-arrow-input" class="tool-btn" title="Draw Arrow">
-            <i class="fa-solid fa-arrow-right-long"></i>
-          </label>
-
-          <input type="checkbox" id="draw-polygon-input" class="tool-checkbox" hidden>
-          <label for="draw-polygon-input" class="tool-btn" title="Draw Zone">
-            <i class="fa-solid fa-draw-polygon"></i>
-          </label>
-
-          <button id="closePolygon" class="tool-btn small-btn" title="Finish Zone">
-            <i class="fa-solid fa-check"></i>
-          </button>
-        </div>
-
-        <div class="spacer"></div>
-
-        <div class="tool-group bottom">
-          <button id="home-btn" class="tool-btn" title="Back to Home" onclick="window.location.href='index.html'">
-            <i class="fa-solid fa-house"></i>
-          </button>
-          <button id="reset-btn" class="tool-btn warning" title="Reset All">
-            <i class="fa-solid fa-rotate-left"></i>
-          </button>
-          <button id="delete-btn" class="tool-btn danger" title="Delete Selected">
-            <i class="fa-regular fa-trash-can"></i>
-          </button>
-          <button id="export-btn" class="tool-btn primary" title="Export Image">
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-      </nav>
-
+      <!-- 1. CANVAS WORKSPACE -->
       <main class="canvas-area">
         <div class="canvas-wrapper">
           <canvas id="canvas"></canvas>
         </div>
         <div class="zoom-controls">
-          <span class="copyright">© Goal-Line</span>
+          <span class="copyright">TACTICAL BOARD • GOAL-LINE STUDIO</span>
         </div>
       </main>
 
-      <aside class="settings-panel">
-        <h3>Properties</h3>
+      <!-- 2. BOTTOM TOOLBAR (Ô LOG ĐƯỢC KÉO DÀI TỐI ĐA) -->
+      <nav class="toolbar">
+        <a class="logo" href="index.html" title="Home">
+          <div class="logo-box">GL</div>
+        </a>
 
-        <div class="setting-group">
-          <label>Object Size (Scale)</label>
-          <div class="row-input">
-              <input type="range" id="global-scale" class="form-control" 
-                     min="0.1" max="5.0" step="0.1" value="1.0" 
-                     style="flex: 2;"> <input type="number" id="scale-number" class="form-control" 
-                     min="0.1" max="5.0" step="0.1" value="1.0" 
-                     style="flex: 1; text-align: center; padding: 4px;"> </div>
-        </div>
-        <hr>
+        <div class="neo-sep"></div>
         
-        <div class="setting-group">
-          <label>Pitch Type</label>
-          <select id="pitch-type" class="form-control">
-            <option value="horizontal">Horizontal</option>
-            <option value="vertical">Vertical</option>
-            <option value="half">Half Pitch</option>
+        <!-- Ô LOG CHIẾM TOÀN BỘ KHOẢNG TRỐNG CÒN LẠI -->
+        <div class="neo-log-container">
+          <span class="log-tag">STATUS</span>
+          <span id="editor-log" class="log-text">READY • SELECT & DRAG OBJECTS</span>
+        </div>
+
+        <div class="neo-sep"></div>
+
+        <!-- CÁC NÚT ACTION -->
+        <div class="tool-group">
+          <button id="reset-btn" class="tool-action-btn btn-action-orange" title="Reset All Tactics">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>RESET</span>
+          </button>
+          <button id="delete-btn" class="tool-action-btn btn-action-pink" title="Delete Selected Item">
+            <i class="fa-regular fa-trash-can"></i>
+            <span>DELETE</span>
+          </button>
+          <button id="export-btn" class="tool-action-btn btn-action-green" title="Export High-Res Image">
+            <i class="fa-solid fa-download"></i>
+            <span>EXPORT</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- 3. SETTINGS PANEL -->
+      <aside class="settings-panel">
+        <div class="panel-header">
+          <h3>TACTICS</h3>
+          <span class="badge-tag">ENGINE v2</span>
+        </div>
+
+        <!-- SCALE CONTROLS -->
+        <div class="neo-card card-yellow">
+          <div class="card-badge">TRANSFORM</div>
+          <label class="section-label">Object Size (Scale)</label>
+          <div class="row-input">
+            <input type="range" id="global-scale" class="form-control range-slider" 
+                   min="0.1" max="5.0" step="0.1" value="1.0"> 
+            <input type="number" id="scale-number" class="form-control num-input" 
+                   min="0.1" max="5.0" step="0.1" value="1.0"> 
+          </div>
+        </div>
+        
+        <!-- PITCH TYPE -->
+        <div class="neo-card card-blue">
+          <div class="card-badge">LAYOUT</div>
+          <label class="section-label">Pitch Orientation</label>
+          <select id="pitch-type" class="form-control neo-select">
+            <option value="horizontal">Horizontal (Full)</option>
+            <option value="vertical">Vertical (Full)</option>
+            <option value="half">Half Pitch (Attacking)</option>
           </select>
         </div>
 
-        <hr>
-
-        <div class="setting-group">
-          <label>Add Player / Ball (<span class="circle-count">0</span>)</label>
+        <!-- PLAYER & BALL SQUAD -->
+        <div class="neo-card card-green">
+          <div class="card-badge">PLAYERS (<span class="circle-count">0</span>)</div>
+          <label class="section-label">Add Token</label>
           <div class="row-input">
-            <select id="circle-color" class="form-control color-select">
+            <select id="circle-color" class="form-control neo-select color-select">
               <option value="ball">⚽ Ball</option>
-              <option value="red" style="color:red">🔴 Red</option>
-              <option value="dodgerblue" style="color:blue">🔵 Blue</option>
-              <option value="lightgreen" style="color:green">🟢 Green</option>
-              <option value="yellow" style="color:gold">🟡 Yellow</option>
-              <option value="white">⚪ White</option>
-              <option value="black">⚫ Black</option>
+              <option value="red">🔴 Red Team</option>
+              <option value="dodgerblue">🔵 Blue Team</option>
+              <option value="lightgreen">🟢 Green Team</option>
+              <option value="yellow">🟡 Yellow Team</option>
+              <option value="white">⚪ White Team</option>
+              <option value="black">⚫ Black Team</option>
             </select>
-            <button id="circle-btn" class="add-btn"><i class="fa-solid fa-plus"></i></button>
+            <button id="circle-btn" class="neo-btn-square" title="Add Player/Ball"><i class="fa-solid fa-plus"></i></button>
           </div>
-          <input id="circle-text" class="form-control mt-2" placeholder="Number (e.g. 10)">
-          <input id="circle-details-text" class="form-control mt-2" placeholder="Name (e.g. Messi)">
+          <input id="circle-text" class="form-control mt-2" placeholder="Jersey Number (e.g. 10)">
+          <input id="circle-details-text" class="form-control mt-2" placeholder="Player Name (e.g. Messi)">
           <div class="row-input mt-2">
-             <label class="small-label">Text Color:</label>
-             <select id="circle-text-color" class="form-control">
+             <label class="small-label">Font Color:</label>
+             <select id="circle-text-color" class="form-control neo-select">
               <option value="white">White</option>
               <option value="black">Black</option>
              </select>
           </div>
         </div>
 
-        <hr>
+        <!-- TACTICAL ARROWS & TOGGLE DRAW -->
+        <div class="neo-card card-pink">
+          <div class="card-badge">TACTICAL ARROWS (<span class="arrow-count">0</span>)</div>
+          <label class="section-label">Arrow Controls</label>
+          
+          <!-- TOGGLE DRAW ARROW MODE -->
+          <label class="neo-toggle-mode" for="draw-arrow-input">
+            <input type="checkbox" id="draw-arrow-input" class="tool-checkbox" hidden>
+            <div class="toggle-track">
+              <span class="toggle-icon"><i class="fa-solid fa-arrow-right-long"></i></span>
+              <span class="toggle-title">DRAW ARROW MODE</span>
+              <span class="toggle-status" id="arrow-status-pill">OFF</span>
+            </div>
+          </label>
 
-        <div class="setting-group">
-          <label>Arrow Settings (<span class="arrow-count">0</span>)</label>
-          <div class="row-input">
-            <select id="arrow-color" class="form-control">
+          <!-- CHÚ THÍCH HƯỚNG DẪN VẼ MŨI TÊN TRÁNH BỊ 1 CỤC -->
+          <div class="tip-banner mt-2">
+            <i class="fa-solid fa-circle-info"></i>
+            <span><strong>How to draw:</strong> Toggle ON, <u>click & drag</u> across the pitch to draw the arrow. Do not click and release in place.</span>
+          </div>
+
+          <div class="row-input mt-2">
+            <select id="arrow-color" class="form-control neo-select">
               <option value="white">White</option>
               <option value="red">Red</option>
               <option value="yellow">Yellow</option>
             </select>
-            <select id="arrow-type" class="form-control">
-              <option value="solid">Solid</option>
-              <option value="dash">Dashed</option>
+            <select id="arrow-type" class="form-control neo-select">
+              <option value="solid">Solid Line</option>
+              <option value="dash">Dashed (Pass)</option>
             </select>
           </div>
-          <div class="checkbox-row">
+          <div class="checkbox-row mt-2">
             <input type="checkbox" id="is-arrow" checked>
-            <label for="is-arrow">Has Arrowhead?</label>
+            <label for="is-arrow">Render Arrowhead</label>
           </div>
         </div>
 
-        <hr>
+        <!-- TACTICAL ZONES / POLYGON -->
+        <div class="neo-card card-purple">
+          <div class="card-badge">TACTICAL ZONES (<span class="polygon-count">0</span>)</div>
+          <label class="section-label">Zone Creator</label>
+          
+          <label class="neo-toggle-mode" for="draw-polygon-input">
+            <input type="checkbox" id="draw-polygon-input" class="tool-checkbox" hidden>
+            <div class="toggle-track">
+              <span class="toggle-icon"><i class="fa-solid fa-draw-polygon"></i></span>
+              <span class="toggle-title">DRAW ZONE MODE</span>
+              <span class="toggle-status" id="zone-status-pill">OFF</span>
+            </div>
+          </label>
 
-        <div class="setting-group">
-          <label>Add Text (<span class="text-count">0</span>)</label>
+          <button id="closePolygon" class="neo-btn-full btn-action-green mt-2" title="Finish current zone polygon">
+            <i class="fa-solid fa-check"></i>
+            <span>FINISH CURRENT ZONE</span>
+          </button>
+        </div>
+
+        <!-- TEXT LABELS -->
+        <div class="neo-card card-orange">
+          <div class="card-badge">LABELS (<span class="text-count">0</span>)</div>
+          <label class="section-label">Add Note / Text</label>
           <div class="row-input">
-            <input id="text-input" class="form-control" placeholder="Enter text...">
-            <button id="text-btn" class="add-btn"><i class="fa-solid fa-plus"></i></button>
+            <input id="text-input" class="form-control" placeholder="Enter tactical note...">
+            <button id="text-btn" class="neo-btn-square" title="Add Text"><i class="fa-solid fa-plus"></i></button>
           </div>
           <div class="row-input mt-2">
             <label class="small-label">Size:</label>
-            <select id="text-font-size" class="form-control">
-              <option value="16">Small</option>
-              <option value="20" selected>Medium</option>
-              <option value="32">Large</option>
-              <option value="48">Huge</option>
+            <select id="text-font-size" class="form-control neo-select">
+              <option value="16">16px Small</option>
+              <option value="20" selected>20px Regular</option>
+              <option value="32">32px Header</option>
+              <option value="48">48px Banner</option>
             </select>
           </div>
-          <small class="tip">Tip: Hold Shift + Scroll to rotate text</small>
-        </div>
-
-        <div style="display:none">
-           <span class="polygon-count">0</span>
+          <small class="tip"><i class="fa-solid fa-circle-info"></i> Shift + Scroll to rotate text</small>
         </div>
       </aside>
     </div>
 
+    <!-- SCRIPTS -->
     <script type="module" src="js/board/board.js"></script>
   </body>
 </html>
