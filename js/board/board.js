@@ -490,10 +490,41 @@ document.getElementById("reset-btn").addEventListener("click", () => {
     }
 });
 
-document.getElementById("export-btn").addEventListener("click", () => {
+// --- XUẤT ẢNH (HỖ TRỢ LƯU VÀO ALBUM ẢNH TRÊN IOS / ANDROID) ---
+document.getElementById("export-btn").addEventListener("click", async () => {
+    setLog("PREPARING EXPORT...");
+    const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
+
+    // Kiểm tra nếu là thiết bị di động hỗ trợ Web Share API
+    if (navigator.canShare && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        try {
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            const file = new File([blob], 'goal-line-tactic.jpg', { type: 'image/jpeg' });
+
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Goal-Line Tactical Board',
+                    text: 'Goal-Line Studio Tactic'
+                });
+                setLog("EXPORTED TO SHARE SHEET");
+                return;
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.warn("Share failed, falling back to download", error);
+            } else {
+                setLog("EXPORT CANCELLED");
+                return;
+            }
+        }
+    }
+
+    // Fallback tải file thông thường cho PC
     const link = document.createElement('a');
     link.download = 'goal-line-tactic.jpg';
-    link.href = canvas.toDataURL("image/jpeg", 1.0);
+    link.href = dataUrl;
     link.click();
     setLog("IMAGE EXPORTED SUCCESSFULLY");
 });
