@@ -135,7 +135,7 @@ window.closeSettings = function() { if ($('settingsPanel')) $('settingsPanel').c
 
 window.saveSettings = function() {
   const server = $('cfgServer').value.trim().replace(/\/$/, '');
-  if (!server) { alert('Vui lòng nhập URL Ladder server.'); return; }
+  if (!server) { alert('Please enter Ladder Server URL.'); return; }
   cfg = { server: server, user: $('cfgUser').value.trim(), pass: $('cfgPass').value, apiKey: $('cfgApiKey').value.trim() };
   localStorage.setItem(STORE, JSON.stringify(cfg));
   corsOk = null; syncUI(); closeSettings();
@@ -173,17 +173,17 @@ window.testConn = async function() {
   const tr = $('testResult');
   tr.style.display = 'block';
   tr.className = 'test-result';
-  tr.textContent = 'ĐANG KIỂM TRA…';
+  tr.textContent = 'CHECKING CONNECTION…';
   const server = $('cfgServer').value.trim().replace(/\/$/, '');
   const u = $('cfgUser').value.trim();
   const p = $('cfgPass').value;
   const hdrs = (u && p) ? { 'Authorization': 'Basic ' + btoa(`${u}:${p}`) } : {};
   try {
     const res = await fetch(`${server}/ruleset`, { headers: hdrs, signal: AbortSignal.timeout(6000) });
-    if (res.ok) { tr.className = 'test-result ok'; tr.textContent = '✓ KẾT NỐI SERVER THÀNH CÔNG!'; }
-    else { tr.className = 'test-result err'; tr.textContent = `LỖI: HTTP ${res.status}`; }
+    if (res.ok) { tr.className = 'test-result ok'; tr.textContent = '✓ CONNECTION SUCCESSFUL!'; }
+    else { tr.className = 'test-result err'; tr.textContent = `ERROR: HTTP ${res.status}`; }
   } catch(e) {
-    tr.className = 'test-result err'; tr.textContent = `THẤT BẠI: ${e.message}`;
+    tr.className = 'test-result err'; tr.textContent = `FAILED: ${e.message}`;
   }
 };
 
@@ -204,7 +204,7 @@ window.loadHeadlines = async function(tabId, page = 1) {
     if (btnRefreshHL) btnRefreshHL.classList.add('spin');
     if (corsOk === null) await pingCors();
     if (!corsOk) { 
-      if (listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">⚠️ CORS BỊ CHẶN</div>`; 
+      if (listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">⚠️ CORS BLOCKED</div>`; 
       if (btnRefreshHL) btnRefreshHL.classList.remove('spin'); 
       return; 
     }
@@ -230,10 +230,10 @@ window.loadHeadlines = async function(tabId, page = 1) {
       const loader = document.getElementById(`hlLoader-${tabId}`);
       if (loader) loader.remove();
       if (items.length > 0) appendHeadlines(items, listEl);
-      else if (listEl) listEl.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; font-weight:800; font-size:11px">HẾT DỮ LIỆU.</div>`);
+      else if (listEl) listEl.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; font-weight:800; font-size:11px">NO MORE STORIES.</div>`);
     }
   } catch(e) {
-    if (page === 1 && listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">❌ LỖI DỮ LIỆU<br/><span style="font-size:10px">${esc(e.message)}</span></div>`; 
+    if (page === 1 && listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">❌ FETCH ERROR<br/><span style="font-size:10px">${esc(e.message)}</span></div>`; 
     const loader = document.getElementById(`hlLoader-${tabId}`); if (loader) loader.remove(); 
   }
   if (page === 1 && btnRefreshHL) btnRefreshHL.classList.remove('spin');
@@ -280,7 +280,7 @@ function parseAthletic(html, tabData) {
       const textContent = container.textContent.toLowerCase();
       if (textContent.match(/\d+\s*(h|m|hour|minute)s?\s*ago/)) {
         const now = new Date();
-        finalDate = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        finalDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
         timestamp = now.getTime();
       } else {
         const timeTag = container.querySelector('time');
@@ -288,7 +288,7 @@ function parseAthletic(html, tabData) {
           try {
             const d = new Date(timeTag.getAttribute('datetime'));
             if (!isNaN(d)) {
-              finalDate = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+              finalDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
               timestamp = d.getTime();
             }
           } catch(e) {}
@@ -340,7 +340,7 @@ function parseAthletic(html, tabData) {
 
 function renderHeadlines(items, listEl, icon) {
   if (!listEl) return;
-  if (!items.length) { listEl.innerHTML = `<div class="hl-empty">${icon} KHÔNG CÓ BÀI VIẾT</div>`; return; }
+  if (!items.length) { listEl.innerHTML = `<div class="hl-empty">${icon} NO STORIES FOUND</div>`; return; }
   listEl.innerHTML = ''; 
   appendHeadlines(items, listEl);
 }
@@ -379,7 +379,7 @@ window.pickHL = function(el) {
 async function loadArticle(url) {
   if (!url) { url = urlInput ? urlInput.value.trim() : ''; }
   if (!url) return;
-  try { new URL(url); } catch (e) { alert('URL không hợp lệ.'); return; }
+  try { new URL(url); } catch (e) { alert('Invalid URL.'); return; }
   currentUrl = url; viewingTrans = false;
   if (emptyState) emptyState.style.display = 'none';
   if (loadTxt) loadTxt.textContent = 'FETCHING INTEL…';
@@ -437,7 +437,7 @@ function showFrameErr() {
     const title = emptyState.querySelector('.empty-title'); 
     const desc = emptyState.querySelector('.empty-desc'); 
     if (title) title.textContent = 'X-FRAME BLOCKED'; 
-    if (desc) desc.innerHTML = `Nguồn cấp dữ liệu chặn Iframe.<br/>Dùng nút <strong>↗ TAB MỚI</strong> để đọc trực tiếp.`; 
+    if (desc) desc.innerHTML = `The feed is blocking iframe embedding.<br/>Use <strong>↗ NEW TAB</strong> to view directly.`; 
   } 
 }
 
@@ -462,7 +462,7 @@ async function translateArticle() {
     } catch (e) {} 
   }
   if (!text || text.length < 100) { 
-    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ Không thể trích xuất nội dung văn bản.</div>`; 
+    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ Unable to extract article content.</div>`; 
     showTransPanel(); 
     return; 
   }
@@ -471,19 +471,19 @@ async function translateArticle() {
   if (transContent) transContent.innerHTML = `
     <div style="text-align:center; padding: 60px 0;">
       <div class="neo-spinner" style="margin: 0 auto 20px;"></div>
-      <div style="font-family:var(--font-cond); font-weight:900; font-size:18px;">GEMINI AI ĐANG DỊCH BÀI VIẾT…</div>
+      <div style="font-family:var(--font-cond); font-weight:900; font-size:18px;">GEMINI AI IS TRANSLATING…</div>
     </div>`;
   showTransPanel();
 
   const maxC = 25000; 
-  const input = text.slice(0, maxC) + (text.length > maxC ? '\n\n[...bài viết được rút gọn]' : '');
+  const input = text.slice(0, maxC) + (text.length > maxC ? '\n\n[...article truncated due to length]' : '');
   
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${cfg.apiKey}`, {
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Bạn là biên tập viên thể thao của một tờ báo bóng đá Việt Nam chuyên nghiệp. Dịch bài báo The Athletic sau sang tiếng Việt.\nQuy tắc:\n- Văn phong tự nhiên, giữ nguyên tên riêng, số liệu.\n- Chuyển thẻ [IMAGE: url] thành thẻ HTML: <img src="url" alt="Ảnh minh họa">.\n- Trả về HTML thuần, có tiêu đề h1, byline, thẻ p. KHÔNG thêm giải thích ngoài.\nBài báo:\n${input}` }] }],
+        contents: [{ parts: [{ text: `You are a professional Vietnamese sports journalist. Translate the following The Athletic article into natural, engaging Vietnamese.\nRules:\n- Maintain professional football terminology, proper nouns, and stats accurately.\n- Convert [IMAGE: url] tags into HTML: <img src="url" alt="Illustration">.\n- Return clean HTML containing an h1 title, byline, and p tags. Do NOT add markdown code fences or conversational filler.\nArticle:\n${input}` }] }],
         generationConfig: { temperature: 0.3 }
       })
     });
@@ -514,7 +514,7 @@ async function translateArticle() {
     }
     if (transContent) { cachedTranslations[currentUrl] = transContent.innerHTML; }
   } catch(e) { 
-    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ LỖI DỊCH: ${esc(e.message)}</div>`; 
+    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ TRANSLATION ERROR: ${esc(e.message)}</div>`; 
   }
   if (btnTranslate) btnTranslate.disabled = false;
 }
@@ -568,7 +568,7 @@ function extractFromDoc(doc) {
 function cleanAndStyleHTML(htmlString) {
   const doc = new DOMParser().parseFromString(htmlString, 'text/html');
   
-  // 1. XOÁ CÁC ELEMENT GÂY RÁC VÀ QUẢNG CÁO
+  // 1. Remove ad trackers, audio bars, share overlays
   const junkSelectors = [
     'script', 'noscript', 'nav', 'footer', 'button', 'svg', 'form', 'input', 'aside',
     '.ad-container', '.ad-unit', '.ad-slot', '.paywall-container', '.newsletter-wrapper',
@@ -579,14 +579,13 @@ function cleanAndStyleHTML(htmlString) {
     '[class*="bookmark"]', '[class*="Bookmark"]', '[class*="tooltip"]', '[class*="Tooltip"]',
     '[class*="action-bar"]', '[class*="ActionBar"]', '[class*="byline-tools"]', '[class*="BylineTools"]',
     '[data-testid*="share"]', '[data-testid*="bookmark"]',
-    // Cụm banner quảng cáo game Connections
     '[class*="game"]', '[class*="Game"]', '[class*="puzzle"]', '[class*="Connections"]'
   ];
   junkSelectors.forEach(s => { 
     try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch(e) {} 
   });
 
-  // 2. XOÁ TEXT CONNECTIONS & CÁC DẤU NGOẶC VUÔNG RÁC [ ]
+  // 2. Remove game banners & bracket artifacts
   doc.querySelectorAll('h2, h3, h4, p, a, span').forEach(el => {
     const text = el.textContent.trim().toLowerCase();
     if (text === 'connections: sports edition' || 
@@ -598,7 +597,7 @@ function cleanAndStyleHTML(htmlString) {
     }
   });
 
-  // 3. XỬ LÝ IFRAME: CHỈ GIỮ LẠI VIDEO THẬT (YOUTUBE, VIMEO), XOÁ IFRAME RỖNG/QUẢNG CÁO
+  // 3. Purge broken empty iframes
   doc.querySelectorAll('iframe').forEach(ifr => {
     const src = (ifr.src || ifr.getAttribute('data-src') || '').toLowerCase();
     if (!src || src === 'about:blank' || src.includes('google') || src.includes('doubleclick') || src.includes('adnxs')) {
@@ -606,7 +605,7 @@ function cleanAndStyleHTML(htmlString) {
     }
   });
 
-  // 4. LỌC ẢNH AN TOÀN: XOÁ ICON / AVATAR / PIXEL NHỎ BỊ KẸT LẠI
+  // 4. Sanitize images
   doc.querySelectorAll('img').forEach(img => {
     const src = img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.src || '';
     const lower = src.toLowerCase();
@@ -634,7 +633,7 @@ function cleanAndStyleHTML(htmlString) {
     img.setAttribute('onerror', "this.remove();");
   });
 
-  // 5. DỌN SẠCH CÁC THẺ DIV / CONTAINER HOÀN TOÀN RỖNG (XOÁ BỎ KHOẢNG TRẮNG VÔ HÌNH)
+  // 5. Clean ghost spacer containers
   for (let pass = 0; pass < 3; pass++) {
     doc.querySelectorAll('div, section, figure, p, span').forEach(el => {
       const tag = el.tagName.toLowerCase();
@@ -643,14 +642,13 @@ function cleanAndStyleHTML(htmlString) {
       const hasMedia = el.querySelector('img, video, iframe');
       const text = el.textContent.trim();
       
-      // Nếu không có ảnh/video và không có chữ -> Xoá ngay
       if (!hasMedia && !text) {
         el.remove();
       }
     });
   }
 
-  // 6. TẠO VIEWPORT
+  // 6. Viewport setup
   let metaViewport = doc.querySelector('meta[name="viewport"]'); 
   if (!metaViewport) { 
     metaViewport = doc.createElement('meta'); 
@@ -659,7 +657,7 @@ function cleanAndStyleHTML(htmlString) {
   }
   metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
 
-  // 7. INJECT CSS BẢN GỐC (COLLAPSE MỌI KHOẢNG TRỐNG CHIỀU CAO THỪA THÃI)
+  // 7. Inject Brutalist CSS
   const style = doc.createElement('style');
   style.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&display=swap');
@@ -689,7 +687,6 @@ function cleanAndStyleHTML(htmlString) {
       font-family: 'Space Grotesk', system-ui, sans-serif !important; 
     }
 
-    /* GỠ BỎ TOÀN BỘ MIN-HEIGHT / HEIGHT TỪ STYLESHEET CŨ CỦA THE ATHLETIC */
     #__next, #site-content, main, article, header, section, [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] { 
       display: block !important; 
       position: static !important; 
@@ -703,7 +700,6 @@ function cleanAndStyleHTML(htmlString) {
       padding: 0 !important; 
     }
 
-    /* TRIỆT TIÊU KHOẢNG TRỐNG GIẢ TẠO Ở TẤT CẢ DIV & SECTION */
     div, section {
       min-height: 0 !important;
       height: auto !important;
@@ -720,7 +716,6 @@ function cleanAndStyleHTML(htmlString) {
       max-width: 100% !important; 
     }
 
-    /* TIÊU ĐỀ BẢN GỐC: CO GIÃN 100% FULL WIDTH */
     h1 { 
       font-family: 'Space Grotesk', system-ui, sans-serif !important; 
       font-size: 2.3rem !important; 
@@ -754,7 +749,6 @@ function cleanAndStyleHTML(htmlString) {
       color: #111 !important; 
     }
 
-    /* HÌNH ẢNH: KÉO SÁT NHAU, BỎ PADDING CỐ ĐỊNH */
     figure, picture, [class*="image"], [class*="Image"] {
       display: block !important;
       width: 100% !important;
@@ -770,7 +764,7 @@ function cleanAndStyleHTML(htmlString) {
       width: 100% !important; 
       max-width: 100% !important; 
       height: auto !important; 
-      max-height: none !important;
+      max-height: none !important; 
       display: block !important; 
       object-fit: contain !important;
       margin: 12px auto !important; 
@@ -791,7 +785,6 @@ function cleanAndStyleHTML(htmlString) {
       text-align: center !important;
     }
 
-    /* IFRAME VIDEO (NẾU CÓ YOUTUBE) */
     iframe {
       width: 100% !important;
       aspect-ratio: 16 / 9 !important;

@@ -490,41 +490,10 @@ document.getElementById("reset-btn").addEventListener("click", () => {
     }
 });
 
-// --- XUẤT ẢNH (HỖ TRỢ LƯU VÀO ALBUM ẢNH TRÊN IOS / ANDROID) ---
-document.getElementById("export-btn").addEventListener("click", async () => {
-    setLog("PREPARING EXPORT...");
-    const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
-
-    // Kiểm tra nếu là thiết bị di động hỗ trợ Web Share API
-    if (navigator.canShare && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        try {
-            const response = await fetch(dataUrl);
-            const blob = await response.blob();
-            const file = new File([blob], 'goal-line-tactic.jpg', { type: 'image/jpeg' });
-
-            if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Goal-Line Tactical Board',
-                    text: 'Goal-Line Studio Tactic'
-                });
-                setLog("EXPORTED TO SHARE SHEET");
-                return;
-            }
-        } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.warn("Share failed, falling back to download", error);
-            } else {
-                setLog("EXPORT CANCELLED");
-                return;
-            }
-        }
-    }
-
-    // Fallback tải file thông thường cho PC
+document.getElementById("export-btn").addEventListener("click", () => {
     const link = document.createElement('a');
     link.download = 'goal-line-tactic.jpg';
-    link.href = dataUrl;
+    link.href = canvas.toDataURL("image/jpeg", 1.0);
     link.click();
     setLog("IMAGE EXPORTED SUCCESSFULLY");
 });
@@ -585,43 +554,44 @@ window.addEventListener("wheel", (e) => {
     }
 });
 
-// =========================================================================
-// --- MOBILE TOUCH BRIDGE (KHÔNG LÀM ẢNH HƯỞNG CODE CHUỘT PC) ---
-// =========================================================================
+// KIỂM TRA THIẾT BỊ DI ĐỘNG & CHẶN
+function checkMobileDevice() {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) {
+        const modal = document.createElement('div');
+        modal.className = 'startup-overlay';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="startup-box" style="border: 4px solid #000; box-shadow: 8px 8px 0 #000;">
+                <div class="modal-badge" style="background:#ff608b; color:#fff;">DESKTOP ONLY</div>
+                <h2 style="font-family:'Barlow Condensed'; font-size:2rem; margin: 15px 0 10px;">DESKTOP SCREEN REQUIRED</h2>
+                <p style="font-size:0.9rem; font-weight:600; line-height:1.5; color:#333; margin-bottom:24px;">
+                    Tactical setups require desktop screen resolution and mouse precision for curve handles and zone mapping. Mobile devices are currently not supported.
+                </p>
+                <button id="btn-back-home" class="startup-btn btn-primary-neo" style="width:100%; padding:14px; font-weight:900;">
+                    <i class="fa-solid fa-house" style="font-size:1.4rem;"></i>
+                    <span>RETURN TO HOME</span>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
 
-// 1. Chạm ngón tay xuống sân (Tương đương Mousedown)
-canvas.addEventListener("touchstart", (e) => {
-    if (e.touches.length > 1) return; // Bỏ qua nếu chạm 2 ngón cùng lúc
-    e.preventDefault(); // Ngăn zoom / giật màn hình trên Safari iOS
-    
-    // Kích hoạt lại toàn bộ logic mousedown sẵn có
-    const fakeEvent = {
-        clientX: e.touches[0].clientX,
-        clientY: e.touches[0].clientY,
-        preventDefault: () => {}
-    };
-    canvas.dispatchEvent(new MouseEvent("mousedown", fakeEvent));
-}, { passive: false });
+        document.getElementById('btn-back-home').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+        return true;
+    }
+    return false;
+}
 
-// 2. Kéo ngón tay di chuyển (Tương đương Mousemove)
-canvas.addEventListener("touchmove", (e) => {
-    if (e.touches.length > 1) return;
-    e.preventDefault();
-    
-    const fakeEvent = {
-        clientX: e.touches[0].clientX,
-        clientY: e.touches[0].clientY,
-        preventDefault: () => {}
-    };
-    canvas.dispatchEvent(new MouseEvent("mousemove", fakeEvent));
-}, { passive: false });
+if (checkMobileDevice()) {
+    throw new Error("Mobile device detected. Execution stopped.");
+}
 
-// 3. Nhấc ngón tay lên (Tương đương Mouseup)
-canvas.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    canvas.dispatchEvent(new MouseEvent("mouseup", {}));
-}, { passive: false });
-
+if (checkMobileDevice()) {
+    // Ngừng nạp toàn bộ logic nếu là mobile
+    throw new Error("Mobile device detected. Execution stopped.");
+}
 
 // Start App
 init();

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -7,12 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/reader.css?v=3" />
+  <link rel="stylesheet" href="css/reader.css?v=4" />
 </head>
 <body>
 <div class="app">
 
-  <!-- Header -->
   <header>
     <button class="btn-icon mobile-only" id="btnToggleSidebar" aria-label="Menu">☰</button>
     
@@ -26,44 +25,40 @@
     <div class="hdr-right">
       <div class="status-pill">
         <div id="statusDot" class="status-dot"></div>
-        <span id="statusLabel">DISCONNECTED</span>
+        <span id="statusLabel">NOT CONFIGURED</span>
       </div>
-      <button class="btn btn-icon btn-neo" id="btnSettings" title="Cài đặt">⚙️</button>
+      <button class="btn btn-icon btn-neo" id="btnSettings" title="Settings">⚙️</button>
     </div>
   </header>
 
-  <!-- Toolbar -->
   <div class="toolbar">
     <div id="notConfiguredBanner" class="banner-neo hidden" onclick="openSettings()">
       <span class="badge-alert">WARNING</span>
-      <span>Chưa kết nối Ladder Server — Nhấn vào đây để thiết lập API!</span>
+      <span>Ladder Server Not Connected — Click here to configure API settings!</span>
     </div>
 
     <div class="url-wrap" id="urlWrap">
       <span class="url-icon">URL:</span>
       <input type="url" id="articleUrl" spellcheck="false" autocomplete="off"
-        placeholder="Dán URL bài viết The Athletic (https://www.nytimes.com/athletic/...)" />
+        placeholder="Paste The Athletic article URL (https://www.nytimes.com/athletic/...)" />
     </div>
 
-    <button class="btn btn-neo btn-primary hidden" id="btnRead" disabled>⚡ ĐỌC BÀI</button>
-    <button class="btn btn-neo btn-vi hidden" id="btnTranslate" disabled>🌐 DỊCH AI</button>
+    <button class="btn btn-neo btn-primary hidden" id="btnRead" disabled>⚡ READ</button>
+    <button class="btn btn-neo btn-vi hidden" id="btnTranslate" disabled>🌐 AI TRANSLATE</button>
     <div class="sep hidden" id="sepTab"></div>
-    <button class="btn btn-neo btn-ghost hidden" id="btnNewTab">↗ TAB MỚI</button>
-    <button class="btn btn-neo btn-ghost hidden" id="btnOriginal">← BẢN GỐC</button>
+    <button class="btn btn-neo btn-ghost hidden" id="btnNewTab">↗ NEW TAB</button>
+    <button class="btn btn-neo btn-ghost hidden" id="btnOriginal">← ORIGINAL</button>
   </div>
 
-  <!-- Workspace -->
   <div class="workspace">
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-hdr">
         <div class="sidebar-tag">NEWS DESK</div>
-        <button class="btn-neo btn-refresh" id="btnRefreshHL" onclick="refreshCurrentTab()" title="Làm mới">↻</button>
+        <button class="btn-neo btn-refresh" id="btnRefreshHL" onclick="refreshCurrentTab()" title="Refresh">↻</button>
       </div>
       
-      <!-- Main Category Tabs -->
       <div class="sidebar-tabs">
         <button class="tab-btn active" data-tab="football">FOOTBALL</button>
         <button class="tab-btn" data-tab="nba">NBA</button>
@@ -71,7 +66,6 @@
         <button class="tab-btn" data-tab="tennis">TENNIS</button>
       </div>
 
-      <!-- Football League Sub-tabs -->
       <div class="sidebar-sub-tabs" id="subTabsFootball">
         <button class="sub-tab-btn active" data-tab="football-all">ALL</button>
         <button class="sub-tab-btn" data-tab="football-epl">EPL</button>
@@ -82,7 +76,6 @@
         <button class="sub-tab-btn" data-tab="football-wildcard">INTERNATIONAL</button>
       </div>
 
-      <!-- Headlines Containers -->
       <div class="hl-container">
         <div class="hl-list active" id="list-football-all"></div>
         <div class="hl-list" id="list-football-epl"></div>
@@ -97,7 +90,6 @@
       </div>
     </aside>
 
-    <!-- Reading Workspace -->
     <main class="content-area">
       <div class="loading-overlay" id="loadingOverlay">
         <div class="neo-spinner"></div>
@@ -107,22 +99,21 @@
       <div class="empty-state" id="emptyState">
         <div class="empty-box">
           <div class="empty-icon">📰</div>
-          <div class="empty-title">CHƯA CHỌN BÀI BÁO</div>
+          <div class="empty-title">NO ARTICLE SELECTED</div>
           <div class="empty-desc">
-            Chọn một bài từ danh sách tin tức bên trái hoặc dán URL vào thanh điều hướng bên trên.<br/>
-            Nhấn phím <kbd class="kbd">ENTER</kbd> để render bài viết.
+            Select an article from the news desk or paste an article URL in the navigation bar.<br/>
+            Press <kbd class="kbd">ENTER</kbd> or click <kbd class="kbd">⚡ READ</kbd> to render the story.
           </div>
         </div>
       </div>
 
       <iframe id="viewerFrame" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
 
-      <!-- Gemini AI Translation Box -->
       <div class="trans-panel" id="transPanel">
         <div class="trans-inner">
           <div class="trans-bar">
             <span class="badge-gemini">GEMINI AI ENGINE</span>
-            <span class="trans-bar-title">BẢN DỊCH TIẾNG VIỆT ĐỘC QUYỀN</span>
+            <span class="trans-bar-title">VIETNAMESE TRANSLATION</span>
           </div>
           <div id="transContent" class="trans-content"></div>
         </div>
@@ -131,17 +122,16 @@
   </div>
 </div>
 
-<!-- Modal Settings (Neobrutalism Dialog) -->
 <div class="backdrop" id="backdrop" onclick="closeSettings()"></div>
 <div class="sp" id="settingsPanel">
   <div class="sp-hdr">
-    <span class="sp-title">⚡ CẤU HÌNH HỆ THỐNG</span>
+    <span class="sp-title">⚡ SYSTEM SETTINGS</span>
     <button class="btn-x" onclick="closeSettings()">✕</button>
   </div>
   <div class="sp-body">
     <div class="alert alert-warn">
       <span class="alert-icon">⚠️</span>
-      <div>Dữ liệu lưu độc quyền trên <code>localStorage</code> máy bạn. Không lưu trữ trên cloud trung gian.</div>
+      <div>Data is stored exclusively in your browser's <code>localStorage</code>. No external server tracking.</div>
     </div>
     
     <div class="field">
@@ -157,11 +147,11 @@
     <div class="field">
       <label class="field-label" for="cfgPass">HTTP AUTH PASSWORD</label>
       <input type="password" id="cfgPass" class="neo-input" placeholder="••••••••" autocomplete="off"/>
-      <div class="field-hint">Để trống nếu HF Space không cấu hình mật khẩu.</div>
+      <div class="field-hint">Leave blank if no <code>USERPASS</code> is configured on your HF Space.</div>
     </div>
 
     <div class="field">
-      <button class="btn btn-neo btn-ghost" style="align-self:flex-start" onclick="testConn()">🔌 TEST KẾT NỐI</button>
+      <button class="btn btn-neo btn-ghost" style="align-self:flex-start" onclick="testConn()">🔌 TEST CONNECTION</button>
       <div id="testResult" class="test-result"></div>
     </div>
 
@@ -170,20 +160,20 @@
     <div class="field">
       <label class="field-label" for="cfgApiKey">🔑 GEMINI API KEY</label>
       <input type="password" id="cfgApiKey" class="neo-input" placeholder="AIzaSy..." autocomplete="off"/>
-      <div class="field-hint">Cần thiết cho tính năng dịch. Lấy key tại <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></div>
+      <div class="field-hint">Required for translation features. Obtain an API key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></div>
     </div>
 
     <div class="alert alert-info">
       <span class="alert-icon">💡</span>
-      <div>Nếu frame bị trắng, thêm file cấu hình <code>ruleset.yaml</code> trên server Ladder để gỡ bỏ header X-Frame-Options.</div>
+      <div>If the article frame appears blank, add <code>ruleset.yaml</code> to your Ladder server to strip X-Frame-Options headers.</div>
     </div>
   </div>
   <div class="sp-footer">
-    <button class="btn btn-neo btn-ghost" onclick="closeSettings()">HUỶ</button>
-    <button class="btn btn-neo btn-primary" onclick="saveSettings()">💾 LƯU CẤU HÌNH</button>
+    <button class="btn btn-neo btn-ghost" onclick="closeSettings()">CANCEL</button>
+    <button class="btn btn-neo btn-primary" onclick="saveSettings()">💾 SAVE SETTINGS</button>
   </div>
 </div>
 
-<script type="module" src="js/reader.js?v=3"></script>
+<script type="module" src="js/reader.js?v=4"></script>
 </body>
 </html>

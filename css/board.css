@@ -116,7 +116,6 @@ html, body {
 }
 
 #canvas {
-  touch-action: none;
   max-width: 95%;
   max-height: calc(100vh - 120px);
   object-fit: contain;
@@ -719,60 +718,35 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* ---------------- RESPONSIVE MOBILE ---------------- */
 @media screen and (max-width: 860px) {
-  html, body {
-    height: auto !important;
-    min-height: 100% !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important; /* MỞ KHÓA CUỘN TOÀN TRANG TRÊN MOBILE */
-    -webkit-overflow-scrolling: touch;
-  }
-
   .app-container {
-    display: flex !important;
-    flex-direction: column !important;
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow: visible !important;
-    border: none !important;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    overflow-y: auto;
   }
 
-  /* Khung sân bóng cố định 50% chiều cao màn hình để thao tác vẽ */
   .canvas-area {
-    flex: none !important;
-    width: 100% !important;
-    height: 52vh !important;
-    min-height: 350px !important;
-    padding: 12px !important;
+    min-height: 52vh;
+    padding: 12px;
   }
 
-  #canvas {
-    max-height: 48vh !important;
-  }
-
-  /* Toolbar nằm ngay dưới sân */
   .toolbar {
-    width: 100% !important;
-    height: auto !important;
-    padding: 12px 14px !important;
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-    border-top: var(--neo-border-w) solid var(--neo-black) !important;
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    flex-wrap: wrap;
   }
 
   .neo-log-container {
     order: 3;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-top: 4px;
+    width: 100%;
   }
 
-  /* Cột công cụ xổ dài xuống dưới, cuộn tự do để thêm shape */
   .settings-panel {
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    border-left: none !important;
-    border-top: var(--neo-border-w) solid var(--neo-black) !important;
-    padding: 20px 16px 90px !important; /* Đệm 90px đáy tránh bị thanh điều hướng che */
+    width: 100%;
+    height: auto;
+    border-left: none;
+    border-top: var(--neo-border-w) solid var(--neo-black);
+    padding-bottom: 40px;
   }
 }
