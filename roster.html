@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Squad Roster | Goal-Line Studio</title>
+  <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type"/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="css/roster.css"/>
+</head>
+<body class="roster-body">
+
+  <div class="roster-container">
+    <!-- Header -->
+    <header class="roster-nav">
+      <div class="nav-left">
+        <a href="index.html" class="btn-back" title="Return to Dashboard">
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div class="nav-title-group">
+          <div class="title-with-badge">
+            <span class="logo-box">GL</span>
+            <h1>SQUAD DIRECTORY</h1>
+          </div>
+          <span class="sub-badge">PERSONNEL REGISTRY</span>
+        </div>
+      </div>
+
+      <div class="nav-metrics">
+        <div class="metric-card">
+          <span class="m-num" id="stat-total">0</span>
+          <span class="m-lbl">TOTAL ROSTER</span>
+        </div>
+        <div class="metric-card bg-green">
+          <span class="m-num" id="stat-active">0</span>
+          <span class="m-lbl">ACTIVE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Filter Dock -->
+    <section class="control-dock">
+      <div class="search-box">
+        <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+        <input type="text" id="roster-search" placeholder="Filter by handle, name, role, email..." autocomplete="off"/>
+        <button id="clear-search" class="btn-clear hidden" title="Clear">✕</button>
+      </div>
+
+      <div class="filters-row">
+        <!-- Team Department Chips -->
+        <div class="filter-group">
+          <span class="filter-lbl">TEAM:</span>
+          <div class="chips-wrap" id="team-chips">
+            <button class="chip-btn active" data-filter="all">ALL</button>
+            <button class="chip-btn" data-filter="Executive">EXECUTIVE</button>
+            <button class="chip-btn" data-filter="Management">MANAGEMENT</button>
+            <button class="chip-btn" data-filter="Production">PRODUCTION</button>
+            <button class="chip-btn" data-filter="Support">SUPPORT</button>
+          </div>
+        </div>
+
+        <!-- Location Chips -->
+        <div class="filter-group">
+          <span class="filter-lbl">HUB:</span>
+          <div class="chips-wrap" id="location-chips">
+            <button class="chip-btn active" data-loc="all">ALL</button>
+            <button class="chip-btn" data-loc="HCM">HCM</button>
+            <button class="chip-btn" data-loc="Hanoi">HANOI</button>
+            <button class="chip-btn" data-loc="other">OTHER</button>
+          </div>
+        </div>
+
+        <!-- Status Chips -->
+        <div class="filter-group">
+          <span class="filter-lbl">STATUS:</span>
+          <div class="chips-wrap" id="status-chips">
+            <button class="chip-btn" data-status="all">ALL</button>
+            <button class="chip-btn active" data-status="active">ACTIVE</button>
+            <button class="chip-btn" data-status="on leave">ON LEAVE</button>
+            <button class="chip-btn" data-status="inactive">INACTIVE</button>
+          </div>
+        </div>
+
+        <!-- View Switcher (Grid vs Table) -->
+        <div class="view-switcher">
+          <button id="view-grid" class="btn-view active" title="Grid View"><i class="fa-solid fa-table-cells-large"></i></button>
+          <button id="view-table" class="btn-view" title="Table View"><i class="fa-solid fa-list"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <main class="roster-stage">
+      <!-- Grid Container -->
+      <div id="roster-grid" class="cards-grid"></div>
+
+      <!-- Table Container (Sortable Table Headers) -->
+      <div id="roster-table-wrap" class="table-wrap hidden">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th class="sortable-th" data-sort="handle">NICKNAME <span class="sort-icon"></span></th>
+              <th class="sortable-th" data-sort="fullName">FULL NAME <span class="sort-icon"></span></th>
+              <th class="sortable-th" data-sort="role">ROLE <span class="sort-icon"></span></th>
+              <th class="sortable-th" data-sort="team">TEAM <span class="sort-icon"></span></th>
+              <th class="sortable-th" data-sort="gen">GEN / DATE <span class="sort-icon"></span></th>
+              <th class="sortable-th" data-sort="location">LOCATION <span class="sort-icon"></span></th>
+              <th class="sortable-th" data-sort="status">STATUS <span class="sort-icon"></span></th>
+              <th>ACTION</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Empty Fallback -->
+      <div id="empty-results" class="empty-state hidden">
+        <div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>
+        <h3>NO MEMBERS FOUND</h3>
+        <p>Try adjusting your search query or reset the active filters.</p>
+        <button id="reset-filters-btn" class="btn-reset">RESET ALL FILTERS</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- SCOUTING REPORT MODAL (DOSSIER) -->
+  <div id="dossier-modal" class="modal-backdrop">
+    <div class="dossier-card">
+      <div class="dossier-header">
+        <div class="dossier-tag">SCOUTING REPORT</div>
+        <button id="modal-close-btn" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="dossier-body">
+        <div class="profile-hero">
+          <!-- Hỗ trợ avatar ảnh thật hoặc Monogram fallback -->
+          <div class="avatar-box" id="m-avatar-wrap">
+            <span id="m-avatar-text">GL</span>
+          </div>
+
+          <div class="hero-data">
+            <div class="hero-handle-wrap">
+              <h2 id="m-handle">HANDLE</h2>
+              <span id="m-status" class="status-badge">ACTIVE</span>
+            </div>
+            <p id="m-fullname" class="real-name">Full Name</p>
+            <div class="pills-line">
+              <span id="m-role" class="pill-role">ROLE</span>
+              <span id="m-team" class="pill-team">TEAM</span>
+              <span id="m-loc" class="pill-loc">LOCATION</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span class="meta-key">BORN / AGE</span>
+            <span class="meta-val" id="m-dob">--</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">GENERATION</span>
+            <span class="meta-val" id="m-gen">--</span>
+          </div>
+          <div class="meta-item full-width">
+            <span class="meta-key">OFFICIAL EMAIL</span>
+            <div class="email-copy-wrap">
+              <span class="meta-val" id="m-email">--</span>
+              <button id="btn-copy-email" class="btn-copy" title="Copy Email">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multiple Signature Works Section -->
+        <div class="signature-section" id="signature-block">
+          <div class="sig-header">
+            <i class="fa-solid fa-crown"></i>
+            <span>HALL OF FAME • SIGNATURE WORKS</span>
+          </div>
+          <!-- Container chứa nhiều bài viết -->
+          <div class="sig-works-list" id="m-works-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/roster.js"></script>
+</body>
+</html>

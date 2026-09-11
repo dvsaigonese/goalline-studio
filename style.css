@@ -420,6 +420,167 @@ html, body {
   margin-right: 4px;
 }
 
+/* ---------------- ROSTER BIG SHOWCASE BANNER ---------------- */
+.roster-showcase-section {
+  margin-bottom: 36px;
+}
+
+.roster-banner {
+  background: var(--neo-card-bg);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-lg);
+  padding: 28px 32px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.roster-banner.card-yellow {
+  border-top: 10px solid var(--neo-yellow);
+}
+
+.banner-badge-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.banner-tag {
+  background: var(--neo-black);
+  color: var(--neo-yellow);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 4px 10px;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.banner-status-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 2px solid var(--neo-black);
+  background: var(--neo-green);
+  padding: 3px 8px;
+  box-shadow: var(--neo-shadow-sm);
+}
+
+.banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+}
+
+.banner-text {
+  flex: 1;
+}
+
+.sub-lead {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #555;
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.banner-title {
+  font-family: var(--font-cond);
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+}
+
+.banner-desc {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.5;
+  max-width: 680px;
+}
+
+.banner-action-wrap {
+  flex-shrink: 0;
+}
+
+.btn-launch-roster {
+  background: var(--neo-black);
+  color: var(--neo-white);
+  padding: 16px 26px;
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: all 0.12s;
+}
+
+.btn-launch-roster:hover {
+  background: var(--neo-yellow);
+  color: var(--neo-black);
+  transform: translate(-3px, -3px);
+  box-shadow: var(--neo-shadow-hover);
+}
+
+.btn-launch-roster:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--neo-shadow-active);
+}
+
+.banner-footer-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 2px dashed var(--neo-black);
+  padding-top: 16px;
+}
+
+.stat-pill {
+  background: var(--neo-bg);
+  border: 2px solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stat-pill.highlight {
+  background: var(--neo-yellow);
+}
+
+.pill-label {
+  color: #666;
+  margin-right: 4px;
+}
+
+@media screen and (max-width: 992px) {
+  .banner-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-launch-roster {
+    width: 100%;
+    justify-content: center;
+  }
+  .banner-title {
+    font-size: 2.2rem;
+  }
+}
+
 /* ---------------- RESPONSIVE (MOBILE) ---------------- */
 @media screen and (max-width: 992px) {
   .tool-grid {
