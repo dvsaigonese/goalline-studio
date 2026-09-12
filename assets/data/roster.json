@@ -268,7 +268,12 @@
     "location": "Hanoi",
     "status": "active",
     "avatar": "",
-    "masterpieces": []
+    "masterpieces": [
+      {
+        "title": "Hình như Thomas Tuchel đã quên Kobbie Mainoo rồi...",
+        "url": "https://www.facebook.com/share/p/1BUjdG6M7r/"
+      }
+    ]
   },
   {
     "id": 19,
