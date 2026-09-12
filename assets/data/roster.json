@@ -142,7 +142,20 @@
     "location": "HCM",
     "status": "active",
     "avatar": "",
-    "masterpieces": []
+    "masterpieces": [
+       {
+        "title": "Xabi Alonso - người nâng tầm Bayer Leverkusen tại Bundesliga",
+        "url": "https://www.facebook.com/share/p/1BoaM6PdR4/"
+       },
+       {
+        "title": "Julian Draxler: Một sai lầm đánh mất cả sự nghiệp",
+        "url": "https://www.facebook.com/share/p/1BHywVFMDP/"
+       },
+       {
+        "title": "Loris Karius và ánh sáng sau những năm thảm hoạ ",
+        "url": "https://www.facebook.com/share/p/1EvFEpK66V/"
+       }
+    ]
   },
   {
     "id": 10,
