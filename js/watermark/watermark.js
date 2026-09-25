@@ -6,6 +6,8 @@ import { CONFIG, globalAssets, collageState, hasAnyImage } from './state.js';
 import { initLeagueManager, getSelectedLeague } from './league.js';
 import { initLayoutManager } from './layout.js';
 import { initCanvasEvents } from './canvas-events.js';
+import { CoverageGuard } from './coverage-guard.js';
+import { LayoutResizer } from './layout-resizer.js';
 
 // Khai báo DOM Elements chính
 const canvas = document.getElementById('wm-canvas');
@@ -34,10 +36,14 @@ const brightnessValDisplay = document.getElementById('brightness-val');
 canvas.width = CONFIG.TARGET_WIDTH;
 canvas.height = CONFIG.TARGET_HEIGHT;
 
+// KHỞI TẠO COVERAGE GUARD VÀ LAYOUT RESIZER
+const coverageGuard = new CoverageGuard(canvas);
+const layoutResizer = new LayoutResizer(canvas, collageState, () => renderAll());
+
 // ==========================================
 // --- HÀM RENDER CHÍNH ---
 // ==========================================
-const renderAll = () => {
+const renderAll = (isExport = false) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.filter = 'none'; 
     ctx.fillStyle = 'black';
@@ -66,6 +72,12 @@ const renderAll = () => {
         };
 
         template.render(ctx, canvasInfo, globalState);
+    }
+
+    // Chỉ hiển thị Divider điều chỉnh và Cảnh báo viền hở khi đang biên tập (không vẽ đè lên ảnh xuất)
+    if (!isExport) {
+        layoutResizer.drawDivider(ctx);
+        coverageGuard.checkAndRender(ctx, collageState.slots);
     }
 };
 
@@ -211,7 +223,9 @@ exportBtn.addEventListener('click', async () => {
     collageState.activeSlotIndex = null;
     canvas.classList.remove('editing');
     if (collageInstructions) collageInstructions.style.display = 'none';
-    renderAll();
+
+    // Export sạch: Tạm thời tắt Divider và Cảnh báo viền
+    renderAll(true);
 
     const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
 
@@ -222,14 +236,21 @@ exportBtn.addEventListener('click', async () => {
             const file = new File([blob], 'Goal-Line_Collage.jpg', { type: 'image/jpeg' });
             if (navigator.canShare({ files: [file] })) {
                 await navigator.share({ files: [file], title: 'Goal-Line Image' });
+                renderAll();
                 return; 
             }
-        } catch (error) { return; }
+        } catch (error) { 
+            renderAll();
+            return; 
+        }
     }
     const link = document.createElement('a');
     link.download = 'Goal-Line_Collage.jpg';
     link.href = dataUrl;
     link.click();
+
+    // Render lại trạng thái làm việc bình thường
+    renderAll();
 });
 
 // ==========================================

@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Watermark | Goal-Line Studio</title>
+    <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./css/watermark.css" />
@@ -130,6 +131,7 @@
                 <p>1. <strong>Click</strong> image to pick slot.</p>
                 <p>2. <strong>Drag</strong> to move framing.</p>
                 <p>3. <strong>Wheel</strong> to zoom in / out.</p>
+                <p>4. <strong>Drag Divider</strong> to adjust slot ratio.</p>
             </div>
 
             <!-- POST METADATA & FX -->
@@ -157,6 +159,9 @@
         </aside>
     </div>
 
-    <script type="module" src="js/watermark/watermark.js"></script>
+    <!-- HUD Cảnh báo sọc đen khung ảnh (Tự động kích hoạt bởi CoverageGuard) -->
+    <div id="coverage-warning-hud" class="coverage-hud hidden"></div>
+
+    <script type="module" src="./js/watermark/watermark.js"></script>
 </body>
 </html>
