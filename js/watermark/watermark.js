@@ -123,12 +123,6 @@ function drawCollageBackground() {
             ctx.lineWidth = 12;
             ctx.strokeRect(slotX + 6, slotY + 6, slotW - 12, slotH - 12);
         }
-
-        if (collageState.slots.length > 1) {
-            ctx.strokeStyle = '#000000'; 
-            ctx.lineWidth = 6;
-            ctx.strokeRect(slotX, slotY, slotW, slotH);
-        }
     });
     ctx.restore();
 }

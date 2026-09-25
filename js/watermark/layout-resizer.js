@@ -5,7 +5,6 @@ export class LayoutResizer {
     this.onRatioChange = onRatioChange;
     this.isDragging = false;
     this.dragMode = null; 
-    this.dividerThreshold = 25; 
 
     this.initEvents();
   }
@@ -31,8 +30,16 @@ export class LayoutResizer {
     const W = this.canvas.width;
     const H = this.canvas.height;
 
+    // Tự động scale kích thước theo độ phân giải thực của Canvas
+    const baseScale = Math.max(1, W / 800);
+    const bW = Math.round(200 * baseScale);
+    const bH = Math.round(60 * baseScale);
+    const fontSize = Math.round(26 * baseScale);
+    const borderWidth = Math.round(4 * baseScale);
+    const shadowOffset = Math.round(6 * baseScale);
+
     ctx.save();
-    ctx.lineWidth = 6;
+    ctx.lineWidth = Math.max(4, Math.round(5 * baseScale));
     ctx.strokeStyle = '#000000';
 
     if (mode === 'v') {
@@ -40,24 +47,29 @@ export class LayoutResizer {
       const p1 = Math.round(slots[0].w * 100);
       const p2 = 100 - p1;
 
+      // Vạch chia
       ctx.beginPath();
       ctx.moveTo(splitX, 0);
       ctx.lineTo(splitX, H);
       ctx.stroke();
 
-      const bW = 120;
-      const bH = 36;
+      // Vị trí Badge ở trung tâm vạch chia
       const bX = splitX - bW / 2;
       const bY = H / 2 - bH / 2;
 
+      // 1. Đổ bóng cứng Neobrutalism
       ctx.fillStyle = '#000000';
-      ctx.fillRect(bX + 4, bY + 4, bW, bH);
+      ctx.fillRect(bX + shadowOffset, bY + shadowOffset, bW, bH);
+
+      // 2. Nền vàng và viền đen dày
       ctx.fillStyle = '#ffe600';
       ctx.fillRect(bX, bY, bW, bH);
+      ctx.lineWidth = borderWidth;
       ctx.strokeRect(bX, bY, bW, bH);
 
+      // 3. Chữ % to rõ
       ctx.fillStyle = '#000000';
-      ctx.font = '900 16px "JetBrains Mono", monospace';
+      ctx.font = `900 ${fontSize}px "JetBrains Mono", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(`${p1}% : ${p2}%`, splitX, H / 2);
@@ -72,19 +84,19 @@ export class LayoutResizer {
       ctx.lineTo(W, splitY);
       ctx.stroke();
 
-      const bW = 120;
-      const bH = 36;
       const bX = W / 2 - bW / 2;
       const bY = splitY - bH / 2;
 
       ctx.fillStyle = '#000000';
-      ctx.fillRect(bX + 4, bY + 4, bW, bH);
+      ctx.fillRect(bX + shadowOffset, bY + shadowOffset, bW, bH);
+
       ctx.fillStyle = '#ffe600';
       ctx.fillRect(bX, bY, bW, bH);
+      ctx.lineWidth = borderWidth;
       ctx.strokeRect(bX, bY, bW, bH);
 
       ctx.fillStyle = '#000000';
-      ctx.font = '900 16px "JetBrains Mono", monospace';
+      ctx.font = `900 ${fontSize}px "JetBrains Mono", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(`${p1}% : ${p2}%`, W / 2, splitY);
@@ -111,16 +123,27 @@ export class LayoutResizer {
       if (!mode) return null;
 
       const slots = this.collageState.slots;
+      const W = this.canvas.width;
+      const H = this.canvas.height;
+      const baseScale = Math.max(1, W / 800);
+      const lineThreshold = Math.round(30 * baseScale);
+      const bW = Math.round(200 * baseScale);
+      const bH = Math.round(60 * baseScale);
+
       if (mode === 'v') {
-        const splitX = slots[0].w * this.canvas.width;
-        if (Math.abs(pos.x - splitX) < this.dividerThreshold) return 'v';
+        const splitX = slots[0].w * W;
+        // Bắt chuột khi rê trúng vạch chia HOẶC trúng vào ô badge %
+        const isOverBadge = Math.abs(pos.x - splitX) <= bW / 2 && Math.abs(pos.y - H / 2) <= bH / 2;
+        if (Math.abs(pos.x - splitX) < lineThreshold || isOverBadge) return 'v';
       } else if (mode === 'h') {
-        const splitY = slots[0].h * this.canvas.height;
-        if (Math.abs(pos.y - splitY) < this.dividerThreshold) return 'h';
+        const splitY = slots[0].h * H;
+        const isOverBadge = Math.abs(pos.y - splitY) <= bH / 2 && Math.abs(pos.x - W / 2) <= bW / 2;
+        if (Math.abs(pos.y - splitY) < lineThreshold || isOverBadge) return 'h';
       }
       return null;
     };
 
+    // Chặn pan ảnh khi đang tương tác kéo divider / badge
     this.canvas.addEventListener('mousedown', (e) => {
       const pos = getPos(e);
       const near = isNearDivider(pos);
