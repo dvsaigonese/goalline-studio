@@ -43,9 +43,16 @@
                 <button class="filter-btn" data-filter="unapproved">CHƯA DUYỆT (<span id="count-unapproved">0</span>)</button>
                 <button class="filter-btn" data-filter="approved">ĐÃ DUYỆT (<span id="count-approved">0</span>)</button>
             </div>
-            <button class="btn-neo-add" id="btn-open-modal">
-                <i class="fa-solid fa-plus"></i> ĐẨY BÀI VÀO STACK
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <!-- Nút Xóa hàng loạt (mặc định ẩn, khi tích chọn sẽ hiện) -->
+                <button class="btn-neo-batch-del" id="btn-batch-delete" style="display: none;">
+                    <i class="fa-solid fa-trash-can"></i> XÓA ĐÃ CHỌN (<span id="selected-count">0</span>)
+                </button>
+            
+                <button class="btn-neo-add" id="btn-open-modal">
+                    <i class="fa-solid fa-plus"></i> ĐẨY BÀI VÀO STACK
+                </button>
+            </div>
         </div>
 
         <!-- Table View -->
@@ -53,6 +60,9 @@
             <table class="neo-table">
                 <thead>
                     <tr>
+                        <th style="width: 45px; text-align: center;">
+                            <input type="checkbox" id="check-all" class="neo-checkbox" title="Chọn tất cả">
+                        </th>
                         <th style="width: 110px;">ADMIN</th>
                         <th>BÀI VIẾT (CLICK ĐỂ ĐỌC DUYỆT)</th>
                         <th style="width: 140px;">HÌNH ẢNH</th>
@@ -118,6 +128,75 @@
 
                 <div class="modal-footer">
                     <button type="submit" class="btn-neo-submit">ĐẨY LÊN STACK CHO ANH EM CHECK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CHỈNH SỬA TOÀN BỘ BÀI VIẾT (DÀNH CHO CẢ DESIGNER & ADMIN) -->
+    <div class="neo-modal-overlay" id="edit-modal">
+        <div class="neo-modal" style="max-width: 700px;">
+            <div class="modal-header" style="background: var(--neo-blue);">
+                <h3><i class="fa-solid fa-pen-to-square"></i> CHỈNH SỬA BÀI VIẾT</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-edit-modal">&times;</button>
+            </div>
+            <form id="form-edit-post" class="modal-body">
+                <input type="hidden" id="edit-id">
+            
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TÊN ADMIN TÁC GIẢ:</label>
+                        <input type="text" id="edit-author">
+                    </div>
+                    <div class="form-group">
+                        <label>NGƯỜI DES:</label>
+                        <input type="text" id="edit-designer" placeholder="Tên designer hoàn thành ảnh...">
+                    </div>
+                </div>
+            
+                <div class="form-group">
+                    <label>TIÊU ĐỀ BÀI VIẾT:</label>
+                    <input type="text" id="edit-title">
+                </div>
+            
+                <div class="form-group">
+                    <label>NỘI DUNG BÀI VIẾT:</label>
+                    <textarea id="edit-content" rows="5"></textarea>
+                </div>
+            
+                <!-- Cụm cập nhật ảnh cho Designer -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TẢI ẢNH MỚI TỪ MÁY (NẾU CÓ):</label>
+                        <input type="file" id="edit-image-file" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>HOẶC DÁN TRỰC TIẾP LINK ẢNH:</label>
+                        <input type="text" id="edit-image-url" placeholder="https://...">
+                    </div>
+                </div>
+            
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GHI CHÚ VỀ ẢNH / YÊU CẦU:</label>
+                        <input type="text" id="edit-note">
+                    </div>
+                    <div class="form-group">
+                        <label>LỊCH ĐĂNG / GHI CHÚ SERIES:</label>
+                        <input type="text" id="edit-schedule-note">
+                    </div>
+                </div>
+            
+                <div class="form-group">
+                    <label>TRẠNG THÁI DUYỆT:</label>
+                    <select id="edit-status">
+                        <option value="unapproved">Chưa duyệt</option>
+                        <option value="approved">Đã duyệt</option>
+                    </select>
+                </div>
+            
+                <div class="modal-footer">
+                    <button type="submit" class="btn-neo-submit" id="btn-submit-edit">LƯU CẬP NHẬT</button>
                 </div>
             </form>
         </div>

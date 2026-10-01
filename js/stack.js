@@ -5,38 +5,17 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const GL_TEAM = [
-  'Maztermind',
-  'Vinci',
-  'Voet',
-  'Quýt',
-  'Tiryth',
-  'Tizzy',
-  'Nikolaj',
-  'Cakashi',
-  'Nedu',
-  'Terry',
-  'Naruto',
-  'Ruben',
-  'Dante',
-  'Daugust',
-  'Draco',
-  'Harif',
-  'Giáo 5ư',
-  'Tom',
-  'Brunson',
-  'Vate',
-  'Zenriot',
-  'Kaiz',
-  'Metis',
-  'Genie',
-  'Dmoney'
+  'Maztermind', 'Vinci', 'Voet', 'Quýt', 'Tiryth', 'Tizzy', 'Nikolaj', 
+  'Cakashi', 'Nedu', 'Terry', 'Naruto', 'Ruben', 'Dante', 'Daugust', 
+  'Draco', 'Harif', 'Giáo 5ư', 'Tom', 'Brunson', 'Vate', 'Zenriot', 
+  'Kaiz', 'Metis', 'Genie', 'Dmoney'
 ];
 
 function checkIdentity() {
   let currentUser = localStorage.getItem('gl_current_user');
   if (!currentUser) {
-    const chosen = prompt(`CHÀO MỪNG ĐẾN VỚI GOAL-LINE STUDIO!\nBạn là ai trong team?\n(${GL_TEAM.join(', ')})`, 'HaRif');
-    currentUser = chosen ? chosen.trim() : 'HaRif';
+    const chosen = prompt(`CHÀO MỪNG ĐẾN VỚI GOAL-LINE STUDIO!\nBạn là ai trong team?\n(${GL_TEAM.join(', ')})`, 'Vinci');
+    currentUser = chosen ? chosen.trim() : 'Vinci';
     localStorage.setItem('gl_current_user', currentUser);
   }
   
@@ -50,31 +29,30 @@ function checkIdentity() {
 }
 
 document.getElementById('btn-change-identity').onclick = () => {
-  const chosen = prompt(`Chọn lại tên của bạn:\n(${GL_TEAM.join(', ')})`, localStorage.getItem('gl_current_user') || 'HaRif');
+  const chosen = prompt(`Chọn lại tên của bạn:\n(${GL_TEAM.join(', ')})`, localStorage.getItem('gl_current_user') || 'Vinci');
   if (chosen) {
     localStorage.setItem('gl_current_user', chosen.trim());
     checkIdentity();
   }
 };
 
-// ==========================================
-// 3. QUẢN LÝ DỮ LIỆU & RENDER BẢNG
-// ==========================================
 let posts = [];
 let activeFilter = 'all';
 let currentReadingPost = null;
+let selectedPostIds = new Set(); // Tập hợp ID các bài được chọn để xóa
 
-// Tải dữ liệu từ database Supabase
+// ==========================================
+// TẢI DỮ LIỆU TỪ SUPABASE
+// ==========================================
 async function loadPostsFromDB() {
   try {
-    const { data, error } = await sb
+    const { data, error } = await window.sb
       .from('stack_posts')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Lỗi kết nối Supabase:', error.message);
-      alert('Không thể kết nối Supabase: ' + error.message);
       return;
     }
 
@@ -82,8 +60,8 @@ async function loadPostsFromDB() {
       const isApproved = item.status === 'approved' || item.status === 'ready';
       return {
         id: item.id,
-        author: item.author,
-        title: item.title,
+        author: item.author || '--',
+        title: item.title || 'Không có tiêu đề',
         content: item.content || '',
         imgUrl: item.img_url || '',
         designer: item.designer || '--',
@@ -95,11 +73,13 @@ async function loadPostsFromDB() {
 
     renderTable();
   } catch (err) {
-    console.error('Lỗi ngoại lệ:', err);
+    console.error('Lỗi:', err);
   }
 }
 
-// Render dữ liệu ra bảng HTML
+// ==========================================
+// RENDER BẢNG STACK VÀ CHECKBOX
+// ==========================================
 function renderTable() {
   const tbody = document.getElementById('stack-table-body');
   if (!tbody) return;
@@ -107,28 +87,31 @@ function renderTable() {
 
   const filtered = posts.filter(p => activeFilter === 'all' || p.status === activeFilter);
 
-  // Cập nhật số đếm các tab
+  // Cập nhật số đếm
   document.getElementById('count-all').innerText = posts.length;
   document.getElementById('count-unapproved').innerText = posts.filter(p => p.status === 'unapproved').length;
   document.getElementById('count-approved').innerText = posts.filter(p => p.status === 'approved').length;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; font-weight:700;">CHƯA CÓ BÀI VIẾT NÀO TRONG MỤC NÀY</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; font-weight:700;">CHƯA CÓ BÀI VIẾT NÀO TRONG MỤC NÀY</td></tr>`;
+    updateBatchDeleteUI();
     return;
   }
 
   filtered.forEach(post => {
     const tr = document.createElement('tr');
-    
-    // Chỉ render thẻ <img> khi có URL hợp lệ bắt đầu bằng http
-    const hasValidImage = post.imgUrl && post.imgUrl.startsWith('http');
-
     const isApproved = post.status === 'approved';
     const statusBadge = isApproved 
       ? `<span class="badge-status badge-approved">ĐÃ DUYỆT</span>`
       : `<span class="badge-status badge-unapproved">CHƯA DUYỆT</span>`;
 
+    const isChecked = selectedPostIds.has(post.id) ? 'checked' : '';
+    const hasValidImage = post.imgUrl && post.imgUrl.startsWith('http');
+
     tr.innerHTML = `
+      <td style="text-align: center;">
+        <input type="checkbox" class="neo-checkbox row-checkbox" data-id="${post.id}" ${isChecked}>
+      </td>
       <td><span class="author-pill">${post.author}</span></td>
       <td>
         <div class="post-clickable-title" onclick="openReader('${post.id}')">
@@ -139,23 +122,26 @@ function renderTable() {
       </td>
       <td>
         ${hasValidImage ? `
-          <div class="img-thumb-box img-thumb-clickable" onclick="openImageViewer('${post.imgUrl}', '${post.title}')" title="Click để xem ảnh to">
+          <div class="img-thumb-box img-thumb-clickable" onclick="openImageViewer('${post.imgUrl}', '${post.title}')" title="Click xem ảnh to">
             <img src="${post.imgUrl}" alt="Thumbnail" onerror="this.parentElement.innerHTML='(Lỗi ảnh)'">
           </div>
         ` : `<span style="font-size:0.75rem; color:#888;">(Chưa có ảnh)</span>`}
       </td>
       <td><strong>${post.designer}</strong></td>
-      <td style="font-size:0.85rem; max-width:200px;">${post.note}</td>
+      <td style="font-size:0.85rem; max-width:180px;">${post.note}</td>
       <td><span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700;">${post.scheduleNote}</span></td>
       <td>
         <div class="table-actions">
-          <button class="btn-action-icon" title="Đọc bài" onclick="openReader('${post.id}')">
+          <button class="btn-action-icon" title="Đọc duyệt bài" onclick="openReader('${post.id}')">
             <i class="fa-solid fa-eye"></i>
           </button>
-          <button class="btn-action-icon" title="Copy nhanh tiêu đề" onclick="copyText('${post.title}')">
+          <button class="btn-action-icon" title="Chỉnh sửa mọi thông tin" onclick="openEditModal('${post.id}')" style="color:#0984e3;">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button class="btn-action-icon" title="Copy tiêu đề" onclick="copyText('${post.title}')">
             <i class="fa-solid fa-copy"></i>
           </button>
-          <button class="btn-action-icon" style="color:red;" title="Xóa bài" onclick="deletePost('${post.id}')">
+          <button class="btn-action-icon" style="color:red;" title="Xóa bài này" onclick="deleteSinglePost('${post.id}')">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
@@ -163,95 +149,198 @@ function renderTable() {
     `;
     tbody.appendChild(tr);
   });
+
+  // Gắn sự kiện checkbox từng dòng
+  document.querySelectorAll('.row-checkbox').forEach(cb => {
+    cb.onchange = (e) => {
+      const id = e.target.dataset.id;
+      if (e.target.checked) {
+        selectedPostIds.add(id);
+      } else {
+        selectedPostIds.delete(id);
+      }
+      updateBatchDeleteUI();
+    };
+  });
+
+  updateBatchDeleteUI();
 }
 
+// Cập nhật trạng thái nút xóa hàng loạt và Check All
+function updateBatchDeleteUI() {
+  const btnBatch = document.getElementById('btn-batch-delete');
+  const countEl = document.getElementById('selected-count');
+  const checkAllBox = document.getElementById('check-all');
+
+  const count = selectedPostIds.size;
+  countEl.innerText = count;
+
+  if (count > 0) {
+    btnBatch.style.display = 'inline-flex';
+  } else {
+    btnBatch.style.display = 'none';
+  }
+
+  const visibleRowCheckboxes = document.querySelectorAll('.row-checkbox');
+  if (visibleRowCheckboxes.length > 0 && Array.from(visibleRowCheckboxes).every(cb => cb.checked)) {
+    checkAllBox.checked = true;
+  } else {
+    checkAllBox.checked = false;
+  }
+}
+
+// Check All logic
+document.getElementById('check-all').onchange = (e) => {
+  const isChecked = e.target.checked;
+  const filtered = posts.filter(p => activeFilter === 'all' || p.status === activeFilter);
+
+  filtered.forEach(p => {
+    if (isChecked) {
+      selectedPostIds.add(p.id);
+    } else {
+      selectedPostIds.delete(p.id);
+    }
+  });
+
+  document.querySelectorAll('.row-checkbox').forEach(cb => {
+    cb.checked = isChecked;
+  });
+
+  updateBatchDeleteUI();
+};
+
 // ==========================================
-// 4. THAO TÁC THÊM, SỬA, XÓA DỮ LIỆU
+// XÓA ĐƠN LẺ & XÓA CHỌN HÀNG LOẠT (MÃ PIN)
 // ==========================================
 
-// Đẩy bài mới vào Supabase
-document.getElementById('form-add-post').onsubmit = async (e) => {
+// Xóa 1 bài (Chỉ cần xác nhận nhanh)
+window.deleteSinglePost = async (id) => {
+  if (!confirm("Bạn có chắc chắn muốn xóa bài viết này khỏi Stack?")) return;
+
+  const { error } = await window.sb.from('stack_posts').delete().eq('id', id);
+  if (error) {
+    alert("Lỗi khi xóa: " + error.message);
+  } else {
+    selectedPostIds.delete(id);
+  }
+};
+
+// Xóa các bài đã chọn (Yêu cầu nhập mã PIN)
+document.getElementById('btn-batch-delete').onclick = async () => {
+  if (selectedPostIds.size === 0) return;
+
+  const pin = prompt(`Bạn đang chọn xóa ${selectedPostIds.size} bài viết.\nNhập mã PIN Admin để xác nhận xóa hàng loạt:`);
+  if (pin !== '2026') {
+    if (pin !== null) alert("Sai mã PIN Admin!");
+    return;
+  }
+
+  const idsToDelete = Array.from(selectedPostIds);
+  const { error } = await window.sb
+    .from('stack_posts')
+    .delete()
+    .in('id', idsToDelete);
+
+  if (error) {
+    alert("Lỗi khi xóa hàng loạt: " + error.message);
+  } else {
+    selectedPostIds.clear();
+    alert(`Đã xóa thành công ${idsToDelete.length} bài viết!`);
+    loadPostsFromDB();
+  }
+};
+
+// ==========================================
+// CHỨC NĂNG SỬA BÀI TOÀN DIỆN (CHO DESIGNER & ADMIN)
+// ==========================================
+const editModal = document.getElementById('edit-modal');
+
+window.openEditModal = (id) => {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+
+  document.getElementById('edit-id').value = post.id;
+  document.getElementById('edit-author').value = post.author;
+  document.getElementById('edit-designer').value = post.designer === '--' ? '' : post.designer;
+  document.getElementById('edit-title').value = post.title;
+  document.getElementById('edit-content').value = post.content;
+  document.getElementById('edit-image-url').value = post.imgUrl;
+  document.getElementById('edit-note').value = post.note === '--' ? '' : post.note;
+  document.getElementById('edit-schedule-note').value = post.scheduleNote === '--' ? '' : post.scheduleNote;
+  document.getElementById('edit-status').value = post.status;
+  document.getElementById('edit-image-file').value = '';
+
+  editModal.classList.add('active');
+};
+
+document.getElementById('btn-close-edit-modal').onclick = () => {
+  editModal.classList.remove('active');
+};
+
+// Submit form sửa
+document.getElementById('form-edit-post').onsubmit = async (e) => {
   e.preventDefault();
 
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  submitBtn.innerText = 'ĐANG ĐẨY LÊN...';
+  const id = document.getElementById('edit-id').value;
+  const submitBtn = document.getElementById('btn-submit-edit');
+  submitBtn.innerText = 'ĐANG LƯU...';
   submitBtn.disabled = true;
 
   try {
-    let finalImageUrl = '';
-    const fileInput = document.getElementById('input-image-file');
-    const file = fileInput.files[0];
+    let finalImageUrl = document.getElementById('edit-image-url').value.trim();
+    const file = document.getElementById('edit-image-file').files[0];
 
-    // 1. Nếu có đính kèm file ảnh từ máy -> Tự động upload lên Supabase Storage
+    // Nếu designer tải ảnh mới lên từ máy
     if (file) {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      const { data: uploadData, error: uploadError } = await window.sb.storage
+      const { error: uploadError } = await window.sb.storage
         .from('stack-assets')
         .upload(fileName, file);
 
-      if (uploadError) {
-        console.error('Lỗi upload file ảnh:', uploadError.message);
-      } else {
-        // Lấy link ảnh trực tiếp
+      if (!uploadError) {
         const { data: publicUrlData } = window.sb.storage
           .from('stack-assets')
           .getPublicUrl(fileName);
-
         finalImageUrl = publicUrlData.publicUrl;
       }
     }
 
-    // 2. Gom dữ liệu form đưa vào Database
-    const newPostData = {
-      author: document.getElementById('input-author').value || 'HaRif',
-      designer: document.getElementById('input-designer').value || '--',
-      title: document.getElementById('input-title').value || 'Không có tiêu đề',
-      content: document.getElementById('input-full-content').value || '',
+    const updatedData = {
+      author: document.getElementById('edit-author').value || 'HaRif',
+      designer: document.getElementById('edit-designer').value.trim() || '--',
+      title: document.getElementById('edit-title').value.trim() || 'Không có tiêu đề',
+      content: document.getElementById('edit-content').value || '',
       img_url: finalImageUrl,
-      note: document.getElementById('input-note').value || '--',
-      schedule_note: document.getElementById('input-schedule-note').value || '--',
-      status: 'unapproved'
+      note: document.getElementById('edit-note').value.trim() || '--',
+      schedule_note: document.getElementById('edit-schedule-note').value.trim() || '--',
+      status: document.getElementById('edit-status').value
     };
 
-    const { error: insertError } = await window.sb
+    const { error: updateError } = await window.sb
       .from('stack_posts')
-      .insert([newPostData]);
+      .update(updatedData)
+      .eq('id', id);
 
-    if (insertError) {
-      alert('Lỗi lưu bài: ' + insertError.message);
+    if (updateError) {
+      alert("Lỗi cập nhật: " + updateError.message);
     } else {
-      e.target.reset();
-      document.getElementById('input-author').value = localStorage.getItem('gl_current_user') || 'HaRif';
-      document.getElementById('post-modal').classList.remove('active');
+      editModal.classList.remove('active');
+      alert("Đã cập nhật bài viết thành công!");
+      loadPostsFromDB();
     }
   } catch (err) {
-    console.error('Lỗi:', err);
-    alert('Có lỗi xảy ra khi tải bài lên.');
+    console.error(err);
   } finally {
-    submitBtn.innerText = 'ĐẨY LÊN STACK CHO ANH EM CHECK';
+    submitBtn.innerText = 'LƯU CẬP NHẬT';
     submitBtn.disabled = false;
   }
 };
 
-// Xóa bài có mã PIN bảo vệ
-window.deletePost = async (id) => {
-  const pin = prompt("Nhập mã PIN Admin để xóa bài:");
-  if (pin === "2026") {
-    const { error } = await sb.from('stack_posts').delete().eq('id', id);
-    if (error) {
-      alert("Lỗi khi xóa bài: " + error.message);
-    }
-  } else if (pin !== null) {
-    alert("Sai mã PIN Admin!");
-  }
-};
-
 // ==========================================
-// 5. MODAL & CÁC NÚT TIỆN ÍCH
+// CÁC THAO TÁC KHÁC (READER, MODAL ĐẨY BÀI, COPY)
 // ==========================================
-// Cập nhật khi mở Modal đọc bài
 window.openReader = (id) => {
   const post = posts.find(p => p.id === id);
   if (!post) return;
@@ -264,7 +353,6 @@ window.openReader = (id) => {
   const wordCount = post.content ? post.content.trim().split(/\s+/).filter(Boolean).length : 0;
   document.getElementById('reader-word-count').innerText = `${wordCount} từ`;
 
-  // Cập nhật trạng thái hiển thị và nút duyệt
   const btnToggle = document.getElementById('btn-toggle-approval');
   const statusLabel = document.getElementById('reader-status-label');
 
@@ -285,10 +373,12 @@ window.openReader = (id) => {
   document.getElementById('reader-modal').classList.add('active');
 };
 
-// Sự kiện bấm nút Toggle Duyệt / Hủy duyệt
+document.getElementById('btn-close-reader').onclick = () => {
+  document.getElementById('reader-modal').classList.remove('active');
+};
+
 document.getElementById('btn-toggle-approval').onclick = async () => {
   if (!currentReadingPost) return;
-
   const nextStatus = currentReadingPost.status === 'approved' ? 'unapproved' : 'approved';
 
   const { error } = await window.sb
@@ -296,25 +386,10 @@ document.getElementById('btn-toggle-approval').onclick = async () => {
     .update({ status: nextStatus })
     .eq('id', currentReadingPost.id);
 
-  if (error) {
-    alert('Lỗi cập nhật: ' + error.message);
-  } else {
-    currentReadingPost.status = nextStatus;
+  if (!error) {
     document.getElementById('reader-modal').classList.remove('active');
     loadPostsFromDB();
   }
-};
-
-document.getElementById('btn-close-reader').onclick = () => {
-  document.getElementById('reader-modal').classList.remove('active');
-};
-
-document.getElementById('btn-copy-reader-content').onclick = () => {
-  if (!currentReadingPost) return;
-  const fullText = `${currentReadingPost.title}\n\n${currentReadingPost.content}`;
-  navigator.clipboard.writeText(fullText).then(() => {
-    alert("ĐÃ COPY TOÀN BỘ NỘI DUNG VÀO CLIPBOARD!");
-  });
 };
 
 window.openImageViewer = (url, title) => {
@@ -332,12 +407,56 @@ window.copyText = (text) => {
   navigator.clipboard.writeText(text).then(() => alert(`Đã copy: "${text}"`));
 };
 
-// Modal Thêm bài
+// Form Đẩy bài mới
 const addModal = document.getElementById('post-modal');
 document.getElementById('btn-open-modal').onclick = () => addModal.classList.add('active');
 document.getElementById('btn-close-modal').onclick = () => addModal.classList.remove('active');
 
-// Filter Tab Buttons
+document.getElementById('form-add-post').onsubmit = async (e) => {
+  e.preventDefault();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.innerText = 'ĐANG ĐẨY LÊN...';
+  submitBtn.disabled = true;
+
+  try {
+    let finalImageUrl = '';
+    const file = document.getElementById('input-image-file').files[0];
+
+    if (file) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error: uploadError } = await window.sb.storage.from('stack-assets').upload(fileName, file);
+
+      if (!uploadError) {
+        const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
+        finalImageUrl = data.publicUrl;
+      }
+    }
+
+    const newPostData = {
+      author: document.getElementById('input-author').value || 'Vinci',
+      designer: document.getElementById('input-designer').value || '--',
+      title: document.getElementById('input-title').value || 'Không có tiêu đề',
+      content: document.getElementById('input-full-content').value || '',
+      img_url: finalImageUrl,
+      note: document.getElementById('input-note').value || '--',
+      schedule_note: document.getElementById('input-schedule-note').value || '--',
+      status: 'unapproved'
+    };
+
+    await window.sb.from('stack_posts').insert([newPostData]);
+    e.target.reset();
+    document.getElementById('input-author').value = localStorage.getItem('gl_current_user') || 'Vinci';
+    addModal.classList.remove('active');
+  } catch (err) {
+    console.error(err);
+  } finally {
+    submitBtn.innerText = 'ĐẨY LÊN STACK CHO ANH EM CHECK';
+    submitBtn.disabled = false;
+  }
+};
+
+// Filter Tab
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -347,16 +466,10 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
   };
 });
 
-// ==========================================
-// 6. REALTIME LISTENER & KHỞI CHẠY
-// ==========================================
-sb.channel('realtime_stack')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'stack_posts' }, () => {
-    // Tự động tải lại bảng khi có bất kỳ ai thêm / sửa / xóa
-    loadPostsFromDB();
-  })
+// Realtime sync
+window.sb.channel('realtime_stack')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'stack_posts' }, loadPostsFromDB)
   .subscribe();
 
-// Chạy khởi tạo khi tải trang
 checkIdentity();
 loadPostsFromDB();

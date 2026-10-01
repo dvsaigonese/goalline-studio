@@ -365,3 +365,59 @@
   background: var(--neo-green); 
   color: var(--neo-black); 
 }
+
+/* Checkbox Neobrutalism */
+.neo-checkbox {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--neo-black);
+  background: #ffffff;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  box-shadow: 2px 2px 0 var(--neo-black);
+}
+
+.neo-checkbox:checked {
+  background: var(--neo-yellow);
+}
+
+.neo-checkbox:checked::after {
+  content: "✔";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--neo-black);
+}
+
+/* Nút Xóa Đã Chọn */
+.btn-neo-batch-del {
+  background: #ff4757;
+  color: #ffffff;
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 10px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.1s;
+}
+
+.btn-neo-batch-del:hover {
+  background: #ff6b81;
+  transform: translate(-2px, -2px);
+  box-shadow: var(--neo-shadow-hover);
+}
+
+.btn-neo-batch-del:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--neo-shadow-active);
+}
