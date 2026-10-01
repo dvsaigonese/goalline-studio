@@ -1,0 +1,431 @@
+/* css/writer.css */
+
+.writer-body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Giữ khung soạn thảo không bị cuộn toàn trang */
+}
+
+.writer-nav {
+  margin-bottom: 0 !important;
+  border-bottom: var(--neo-border-w) solid var(--neo-black);
+  z-index: 50;
+}
+
+.writer-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-push-stack {
+  background: var(--neo-green) !important;
+  color: var(--neo-black) !important;
+}
+
+/* ==================================================
+   LAYOUT CHÍNH
+   ================================================== */
+.workspace-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  gap: 16px;
+}
+
+/* ==================================================
+   SIDEBAR DANH SÁCH BÀI
+   ================================================== */
+.docs-sidebar {
+  width: 320px;
+  background: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+  z-index: 40;
+}
+
+.sidebar-top {
+  padding: 12px;
+  border-bottom: 2px solid var(--neo-black);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-neo-new-doc {
+  flex: 1;
+  background: var(--neo-yellow);
+  border: 2px solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 1.1rem;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.1s;
+}
+
+.btn-neo-new-doc:hover {
+  background: var(--neo-green);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--neo-shadow);
+}
+
+.btn-close-sidebar-mobile {
+  display: none;
+  background: none;
+  border: 2px solid var(--neo-black);
+  width: 38px;
+  height: 38px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.docs-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Thẻ bài viết trong Sidebar */
+.doc-card {
+  background: var(--neo-bg);
+  border: 2px solid var(--neo-black);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.1s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+
+.doc-card:hover {
+  background: #fff;
+  transform: translate(-2px, -2px);
+  box-shadow: 2px 2px 0 var(--neo-black);
+}
+
+.doc-card.active {
+  background: var(--neo-yellow);
+  box-shadow: 3px 3px 0 var(--neo-black);
+  border-width: 2.5px;
+}
+
+.doc-card-title {
+  font-family: var(--font-main);
+  font-weight: 800;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 24px;
+}
+
+.doc-card-meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn-del-doc {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #888;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.85rem;
+}
+
+.btn-del-doc:hover {
+  color: red;
+}
+
+.sidebar-footer {
+  padding: 10px 14px;
+  border-top: 2px solid var(--neo-black);
+  background: #f8f9fa;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #555;
+}
+
+/* ==================================================
+   EDITOR CHÍNH
+   ================================================== */
+.editor-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-lg);
+  overflow: hidden;
+}
+
+.editor-stats-bar {
+  padding: 10px 16px;
+  background: #f1f2f6;
+  border-bottom: 2px solid var(--neo-black);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stat-pill-group {
+  display: flex;
+  gap: 8px;
+}
+
+.stat-badge {
+  background: #fff;
+  border: 1.5px solid var(--neo-black);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.stat-badge.highlight {
+  background: var(--neo-blue);
+}
+
+.save-indicator {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #27ae60;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-paper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: #ffffff;
+  overflow-y: auto;
+}
+
+.editor-title-input {
+  width: 100%;
+  font-family: var(--font-cond);
+  font-size: 2.2rem;
+  font-weight: 900;
+  border: none;
+  outline: none;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed #ddd;
+  margin-bottom: 16px;
+  color: var(--neo-black);
+}
+
+.editor-title-input::placeholder {
+  color: #bbb;
+}
+
+.editor-content-area {
+  flex: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-main);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #222;
+  min-height: 350px;
+}
+
+/* ==================================================
+   RESPONSIVE MOBILE (TỐI ƯU CỰC MƯỢT)
+   ================================================== */
+@media screen and (max-width: 900px) {
+  .writer-body {
+    height: 100vh;
+    height: 100dvh; /* Hỗ trợ dynamic viewport trên iOS/Android */
+  }
+
+  .workspace-container {
+    padding: 8px;
+    gap: 0;
+  }
+
+  .btn-toggle-sidebar {
+    display: inline-flex !important;
+  }
+
+  /* Biến sidebar thành Drawer trượt ra từ bên trái */
+  .docs-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 82%;
+    max-width: 340px;
+    height: 100%;
+    z-index: 100;
+    transform: translateX(-105%);
+    box-shadow: 10px 0px 0px var(--neo-black);
+  }
+
+  .docs-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .btn-close-sidebar-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Lớp phủ làm tối màn hình */
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 90;
+    display: none;
+  }
+
+  .sidebar-backdrop.active {
+    display: block;
+  }
+
+  .editor-paper {
+    padding: 14px;
+  }
+
+  .editor-title-input {
+    font-size: 1.6rem;
+  }
+
+  .editor-content-area {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .btn-text {
+    display: inline;
+  }
+}
+
+/* ==================================================
+   HEADER BUTTONS & ACTIONS (NEOBRUTALISM)
+   ================================================== */
+.btn-neo-back {
+  background: var(--neo-black);
+  color: var(--neo-white);
+  padding: 8px 14px;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.12s;
+  outline: none;
+}
+
+.btn-neo-back:hover {
+  background: var(--neo-yellow);
+  color: var(--neo-black);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--neo-shadow);
+}
+
+.btn-neo-back:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--neo-shadow-active);
+}
+
+.btn-push-stack {
+  background: var(--neo-green) !important;
+  color: var(--neo-black) !important;
+}
+
+.btn-push-stack:hover {
+  background: var(--neo-yellow) !important;
+  color: var(--neo-black) !important;
+}
+
+.btn-toggle-sidebar {
+  background: var(--neo-white);
+  color: var(--neo-black);
+}
+
+/* MODAL NEOBRUTALISM */
+.neo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+.neo-modal-overlay.active { display: flex; }
+.neo-modal {
+  background: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-lg);
+  width: 100%;
+}
+.modal-header {
+  background: var(--neo-yellow);
+  border-bottom: var(--neo-border-w) solid var(--neo-black);
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { font-family: var(--font-cond); font-weight: 900; font-size: 1.3rem; }
+.btn-modal-close { background: none; border: none; font-size: 1.8rem; cursor: pointer; font-weight: 900; }
+.modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group label { display: block; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 800; margin-bottom: 4px; }
+.form-group input, .form-group textarea {
+  width: 100%; padding: 8px 10px; border: 2px solid var(--neo-black);
+  font-family: var(--font-main); font-size: 0.9rem; outline: none;
+}
+.btn-neo-submit {
+  width: 100%; background: var(--neo-black); color: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black); padding: 12px;
+  font-family: var(--font-cond); font-weight: 900; font-size: 1.15rem; cursor: pointer;
+  box-shadow: var(--neo-shadow);
+}
+.btn-neo-submit:hover { background: var(--neo-green); color: var(--neo-black); box-shadow: var(--neo-shadow-hover); }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }

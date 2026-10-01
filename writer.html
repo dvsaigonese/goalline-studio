@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Writer Workspace | Goal-Line Studio</title>
+    <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/writer.css" />
+</head>
+<body class="landing-body writer-body">
+
+    <!-- Top Navigation -->
+    <header class="top-nav writer-nav">
+        <div class="brand-badge">
+            <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
+            <div class="brand-text">
+                <span class="studio-title">GOAL-LINE <em>WRITER</em></span>
+                <span class="system-tag">PERSONAL CONTENT WORKSPACE</span>
+            </div>
+        </div>
+
+        <div class="header-status writer-header-actions">
+            <!-- Nút bật/tắt danh sách bài trên Mobile -->
+            <button class="btn-neo-back btn-toggle-sidebar" id="btn-toggle-sidebar">
+                <i class="fa-solid fa-folder-open"></i> <span class="btn-text">BÀI VIẾT (<span id="mobile-doc-count">0</span>)</span>
+            </button>
+            
+            <button class="btn-neo-back btn-push-stack" id="btn-push-to-stack" title="Đẩy bài này thẳng lên Stack chung">
+                <i class="fa-solid fa-cloud-arrow-up"></i> <span class="btn-text">ĐẨY LÊN STACK</span>
+            </button>
+
+            <a href="index.html" class="btn-neo-back">
+                <i class="fa-solid fa-arrow-left"></i> <span class="btn-text">HOME</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="workspace-container">
+        
+        <!-- SIDEBAR: DANH SÁCH BÀI VIẾT (Tự trượt trên mobile) -->
+        <aside class="docs-sidebar" id="docs-sidebar">
+            <div class="sidebar-top">
+                <button class="btn-neo-new-doc" id="btn-new-doc">
+                    <i class="fa-solid fa-plus"></i> BÀI MỚI
+                </button>
+                <button class="btn-close-sidebar-mobile" id="btn-close-sidebar">&times;</button>
+            </div>
+            
+            <div class="docs-list-scroll" id="docs-list">
+                <!-- Danh sách bài viết được render từ JS -->
+            </div>
+
+            <div class="sidebar-footer">
+                <span id="storage-status"><i class="fa-solid fa-shield-halved"></i> TỰ LƯU TRÊN MÁY</span>
+            </div>
+        </aside>
+
+        <!-- BACKDROP CHO MOBILE KHI MỞ SIDEBAR -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+        <!-- MAIN EDITOR: NƠI SOẠN THẢO BÀI VIẾT -->
+        <main class="editor-main">
+            <!-- Stats Bar -->
+            <div class="editor-stats-bar">
+                <div class="stat-pill-group">
+                    <div class="stat-badge"><i class="fa-solid fa-font"></i> <strong id="stat-words">0</strong> từ</div>
+                    <div class="stat-badge"><i class="fa-solid fa-keyboard"></i> <strong id="stat-chars">0</strong> ký tự</div>
+                    <div class="stat-badge highlight" id="stat-read-time">~0 phút đọc</div>
+                </div>
+                <div class="save-indicator" id="save-indicator">
+                    <i class="fa-solid fa-check"></i> Đã lưu
+                </div>
+            </div>
+
+            <!-- Workspace Paper -->
+            <div class="editor-paper">
+                <input type="text" id="editor-title" class="editor-title-input" placeholder="Tiêu đề bài viết..." autocomplete="off">
+                <textarea id="editor-content" class="editor-content-area" placeholder="Bắt đầu viết nội dung bài tại đây..."></textarea>
+            </div>
+        </main>
+    </div>
+    <!-- MODAL ĐẨY BÀI VIẾT NÀY VÀO STACK -->
+    <div class="neo-modal-overlay" id="writer-push-modal">
+        <div class="neo-modal" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-cloud-arrow-up"></i> ĐẨY BÀI VÀO STACK CHUNG</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-push-modal">&times;</button>
+            </div>
+            <form id="form-push-to-stack" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TÊN ADMIN TÁC GIẢ:</label>
+                        <input type="text" id="modal-author" readonly style="background:#f1f2f6;">
+                    </div>
+                    <div class="form-group">
+                        <label>NGƯỜI THIẾT KẾ (NẾU CÓ):</label>
+                        <input type="text" id="modal-designer">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>TIÊU ĐỀ BÀI VIẾT:</label>
+                    <input type="text" id="modal-title">
+                </div>
+
+                <div class="form-group">
+                    <label>NỘI DUNG (ĐÃ TỰ ĐỘNG LẤY TỪ WORKSPACE):</label>
+                    <textarea id="modal-content" rows="6"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>ĐÍNH KÈM FILE ẢNH (NẾU CÓ):</label>
+                    <input type="file" id="modal-image-file" accept="image/*">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GHI CHÚ HÌNH ẢNH / YÊU CẦU DES:</label>
+                        <input type="text" id="modal-note">
+                    </div>
+                    <div class="form-group">
+                        <label>DỰ KIẾN LỊCH ĐĂNG / SERIES:</label>
+                        <input type="text" id="modal-schedule-note">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn-neo-submit" id="btn-submit-push">XÁC NHẬN ĐẨY VÀO STACK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ĐẨY BÀI VIẾT NÀY VÀO STACK -->
+    <div class="neo-modal-overlay" id="writer-push-modal">
+        <div class="neo-modal" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-cloud-arrow-up"></i> ĐẨY BÀI VÀO STACK CHUNG</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-push-modal">&times;</button>
+            </div>
+            <form id="form-push-to-stack" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TÊN ADMIN TÁC GIẢ:</label>
+                        <input type="text" id="modal-author" readonly style="background:#f1f2f6;">
+                    </div>
+                    <div class="form-group">
+                        <label>NGƯỜI THIẾT KẾ (NẾU CÓ):</label>
+                        <input type="text" id="modal-designer">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>TIÊU ĐỀ BÀI VIẾT:</label>
+                    <input type="text" id="modal-title">
+                </div>
+
+                <div class="form-group">
+                    <label>NỘI DUNG (ĐÃ TỰ ĐỘNG LẤY TỪ WORKSPACE):</label>
+                    <textarea id="modal-content" rows="6"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>ĐÍNH KÈM FILE ẢNH (NẾU CÓ):</label>
+                    <input type="file" id="modal-image-file" accept="image/*">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GHI CHÚ HÌNH ẢNH / YÊU CẦU DES:</label>
+                        <input type="text" id="modal-note">
+                    </div>
+                    <div class="form-group">
+                        <label>DỰ KIẾN LỊCH ĐĂNG / SERIES:</label>
+                        <input type="text" id="modal-schedule-note">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn-neo-submit" id="btn-submit-push">XÁC NHẬN ĐẨY VÀO STACK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Nhúng Supabase để hỗ trợ nút "Đẩy lên Stack" -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/writer.js"></script>
+</body>
+</html>

@@ -12,6 +12,8 @@
   font-style: normal;
 }
 
+
+
 :root {
   --neo-black: #000000;
   --neo-white: #ffffff;
@@ -614,3 +616,26 @@ html, body {
     margin: 4px 6px;
   }
 }
+
+/* ==================================================
+   1. FIX VIỀN ĐẦU CHO CARD 02 VÀ CARD 03 BỊ ĐEN
+   ================================================== */
+.card-yellow .card-icon-box { background: var(--neo-yellow); }
+.card-yellow { border-top: 10px solid var(--neo-yellow); }
+
+.card-blue .card-icon-box { background: var(--neo-blue); }
+.card-blue { border-top: 10px solid var(--neo-blue); }
+
+.card-purple .card-icon-box { background: var(--neo-purple); }
+.card-purple { border-top: 10px solid var(--neo-purple); }
+
+.card-orange .card-icon-box { background: var(--neo-orange); }
+.card-orange { border-top: 10px solid var(--neo-orange); }
+
+.card-green .card-icon-box { background: var(--neo-green); }
+.card-green { border-top: 10px solid var(--neo-green); }
+
+.card-pink .card-icon-box { background: var(--neo-pink); }
+.card-pink { border-top: 10px solid var(--neo-pink); }
+
+.card-cyan { border-top: 10px solid #00f0ff !important; }

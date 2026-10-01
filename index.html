@@ -44,6 +44,9 @@
             </div>
 
             <div class="header-status">
+                <button class="status-indicator" onclick="toggleDarkMode()" style="cursor: pointer;" title="Bật/Tắt Dark Mode">
+                    <i id="theme-toggle-icon" class="fa-solid fa-moon"></i>
+                </button>
                 <div class="status-indicator">
                     <span class="pulse-dot"></span>
                     <span id="live-clock">SYSTEM 100% READY</span>
@@ -64,10 +67,67 @@
         <!-- 3 Main Tool Cards Grid (Beta Tools Hidden) -->
         <main class="tool-grid">
             
-            <!-- TOOL 1: WATERMARK & TITLE -->
-            <a href="watermark.html" class="tool-card card-yellow">
+            <!-- TOOL 01: CONTENT STACK -->
+            <a href="stack.html" class="tool-card card-yellow">
                 <div class="card-top">
                     <span class="card-num">01</span>
+                    <span class="card-tag">EDITORIAL PIPELINE</span>
+                </div>
+                <div class="card-icon-box">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title">CONTENT STACK</h3>
+                    <p class="card-desc">Kho lưu trữ bài viết chờ duyệt, ảnh thiết kế từ Canvas Engine, ghi chú designer và hỗ trợ 1-click copy cho poster.</p>
+                </div>
+                <div class="card-footer-btn">
+                    <span>ACCESS STACK</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- TOOL 02: EDITORIAL SCHEDULE -->
+            <a href="schedule.html" class="tool-card card-blue">
+                <div class="card-top">
+                    <span class="card-num">02</span>
+                    <span class="card-tag">SHIFT & CALENDAR</span>
+                </div>
+                <div class="card-icon-box">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title">EDITORIAL SCHEDULE</h3>
+                    <p class="card-desc">Lịch đăng ký viết bài theo tuần, phân ca trực page Facebook và bảng tổng hợp xin nghỉ phép nội bộ team.</p>
+                </div>
+                <div class="card-footer-btn">
+                    <span>VIEW SCHEDULE</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- TOOL 03: WRITER DESK -->
+            <a href="writer.html" class="tool-card card-purple">
+                <div class="card-top">
+                    <span class="card-num">03</span>
+                    <span class="card-tag">CONTENT CREATION</span>
+                </div>
+                <div class="card-icon-box">
+                    <i class="fa-solid fa-pen-fancy"></i>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title">WRITER DESK</h3>
+                    <p class="card-desc">Không gian viết bài cá nhân độc lập, tự động lưu chữ liên tục, đếm từ thời gian thực và 1-click đẩy bài lên Stack.</p>
+                </div>
+                <div class="card-footer-btn">
+                    <span>OPEN WORKSPACE</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- TOOL 04: WATERMARK & TITLE -->
+            <a href="watermark.html" class="tool-card card-orange">
+                <div class="card-top">
+                    <span class="card-num">04</span>
                     <span class="card-tag">POST PRODUCTION</span>
                 </div>
                 <div class="card-icon-box">
@@ -83,10 +143,10 @@
                 </div>
             </a>
 
-            <!-- TOOL 2: TACTICAL BOARD -->
+            <!-- TOOL 05: TACTICAL BOARD -->
             <a href="board.html" class="tool-card card-green">
                 <div class="card-top">
-                    <span class="card-num">02</span>
+                    <span class="card-num">05</span>
                     <span class="card-tag">FORMATION ENGINE</span>
                 </div>
                 <div class="card-icon-box">
@@ -102,10 +162,10 @@
                 </div>
             </a>
 
-            <!-- TOOL 3: THE ATHLETIC READER -->
+            <!-- TOOL 06: THE ATHLETIC READER -->
             <a href="reader.html" class="tool-card card-pink">
                 <div class="card-top">
-                    <span class="card-num">03</span>
+                    <span class="card-num">06</span>
                     <span class="card-tag">NEWS DESK & AI</span>
                 </div>
                 <div class="card-icon-box">
@@ -121,51 +181,11 @@
                 </div>
             </a>
 
-            <!-- ==============================================
-                 BETA TOOLS (ĐÃ ĐƯỢC ẨN BẰNG CLASS hidden-beta)
-                 ============================================== -->
-            <a href="chart.html" class="tool-card card-blue hidden-beta">
-                <div class="card-top">
-                    <span class="card-num">04</span>
-                    <span class="card-tag beta-tag">BETA</span>
-                </div>
-                <div class="card-icon-box"><i class="fa-solid fa-chart-pie"></i></div>
-                <div class="card-body">
-                    <h3 class="card-title">CHART</h3>
-                    <p class="card-desc">Beta version, supports basic charts only.</p>
-                </div>
-                <div class="card-footer-btn"><span>LAUNCH TOOL</span><i class="fa-solid fa-arrow-right"></i></div>
-            </a>
-
-            <a href="report.html" class="tool-card card-orange hidden-beta">
-                <div class="card-top">
-                    <span class="card-num">05</span>
-                    <span class="card-tag beta-tag">BETA</span>
-                </div>
-                <div class="card-icon-box"><i class="fa-solid fa-file-invoice"></i></div>
-                <div class="card-body">
-                    <h3 class="card-title">REPORT</h3>
-                    <p class="card-desc">Beta version, supports WhoScored passmap only.</p>
-                </div>
-                <div class="card-footer-btn"><span>LAUNCH TOOL</span><i class="fa-solid fa-arrow-right"></i></div>
-            </a>
-
-            <a href="ai-news.html" class="tool-card card-purple hidden-beta">
-                <div class="card-top">
-                    <span class="card-num">06</span>
-                    <span class="card-tag beta-tag">BETA</span>
-                </div>
-                <div class="card-icon-box"><i class="fa-solid fa-robot"></i></div>
-                <div class="card-body">
-                    <h3 class="card-title">AI NEWSROOM</h3>
-                    <p class="card-desc">Stay updated with breaking news and draft social posts.</p>
-                </div>
-                <div class="card-footer-btn"><span>LAUNCH TOOL</span><i class="fa-solid fa-arrow-right"></i></div>
-            </a>
         </main>
 
+        <!-- SQUAD DIRECTORY BANNER (Đổi sang card-cyan để không xung đột màu vàng) -->
         <section class="roster-showcase-section">
-            <div class="roster-banner card-yellow">
+            <div class="roster-banner card-cyan">
                 <div class="banner-badge-strip">
                     <span class="banner-tag"><i class="fa-solid fa-users"></i> SQUAD DIRECTORY</span>
                     <span class="banner-status-tag" id="banner-total-tag">SYNCING ROSTER...</span>
@@ -202,14 +222,11 @@
                 <span class="footer-dim">ALL ENGINES STANDALONE.</span>
             </div>
             <div class="footer-right">
-                <span class="keyboard-tip"><kbd>1</kbd> WATERMARK</span>
-                <span class="keyboard-tip"><kbd>2</kbd> TACTICS</span>
-                <span class="keyboard-tip"><kbd>3</kbd> READER</span>
-                <span class="keyboard-tip"><kbd>4</kbd> ROSTER</span>
             </div>
         </footer>
     </div>
 
     <script type="module" src="js/landing.js"></script>
+    <script src="js/theme.js"></script>
 </body>
 </html>

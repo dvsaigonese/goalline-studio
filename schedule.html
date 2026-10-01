@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editorial Schedule | Goal-Line Studio</title>
+    <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/schedule.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="landing-body">
+
+    <div class="landing-wrapper">
+        <!-- Top Nav -->
+        <header class="top-nav">
+            <div class="brand-badge">
+                <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
+                <div class="brand-text">
+                    <span class="studio-title">EDITORIAL <em>SCHEDULE</em></span>
+                    <span class="system-tag">SHIFT ROSTER & WRITING CALENDAR</span>
+                </div>
+            </div>
+
+            <div class="header-status">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span id="current-user-display">ADMIN: HA RIF</span>
+                </div>
+                <button class="btn-neo-back" id="btn-change-identity">
+                    <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+                </button>
+                <button class="btn-neo-back btn-neo-promote" id="btn-promote-week" title="Chốt tuần này và đôn tuần sau lên">
+                    <i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN MỚI
+                </button>
+                <a href="index.html" class="btn-neo-back">
+                    <i class="fa-solid fa-arrow-left"></i> VỀ HOME
+                </a>
+            </div>
+        </header>
+
+
+        <!-- Week Switcher -->
+        <div class="schedule-week-bar">
+            <div class="week-title-box">
+                <span class="tag-label">CHU KỲ XUẤT BẢN</span>
+                <h2 id="current-week-label">TUẦN NÀY</h2>
+            </div>
+            <div class="week-switch-buttons">
+                <button class="btn-week-toggle active" id="btn-this-week">TUẦN NÀY</button>
+                <button class="btn-week-toggle" id="btn-next-week">ĐĂNG KÝ TUẦN SAU</button>
+            </div>
+        </div>
+
+        <!-- BẢNG 1: ĐĂNG KÝ LỊCH VIẾT BÀI NGẮN (TỐI ĐA 5 SLOT) -->
+        <div class="schedule-card card-yellow">
+            <div class="schedule-card-header">
+                <div class="header-badge"><i class="fa-solid fa-bolt"></i> BÀI NGẮN</div>
+                <h3>ĐĂNG KÝ LỊCH VIẾT BÀI NGẮN (2 BÀI/NGƯỜI/TUẦN - TỐI ĐA 5 SLOT/CA)</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="grid-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 85px;">BUỔI</th>
+                            <th style="width: 120px;">GIỜ</th>
+                            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-writing-short">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BẢNG 2: ĐĂNG KÝ LỊCH VIẾT BÀI DÀI (TỐI ĐA 3 SLOT) -->
+        <div class="schedule-card card-orange">
+            <div class="schedule-card-header" style="background:#fff4ea;">
+                <div class="header-badge" style="background:var(--neo-orange); color:black;"><i class="fa-solid fa-newspaper"></i> BÀI DÀI</div>
+                <h3>ĐĂNG KÝ LỊCH VIẾT BÀI DÀI (1 BÀI/NGƯỜI/TUẦN - TỐI ĐA 3 SLOT/CA)</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="grid-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 85px;">BUỔI</th>
+                            <th style="width: 120px;">GIỜ</th>
+                            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-writing-long">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BẢNG 3: ĐĂNG KÝ LỊCH ĐĂNG BÀI (FANPAGE) -->
+        <div class="schedule-card card-cyan">
+            <div class="schedule-card-header">
+                <div class="header-badge"><i class="fa-solid fa-bullhorn"></i> TRỰC PAGE</div>
+                <h3>ĐĂNG KÝ LỊCH ĐĂNG BÀI (CA TRỰC FANPAGE)</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="grid-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">BUỔI</th>
+                            <th style="width: 130px;">KHUNG GIỜ</th>
+                            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-posting">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BẢNG 4: XIN NGHỈ MỘT THỜI GIAN -->
+        <div class="schedule-card card-red">
+            <div class="schedule-card-header bg-red">
+                <div class="header-badge-white"><i class="fa-solid fa-bed"></i> OFF / NGHỈ PHÉP</div>
+                <h3>XIN NGHỈ MỘT THỜI GIAN!</h3>
+            </div>
+            <div class="leave-notice">
+                ⚠️ <strong>Ai đang muốn off, vui lòng điền vào bảng bên dưới. Lý do nhạy cảm quá thì nhắn riêng Vinci, cảm ơn anh em!</strong>
+            </div>
+            <div class="table-responsive">
+                <table class="grid-table leave-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">TÊN ADMIN</th>
+                            <th style="width: 220px;">THỜI GIAN NGHỈ</th>
+                            <th>LÝ DO / GHI CHÚ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-leave">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding: 14px 16px; background: white; border-top: 2px dashed black;">
+                <button class="btn-neo-add" id="btn-add-leave" style="font-size:0.95rem; padding:6px 14px;">
+                    <i class="fa-solid fa-plus"></i> ĐIỀN ĐƠN NGHỈ
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/schedule.js"></script>
+</body>
+</html>

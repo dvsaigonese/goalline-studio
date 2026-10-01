@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Stack | Goal-Line Studio</title>
+    <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/stack.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="landing-body">
+
+    <div class="landing-wrapper">
+        <!-- Top Nav -->
+        <header class="top-nav">
+            <div class="brand-badge">
+                <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
+                <div class="brand-text">
+                    <span class="studio-title">GOAL-LINE <em>STACK</em></span>
+                    <span class="system-tag">PRODUCTION CONTENT PIPELINE</span>
+                </div>
+            </div>
+            <div class="header-status">
+                <span class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span id="current-user-display">ĐANG ĐỊNH DANH...</span>
+                </span>
+                <button class="btn-neo-back" id="btn-change-identity" style="cursor:pointer;"><i class="fa-solid fa-user-pen"></i> ĐỔI TÊN</button>
+                <a href="index.html" class="btn-neo-back"><i class="fa-solid fa-arrow-left"></i> VỀ HOME</a>
+            </div>
+        </header>
+
+        <!-- Controls -->
+        <div class="stack-action-bar">
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="all">TẤT CẢ (<span id="count-all">0</span>)</button>
+                <button class="filter-btn" data-filter="unapproved">CHƯA DUYỆT (<span id="count-unapproved">0</span>)</button>
+                <button class="filter-btn" data-filter="approved">ĐÃ DUYỆT (<span id="count-approved">0</span>)</button>
+            </div>
+            <button class="btn-neo-add" id="btn-open-modal">
+                <i class="fa-solid fa-plus"></i> ĐẨY BÀI VÀO STACK
+            </button>
+        </div>
+
+        <!-- Table View -->
+        <div class="stack-table-container">
+            <table class="neo-table">
+                <thead>
+                    <tr>
+                        <th style="width: 110px;">ADMIN</th>
+                        <th>BÀI VIẾT (CLICK ĐỂ ĐỌC DUYỆT)</th>
+                        <th style="width: 140px;">HÌNH ẢNH</th>
+                        <th style="width: 130px;">NGƯỜI DES</th>
+                        <th>NOTE VỀ ẢNH / DỰ ÁN</th>
+                        <th style="width: 160px;">LỊCH ĐĂNG MONG ĐỢI</th>
+                        <th style="width: 140px;">HÀNH ĐỘNG</th>
+                    </tr>
+                </thead>
+                <tbody id="stack-table-body">
+                    <!-- Render từ JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL 1: ĐẨY BÀI MỚI VÀO STACK -->
+    <div class="neo-modal-overlay" id="post-modal">
+        <div class="neo-modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-file-circle-plus"></i> ĐẨY BÀI VÀO STACK</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-modal">&times;</button>
+            </div>
+            <form id="form-add-post" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TÊN ADMIN TÁC GIẢ:</label>
+                        <input type="text" id="input-author">
+                    </div>
+                    <div class="form-group">
+                        <label>NGƯỜI DES (NẾU CÓ):</label>
+                        <input type="text" id="input-designer">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>TIÊU ĐỀ BÀI VIẾT:</label>
+                    <input type="text" id="input-title">
+                </div>
+
+                <div class="form-group">
+                    <label>NỘI DUNG TOÀN BÀI VIẾT (DÁN CẢ BÀI VÀO ĐÂY ĐỂ ADMIN CHECK):</label>
+                    <textarea id="input-full-content" rows="6"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TẢI ẢNH TRỰC TIẾP TỪ MÁY:</label>
+                        <input type="file" id="input-image-file" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GHI CHÚ VỀ HÌNH ẢNH (CHO DESIGNER):</label>
+                        <input type="text" id="input-note">
+                    </div>
+                    <div class="form-group">
+                        <label>DỰ ĐỊNH NGÀY ĐĂNG / SERIES:</label>
+                        <input type="text" id="input-schedule-note">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn-neo-submit">ĐẨY LÊN STACK CHO ANH EM CHECK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ĐỌC DUYỆT BÀI VIẾT (ARTICLE READER MODAL) -->
+    <div class="neo-modal-overlay" id="reader-modal">
+        <div class="neo-modal" style="max-width: 800px;">
+            <div class="modal-header" style="background: var(--neo-blue);">
+                <div>
+                    <span class="tag-label" id="reader-modal-author" style="margin-bottom:4px;">TÁC GIẢ</span>
+                    <h3 id="reader-modal-title" style="font-size: 1.6rem;">TIÊU ĐỀ BÀI VIẾT</h3>
+                </div>
+                <button class="btn-modal-close" id="btn-close-reader">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="reader-meta-bar">
+                    <span><i class="fa-solid fa-align-left"></i> Độ dài: <strong id="reader-word-count">0 từ</strong></span>
+                    <span><i class="fa-solid fa-tag"></i> Trạng thái: <strong id="reader-status-label">CHỜ DES</strong></span>
+                </div>
+                <div class="reader-content-box" id="reader-modal-text">
+                    <!-- Nội dung bài viết được render ở đây -->
+                </div>
+                <div class="reader-actions-bar">
+                    <button class="btn-neo-add" id="btn-copy-reader-content" style="font-size: 0.95rem;">
+                        <i class="fa-solid fa-copy"></i> COPY TOÀN BỘ BÀI VIẾT
+                    </button>
+                    <button class="btn-neo-back" id="btn-toggle-approval" style="cursor: pointer;">
+                        <i class="fa-solid fa-check"></i> DUYỆT BÀI
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: XEM ẢNH TO (IMAGE LIGHTBOX MODAL) -->
+    <div class="neo-modal-overlay" id="image-modal">
+        <div class="neo-modal" style="max-width: 900px; background: black; border-color: black;">
+            <div class="modal-header" style="background: #222; color: white; border-bottom: 2px solid #444;">
+                <h3 id="image-modal-title" style="color:var(--neo-yellow); font-size:1.2rem;">XEM ẢNH HD</h3>
+                <button class="btn-modal-close" id="btn-close-image" style="color:white;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 10px; text-align: center; background: #111;">
+                <img id="image-modal-preview" src="" alt="Ảnh thiết kế" style="max-width: 100%; max-height: 70vh; object-fit: contain; border: 2px solid var(--neo-yellow);">
+                <div style="margin-top: 15px; display: flex; justify-content: center; gap: 12px;">
+                    <a id="btn-download-hd" href="" target="_blank" download class="btn-neo-add" style="font-size: 0.95rem; text-decoration:none;">
+                        <i class="fa-solid fa-download"></i> TẢI ẢNH GỐC XUỐNG
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/stack.js"></script>
+</body>
+</html>
