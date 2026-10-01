@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Goal-Line Reader Bridge",
+  "version": "1.0.0",
+  "description": "Bypass anti-bot and bridge The Athletic articles directly to Goal-Line Studio.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.nytimes.com/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://dvsaigonese.github.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.nytimes.com/athletic/*"
+      ],
+      "js": ["content-athletic.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://127.0.0.1:*/reader.html*",
+        "http://localhost:*/reader.html*",
+        "https://dvsaigonese.github.io/goalline-studio/reader.html*"
+      ],
+      "js": ["content-bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

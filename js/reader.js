@@ -1,29 +1,16 @@
+/**
+ * GOAL-LINE STUDIO - READER ENGINE (EXTENSION-DRIVEN ARCHITECTURE)
+ * Bỏ hoàn toàn Ladder Proxy server - Chạy qua Chrome Extension Bridge
+ */
+
 /* ─── State ──────────────────────────────────────── */
 const STORE = 'gl_reader_v3';
-let cfg = { server: '', user: '', pass: '', apiKey: '' };
+let cfg = { apiKey: '' };
 let currentUrl = '';
 let currentHtml = '';
 let currentBlobUrl = null;
-let corsOk = null;
 let viewingTrans = false;
-let cachedTranslations = {}; 
-
-const TABS = {
-  'football-all': { url: 'https://www.nytimes.com/athletic/football/', page: 1, loaded: false, urls: new Set(), icon: '⚽' },
-  'football-epl': { url: 'https://www.nytimes.com/athletic/football/premier-league/', page: 1, loaded: false, urls: new Set(), icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  'football-ucl': { url: 'https://www.nytimes.com/athletic/football/champions-league/', page: 1, loaded: false, urls: new Set(), icon: '🏆' },
-  'football-laliga': { url: 'https://www.nytimes.com/athletic/football/la-liga/', page: 1, loaded: false, urls: new Set(), icon: '🇪🇸' },
-  'football-bundesliga': { url: 'https://www.nytimes.com/athletic/football/bundesliga/', page: 1, loaded: false, urls: new Set(), icon: '🇩🇪' },
-  'football-seriea': { url: 'https://www.nytimes.com/athletic/football/serie-a/', page: 1, loaded: false, urls: new Set(), icon: '🇮🇹' },
-  'football-wildcard': { url: 'https://www.nytimes.com/athletic/football/international-football/', page: 1, loaded: false, urls: new Set(), icon: '🌍' },
-  'nba': { url: 'https://www.nytimes.com/athletic/nba/', page: 1, loaded: false, urls: new Set(), icon: '🏀' },
-  'f1': { url: 'https://www.nytimes.com/athletic/formula-1/', page: 1, loaded: false, urls: new Set(), icon: '🏎️' },
-  'tennis': { url: 'https://www.nytimes.com/athletic/tennis/', page: 1, loaded: false, urls: new Set(), icon: '🎾' }
-};
-
-let currentMainTab = 'football';
-let currentTab = 'football-all';
-let isLoadingMore = false;
+let cachedTranslations = {};
 
 /* ─── DOM Helpers ─────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -43,428 +30,219 @@ const emptyState = $('emptyState');
 const frame = $('viewerFrame');
 const transPanel = $('transPanel');
 const transContent = $('transContent');
-const btnRefreshHL = $('btnRefreshHL');
 
-/* ─── Mobile Sidebar & TABS Logic ─────────────────── */
-const btnToggleSidebar = $('btnToggleSidebar');
-const sidebar = $('sidebar');
-const sidebarBackdrop = $('sidebarBackdrop');
-
-window.toggleSidebar = function() {
-  if (sidebar) sidebar.classList.toggle('on');
-  if (sidebarBackdrop) sidebarBackdrop.classList.toggle('on');
-};
-
-if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
-if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', toggleSidebar);
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const mainTab = btn.dataset.tab;
-    if (currentMainTab === mainTab) return;
-    currentMainTab = mainTab;
-
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    const subTabsContainer = $('subTabsFootball');
-    if (mainTab === 'football') {
-      subTabsContainer.classList.remove('hidden-sub-tabs');
-      const activeSubBtn = subTabsContainer.querySelector('.sub-tab-btn.active');
-      currentTab = activeSubBtn ? activeSubBtn.dataset.tab : 'football-all';
-    } else {
-      subTabsContainer.classList.add('hidden-sub-tabs');
-      currentTab = mainTab;
-    }
-
-    switchList(currentTab);
-  });
-});
-
-document.querySelectorAll('.sub-tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const subTab = btn.dataset.tab;
-    if (currentTab === subTab) return;
-    
-    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    currentTab = subTab;
-    switchList(currentTab);
-  });
-});
-
-function switchList(tabId) {
-  document.querySelectorAll('.hl-list').forEach(l => l.classList.remove('active'));
-  const listEl = document.getElementById(`list-${tabId}`);
-  if (listEl) listEl.classList.add('active');
-
-  if (!TABS[tabId].loaded) {
-    loadHeadlines(tabId, 1);
-  }
+/* ─── Mobile Detection Helper ─────────────────────── */
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
 }
 
 /* ─── Init & Setup ────────────────────────────────── */
 function init() {
-  try { const s = localStorage.getItem(STORE); if (s) cfg = { ...cfg, ...JSON.parse(s) }; } catch (e) {}
+  try {
+    const s = localStorage.getItem(STORE);
+    if (s) {
+      const parsed = JSON.parse(s);
+      cfg.apiKey = parsed.apiKey || '';
+    }
+  } catch (e) {}
+
   fillSettings();
   syncUI();
-  if (cfg.server) pingCors().then(() => loadHeadlines(currentTab, 1));
+
+  // Kiểm tra thiết bị di động
+  if (isMobileDevice()) {
+    showMobileDisabledNotice();
+  } else {
+    showExtensionGuideNotice();
+  }
 }
 
 function syncUI() {
-  const ok = !!cfg.server;
-  if (notCfg) notCfg.style.display = ok ? 'none' : 'flex';
-  if (urlWrap) urlWrap.style.display = ok ? 'flex' : 'none';
-  [btnRead, btnTranslate, btnNewTab, sepTab].forEach(el => { if (el) el.classList.toggle('hidden', !ok); });
-  if (btnRead && urlInput) btnRead.disabled = !urlInput.value.trim();
+  if (notCfg) notCfg.style.display = 'none'; // Ẩn banner cấu hình server cũ
+  if (urlWrap) urlWrap.style.display = 'flex';
+  [btnRead, btnTranslate, btnNewTab, sepTab].forEach(el => { if (el) el.classList.remove('hidden'); });
+  
   if (btnTranslate) btnTranslate.disabled = !currentUrl || !cfg.apiKey;
-  if (statusDot) statusDot.className = !ok ? 'status-dot' : (corsOk === false ? 'status-dot err' : 'status-dot on');
-  if (statusLabel) statusLabel.textContent = ok ? cfg.server.replace(/^https?:\/\//, '').slice(0, 24).toUpperCase() : 'OFFLINE';
+  if (statusDot) statusDot.className = 'status-dot on';
+  if (statusLabel) statusLabel.textContent = 'EXTENSION READY';
 }
 
 function fillSettings() {
-  if ($('cfgServer')) $('cfgServer').value = cfg.server || '';
-  if ($('cfgUser')) $('cfgUser').value = cfg.user || '';
-  if ($('cfgPass')) $('cfgPass').value = cfg.pass || '';
-  if ($('cfgApiKey')) $('cfgApiKey').value = cfg.apiKey || '';
+  if ($('cfgApiKey'))$('cfgApiKey').value = cfg.apiKey || '';
 }
 
-window.openSettings = function() { fillSettings(); if ($('settingsPanel')) $('settingsPanel').classList.add('on'); if ($('backdrop')) $('backdrop').classList.add('on'); };
-window.closeSettings = function() { if ($('settingsPanel')) $('settingsPanel').classList.remove('on'); if ($('backdrop')) $('backdrop').classList.remove('on'); };
+window.openSettings = function() {
+  fillSettings();
+  if ($('settingsPanel'))$('settingsPanel').classList.add('on');
+  if ($('backdrop'))$('backdrop').classList.add('on');
+};
+
+window.closeSettings = function() {
+  if ($('settingsPanel'))$('settingsPanel').classList.remove('on');
+  if ($('backdrop'))$('backdrop').classList.remove('on');
+};
 
 window.saveSettings = function() {
-  const server = $('cfgServer').value.trim().replace(/\/$/, '');
-  if (!server) { alert('Please enter Ladder Server URL.'); return; }
-  cfg = { server: server, user: $('cfgUser').value.trim(), pass: $('cfgPass').value, apiKey: $('cfgApiKey').value.trim() };
+  cfg = { apiKey: $('cfgApiKey') ?$('cfgApiKey').value.trim() : '' };
   localStorage.setItem(STORE, JSON.stringify(cfg));
-  corsOk = null; syncUI(); closeSettings();
-  
-  Object.keys(TABS).forEach(k => {
-    TABS[k].loaded = false; TABS[k].page = 1; TABS[k].urls.clear();
-    const listEl = document.getElementById(`list-${k}`);
-    if (listEl) listEl.innerHTML = '';
-  });
-  pingCors().then(() => loadHeadlines(currentTab, 1));
+  syncUI();
+  closeSettings();
 };
 
-/* ─── Networking ──────────────────────────────────── */
-function authHdr() { return (cfg.user && cfg.pass) ? { 'Authorization': 'Basic ' + btoa(`${cfg.user}:${cfg.pass}`) } : {}; }
+/* ─── Mobile Disabled Notice (English) ────────────── */
+function showMobileDisabledNotice() {
+  if (loadOvl) loadOvl.classList.remove('on');
+  if (frame) frame.classList.remove('on');
+  if (transPanel) transPanel.classList.remove('on');
+  if (btnTranslate) btnTranslate.disabled = true;
 
-async function fetchLadder(url) {
-  const res = await fetch(`${cfg.server}/api/${url}`, { headers: authHdr(), signal: AbortSignal.timeout(20000) });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const text = await res.text();
-  try { const data = JSON.parse(text); if (data && data.body) return data.body; } catch (e) {}
-  return text;
+  if (emptyState) {
+    emptyState.style.display = 'flex';
+    emptyState.innerHTML = `
+      <div class="empty-box">
+        <div class="empty-icon-box" style="background:var(--pink); color:#fff;">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <p class="empty-title" style="color:var(--pink);">READER DISABLED ON MOBILE</p>
+        
+        <div class="empty-guide-card" style="background:#fff;">
+          <div class="guide-tag" style="background:var(--pink); color:#fff;">RESTRICTION NOTICE</div>
+          <p style="margin-bottom: 10px; font-weight:600;">
+            Due to strict anti-bot shields protecting The Athletic's servers, content extraction now exclusively relies on our desktop <strong>Chrome Extension Bridge</strong>.
+          </p>
+          <div style="background:var(--yellow); color:#000; padding:10px 12px; border:2px solid #000; box-shadow:2px 2px 0 #000; font-weight:800; font-size:12px;">
+            ⚠️ Mobile browsers cannot run desktop unpacked extensions. Mobile reading mode is therefore disabled.
+          </div>
+        </div>
+
+        <div class="empty-footer-note">
+          👉 Please access Goal-Line Studio on a <strong>PC / Mac</strong>.<br/>
+          👉 DM <strong>Vinci</strong> to receive the extension setup files.
+        </div>
+      </div>
+    `;
+  }
 }
 
-async function pingCors() { 
-  try { 
-    await fetch(`${cfg.server}/ruleset`, { headers: authHdr(), signal: AbortSignal.timeout(6000) }); 
-    corsOk = true; 
-  } catch (e) { 
-    corsOk = false; 
-  } 
-  syncUI(); 
+/* ─── Desktop Extension Guide Notice (English) ────── */
+function showExtensionGuideNotice() {
+  if (emptyState) {
+    emptyState.style.display = 'flex';
+    emptyState.innerHTML = `
+      <div class="empty-box">
+        <div class="empty-icon-box" style="background:var(--yellow); color:#000;">
+          <i class="fa-solid fa-puzzle-piece"></i>
+        </div>
+        <p class="empty-title">NO ARTICLE DISPATCHED</p>
+
+        <div class="empty-guide-card">
+          <span class="guide-tag">⚡ EXTENSION DISPATCH WORKFLOW</span>
+          <ol class="guide-steps">
+            <li>Install <strong>Goal-Line Reader Bridge</strong> in Chrome (DM <strong>Vinci</strong> for files).</li>
+            <li>Open any article on <strong>The Athletic</strong>.</li>
+            <li>Click the yellow button <strong>[⚡ SEND TO GL READER]</strong> at the bottom-right corner.</li>
+            <li>Content & full-res imagery will automatically sync here for reading & AI translation.</li>
+          </ol>
+        </div>
+
+        <div class="empty-footer-note">
+          * Desktop only: Reading engine is not supported on mobile browsers.
+        </div>
+      </div>
+    `;
+  }
 }
 
-window.testConn = async function() {
-  const tr = $('testResult');
-  tr.style.display = 'block';
-  tr.className = 'test-result';
-  tr.textContent = 'CHECKING CONNECTION…';
-  const server = $('cfgServer').value.trim().replace(/\/$/, '');
-  const u = $('cfgUser').value.trim();
-  const p = $('cfgPass').value;
-  const hdrs = (u && p) ? { 'Authorization': 'Basic ' + btoa(`${u}:${p}`) } : {};
-  try {
-    const res = await fetch(`${server}/ruleset`, { headers: hdrs, signal: AbortSignal.timeout(6000) });
-    if (res.ok) { tr.className = 'test-result ok'; tr.textContent = '✓ CONNECTION SUCCESSFUL!'; }
-    else { tr.className = 'test-result err'; tr.textContent = `ERROR: HTTP ${res.status}`; }
-  } catch(e) {
-    tr.className = 'test-result err'; tr.textContent = `FAILED: ${e.message}`;
+/* ─── Action: Manual Read Button Handler ──────────── */
+function loadArticle(url) {
+  if (isMobileDevice()) {
+    showMobileDisabledNotice();
+    return;
   }
-};
 
-/* ─── Headlines Parsing & Infinite Scroll ─────────── */
-window.refreshCurrentTab = function() {
-  TABS[currentTab].loaded = false;
-  loadHeadlines(currentTab, 1);
-};
+  const targetUrl = url || (urlInput ? urlInput.value.trim() : '');
+  if (!targetUrl) return;
 
-window.loadHeadlines = async function(tabId, page = 1) {
-  if (!cfg.server) return;
-  const tabData = TABS[tabId];
-  const listEl = document.getElementById(`list-${tabId}`);
-  
-  if (page === 1) {
-    tabData.page = 1; tabData.urls.clear();
-    if (listEl) listEl.innerHTML = `<div class="hl-empty"><div class="neo-spinner" style="width:28px;height:28px;margin:0 auto 12px"></div>FETCHING ${tabId.replace('football-','').toUpperCase()}…</div>`;
-    if (btnRefreshHL) btnRefreshHL.classList.add('spin');
-    if (corsOk === null) await pingCors();
-    if (!corsOk) { 
-      if (listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">⚠️ CORS BLOCKED</div>`; 
-      if (btnRefreshHL) btnRefreshHL.classList.remove('spin'); 
-      return; 
+  alert(
+    "Direct server scraping is permanently deprecated.\n\n" +
+    "👉 Please open this article on Chrome desktop and click [⚡ SEND TO GL READER] via the extension.\n" +
+    "(If you haven't installed the extension, DM Vinci to get the archive package!)"
+  );
+
+  window.open(targetUrl, '_blank');
+} 
+
+/* ─── Cầu nối nhận bài từ Chrome Extension ────────── */
+window.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'GL_EXTENSION_PAYLOAD') {
+    const article = event.data.data;
+    if (!article || !article.html) return;
+
+    currentUrl = article.url || '';
+    if (urlInput) urlInput.value = currentUrl;
+    viewingTrans = false;
+
+    // Render HTML Neobrutalism đã xử lý bypass ảnh hotlink
+    currentHtml = cleanAndStyleHTML(article.html);
+    setBlobFrame(currentHtml);
+
+    if (emptyState) emptyState.style.display = 'none';
+    if (loadOvl) loadOvl.classList.remove('on');
+    if (frame) frame.classList.add('on');
+    if (transPanel) transPanel.classList.remove('on');
+    if (btnOriginal) btnOriginal.classList.add('hidden');
+    if (btnTranslate) {
+      btnTranslate.classList.remove('active');
+      btnTranslate.disabled = !cfg.apiKey;
     }
-  } else {
-    if (listEl) {
-      const loader = document.createElement('div'); loader.id = `hlLoader-${tabId}`;
-      loader.innerHTML = `<div class="neo-spinner" style="width:24px;height:24px;margin:15px auto"></div>`;
-      listEl.appendChild(loader);
-    }
-  }
-  
-  try {
-    const fetchUrl = page === 1 ? tabData.url : `${tabData.url}?page=${page}`;
-    const html = await fetchLadder(fetchUrl);
-    const items = parseAthletic(html, tabData);
-    
-    items.sort((a, b) => b.timestamp - a.timestamp);
-    tabData.loaded = true;
-
-    if (page === 1) {
-      renderHeadlines(items, listEl, tabData.icon);
-    } else {
-      const loader = document.getElementById(`hlLoader-${tabId}`);
-      if (loader) loader.remove();
-      if (items.length > 0) appendHeadlines(items, listEl);
-      else if (listEl) listEl.insertAdjacentHTML('beforeend', `<div style="text-align:center; padding:15px; font-weight:800; font-size:11px">NO MORE STORIES.</div>`);
-    }
-  } catch(e) {
-    if (page === 1 && listEl) listEl.innerHTML = `<div class="hl-empty" style="background:var(--pink);color:#fff">❌ FETCH ERROR<br/><span style="font-size:10px">${esc(e.message)}</span></div>`; 
-    const loader = document.getElementById(`hlLoader-${tabId}`); if (loader) loader.remove(); 
-  }
-  if (page === 1 && btnRefreshHL) btnRefreshHL.classList.remove('spin');
-  isLoadingMore = false;
-};
-
-Object.keys(TABS).forEach(tabId => {
-  const listEl = document.getElementById(`list-${tabId}`);
-  if (listEl) {
-    listEl.addEventListener('scroll', () => {
-      if (listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 50) {
-        if (!isLoadingMore && corsOk && TABS[tabId].loaded) {
-          isLoadingMore = true; TABS[tabId].page++; loadHeadlines(tabId, TABS[tabId].page);
-        }
-      }
-    });
+    if (btnNewTab) btnNewTab.classList.remove('hidden');
+    if (sepTab) sepTab.classList.remove('hidden');
   }
 });
 
-function parseAthletic(html, tabData) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const items = [];
-
-  function getOriginalUrl(href) {
-    if (!href) return null;
-    const match = decodeURIComponent(href).match(/\/athletic\/\d{6,}[^\s"']*/);
-    if (match) return 'https://www.nytimes.com' + match[0].replace(/\/\/+/g, '/');
-    return null;
+function setBlobFrame(html) {
+  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+  const blob = new Blob([html], { type: 'text/html' });
+  currentBlobUrl = URL.createObjectURL(blob);
+  if (frame) {
+    frame.onload = null;
+    frame.onerror = null;
+    frame.src = currentBlobUrl;
   }
-
-  doc.querySelectorAll('a[href]').forEach(a => {
-    const orig = getOriginalUrl(a.getAttribute('href'));
-    if (!orig || tabData.urls.has(orig)) return;
-
-    const container = a.closest('article, [data-testid="story-card"]') || a;
-    let finalDate = '';
-    let timestamp = 0;
-    
-    const dateMatch = orig.match(/\/(\d{4})\/(\d{2})\/(\d{2})\//);
-    if (dateMatch) {
-      finalDate = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
-      timestamp = new Date(`${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T00:00:00Z`).getTime();
-    } else {
-      const textContent = container.textContent.toLowerCase();
-      if (textContent.match(/\d+\s*(h|m|hour|minute)s?\s*ago/)) {
-        const now = new Date();
-        finalDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        timestamp = now.getTime();
-      } else {
-        const timeTag = container.querySelector('time');
-        if (timeTag && timeTag.getAttribute('datetime')) {
-          try {
-            const d = new Date(timeTag.getAttribute('datetime'));
-            if (!isNaN(d)) {
-              finalDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-              timestamp = d.getTime();
-            }
-          } catch(e) {}
-        }
-      }
-    }
-    if (timestamp === 0) timestamp = Date.now() - Math.random() * 10000;
-
-    const temp = container.cloneNode(true);
-    temp.querySelectorAll('p, h1, h2, h3, h4, h5, div, br, li, ul, article, section').forEach(el => {
-      el.prepend(doc.createTextNode('\n')); el.append(doc.createTextNode('\n'));
-    });
-
-    const rawText = temp.textContent || '';
-    const chunks = rawText.split('\n').map(t => t.trim().replace(/\s+/g, ' ')).filter(t => t.length > 1);
-    if (chunks.length === 0) return;
-    const uniqueChunks = [...new Set(chunks)];
-
-    const titleEl = container.querySelector('h2, h3, h4, h5, [class*="title"], [class*="headline"]');
-    let title = titleEl ? titleEl.textContent.trim().replace(/\s+/g, ' ') : [...uniqueChunks].sort((x, y) => y.length - x.length)[0];
-    if (!title || title.length < 15 || title.length > 250) return;
-    
-    tabData.urls.add(orig);
-
-    let excerpt = '', author = '', comments = '';
-    const remaining = uniqueChunks.filter(c => !title.includes(c) && !c.includes(title));
-
-    remaining.forEach(txt => {
-      const lower = txt.toLowerCase();
-      if (lower.match(/read more|min read|share|save/) || lower === 'opinion' || lower === 'analysis') return;
-      if (/^\d+$/.test(txt) || /^\d+[kKmMsS]$/.test(txt)) comments = txt;
-      else if (txt.length > 45) { if (!excerpt) excerpt = txt; } 
-      else if (txt.length > 3 && txt.length <= 45) {
-        const isDate = lower.includes('ago') || lower.includes('202') || /^\w{3} \d{1,2}/.test(txt);
-        if (!author && txt.split(' ').length <= 6 && !isDate) author = txt;
-      }
-    });
-
-    if (author) {
-      const match = author.match(/^(.*?[a-zA-Z\.'’])(\d+)$/);
-      if (match) { author = match[1].trim(); if (!comments) comments = match[2]; }
-    }
-
-    items.push({ title, excerpt, author, comments, url: orig, date: finalDate, timestamp: timestamp });
-  });
-
-  return items;
 }
 
-function renderHeadlines(items, listEl, icon) {
-  if (!listEl) return;
-  if (!items.length) { listEl.innerHTML = `<div class="hl-empty">${icon} NO STORIES FOUND</div>`; return; }
-  listEl.innerHTML = ''; 
-  appendHeadlines(items, listEl);
-}
-
-function appendHeadlines(items, listEl) {
-  if (!listEl || !items.length) return;
-  const currentCount = listEl.querySelectorAll('.hl-item').length;
-  const html = items.map((a, i) => `
-    <div class="hl-item" data-url="${esc(a.url)}" data-i="${currentCount + i}" onclick="pickHL(this)">
-      <div class="hl-title">${esc(a.title)}</div>
-      ${a.excerpt ? `<div class="hl-excerpt">${esc(a.excerpt)}</div>` : ''}
-      <div class="hl-footer">
-        ${a.author ? `<span class="hl-author">BY: ${esc(a.author)}</span>` : ''}
-        <div class="hl-meta-row">
-          ${a.date ? `<span class="hl-date">${a.date}</span>` : '<span></span>'}
-          ${a.comments ? `<span class="hl-comments">💬 ${esc(a.comments)}</span>` : ''}
-        </div>
-      </div>
-    </div>`).join('');
-  listEl.insertAdjacentHTML('beforeend', html);
-}
-
-window.pickHL = function(el) {
-  document.querySelectorAll('.hl-item').forEach(x => x.classList.remove('active'));
-  el.classList.add('active');
-  if (urlInput) urlInput.value = el.dataset.url;
-  if (btnRead) btnRead.disabled = false;
-  if (window.innerWidth <= 768) { 
-    if (sidebar) sidebar.classList.remove('on'); 
-    if (sidebarBackdrop) sidebarBackdrop.classList.remove('on'); 
+/* ─── Mở New Tab qua Archive Mirror ───────────────── */
+window.openNewTab = function() {
+  if (currentUrl) {
+    window.open(`https://archive.is/newest/${currentUrl}`, '_blank');
   }
-  loadArticle(el.dataset.url);
 };
-
-/* ─── Reader Engine & Clean/Style Injection ─── */
-async function loadArticle(url) {
-  if (!url) { url = urlInput ? urlInput.value.trim() : ''; }
-  if (!url) return;
-  try { new URL(url); } catch (e) { alert('Invalid URL.'); return; }
-  currentUrl = url; viewingTrans = false;
-  if (emptyState) emptyState.style.display = 'none';
-  if (loadTxt) loadTxt.textContent = 'FETCHING INTEL…';
-  if (loadOvl) loadOvl.classList.add('on');
-  if (frame) frame.classList.remove('on');
-  if (transPanel) transPanel.classList.remove('on');
-  if (btnOriginal) btnOriginal.classList.add('hidden');
-  if (btnTranslate) btnTranslate.classList.remove('active');
-  if (btnNewTab) btnNewTab.classList.remove('hidden');
-  if (sepTab) sepTab.classList.remove('hidden');
-
-  if (corsOk !== false) {
-    try {
-      if (loadTxt) loadTxt.textContent = 'BYPASSING VIA LADDER…';
-      currentHtml = await fetchLadder(url);
-      currentHtml = cleanAndStyleHTML(currentHtml);
-      setBlobFrame(currentHtml);
-      if (loadOvl) loadOvl.classList.remove('on');
-      if (frame) frame.classList.add('on');
-      if (btnTranslate) btnTranslate.disabled = !cfg.apiKey;
-      return;
-    } catch(e) { corsOk = false; syncUI(); }
-  }
-
-  if (loadTxt) loadTxt.textContent = 'PROXY FALLBACK…';
-  currentHtml = ''; if (btnTranslate) btnTranslate.disabled = true;
-  let proxyUrl = `${cfg.server}/${encodeURIComponent(url)}`;
-  if (cfg.user && cfg.pass) { 
-    try { 
-      const u = new URL(cfg.server); 
-      u.username = cfg.user; 
-      u.password = cfg.pass; 
-      proxyUrl = `${u.toString().replace(/\/$/, '')}/${encodeURIComponent(url)}`; 
-    } catch (e) {} 
-  }
-  if (frame) { 
-    frame.onload = () => { if (loadOvl) loadOvl.classList.remove('on'); frame.classList.add('on'); }; 
-    frame.onerror = showFrameErr; 
-    frame.src = proxyUrl; 
-  }
-  setTimeout(() => { if (loadOvl && loadOvl.classList.contains('on')) { loadOvl.classList.remove('on'); if (frame) frame.classList.add('on'); } }, 18000);
-}
-
-function setBlobFrame(html) { 
-  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); 
-  const blob = new Blob([html], { type: 'text/html' }); 
-  currentBlobUrl = URL.createObjectURL(blob); 
-  if (frame) { frame.onload = null; frame.onerror = null; frame.src = currentBlobUrl; } 
-}
-
-function showFrameErr() { 
-  if (loadOvl) loadOvl.classList.remove('on'); 
-  if (emptyState) { 
-    emptyState.style.display = 'flex'; 
-    const title = emptyState.querySelector('.empty-title'); 
-    const desc = emptyState.querySelector('.empty-desc'); 
-    if (title) title.textContent = 'X-FRAME BLOCKED'; 
-    if (desc) desc.innerHTML = `The feed is blocking iframe embedding.<br/>Use <strong>↗ NEW TAB</strong> to view directly.`; 
-  } 
-}
-
-window.openNewTab = function() { if (currentUrl) window.open(`${cfg.server}/${encodeURIComponent(currentUrl)}`, '_blank'); };
 
 /* ─── Gemini AI Translation ───────────────────────── */
 async function translateArticle() {
   if (!cfg.apiKey) { openSettings(); return; }
   if (!currentUrl) return;
-  if (cachedTranslations[currentUrl]) { 
-    if (transContent) transContent.innerHTML = cachedTranslations[currentUrl]; 
-    showTransPanel(); 
-    return; 
+
+  if (cachedTranslations[currentUrl]) {
+    if (transContent) transContent.innerHTML = cachedTranslations[currentUrl];
+    showTransPanel();
+    return;
   }
 
   let text = '';
-  if (currentHtml) { text = extractText(currentHtml); } 
-  else { 
-    try { 
-      const doc = frame.contentDocument || frame.contentWindow?.document; 
-      if (doc) text = extractFromDoc(doc); 
-    } catch (e) {} 
+  if (currentHtml) {
+    text = extractText(currentHtml);
+  } else {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (doc) text = extractFromDoc(doc);
+    } catch (e) {}
   }
-  if (!text || text.length < 100) { 
-    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ Unable to extract article content.</div>`; 
-    showTransPanel(); 
-    return; 
+
+  if (!text || text.length < 100) {
+    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ Không thể trích xuất nội dung văn bản. Hãy dùng Extension nạp bài trước khi dịch.</div>`;
+    showTransPanel();
+    return;
   }
 
   if (btnTranslate) btnTranslate.disabled = true;
@@ -475,12 +253,12 @@ async function translateArticle() {
     </div>`;
   showTransPanel();
 
-  const maxC = 25000; 
+  const maxC = 25000;
   const input = text.slice(0, maxC) + (text.length > maxC ? '\n\n[...article truncated due to length]' : '');
-  
+
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${cfg.apiKey}`, {
-      method: 'POST', 
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: `You are a professional Vietnamese sports journalist. Translate the following The Athletic article into natural, engaging Vietnamese.\nRules:\n- Maintain professional football terminology, proper nouns, and stats accurately.\n- Convert [IMAGE: url] tags into HTML: <img src="url" alt="Illustration">.\n- Return clean HTML containing an h1 title, byline, and p tags. Do NOT add markdown code fences or conversational filler.\nArticle:\n${input}` }] }],
@@ -489,9 +267,9 @@ async function translateArticle() {
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    if (transContent) transContent.innerHTML = ''; 
+    if (transContent) transContent.innerHTML = '';
     let fullHtml = '';
-    const reader = res.body.getReader(); 
+    const reader = res.body.getReader();
     const decoder = new TextDecoder("utf-8");
 
     while (true) {
@@ -505,34 +283,34 @@ async function translateArticle() {
             const data = JSON.parse(line.slice(6));
             const textPart = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
             fullHtml += textPart;
-            if (transContent) { 
-              transContent.innerHTML = fullHtml.replace(/^```html\s*/i, '').replace(/```\s*$/, ''); 
+            if (transContent) {
+              transContent.innerHTML = fullHtml.replace(/^```html\s*/i, '').replace(/```\s*$/, '');
             }
           } catch (e) {}
         }
       }
     }
     if (transContent) { cachedTranslations[currentUrl] = transContent.innerHTML; }
-  } catch(e) { 
-    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ TRANSLATION ERROR: ${esc(e.message)}</div>`; 
+  } catch(e) {
+    if (transContent) transContent.innerHTML = `<div class="alert alert-warn">❌ TRANSLATION ERROR: ${esc(e.message)}</div>`;
   }
   if (btnTranslate) btnTranslate.disabled = false;
 }
 
-window.showTransPanel = function() { 
-  viewingTrans = true; 
-  if (transPanel) transPanel.classList.add('on'); 
-  if (frame) frame.classList.remove('on'); 
-  if (btnOriginal) btnOriginal.classList.remove('hidden'); 
-  if (btnTranslate) btnTranslate.classList.add('active'); 
+window.showTransPanel = function() {
+  viewingTrans = true;
+  if (transPanel) transPanel.classList.add('on');
+  if (frame) frame.classList.remove('on');
+  if (btnOriginal) btnOriginal.classList.remove('hidden');
+  if (btnTranslate) btnTranslate.classList.add('active');
 };
 
-window.showOriginal = function() { 
-  viewingTrans = false; 
-  if (transPanel) transPanel.classList.remove('on'); 
-  if (currentUrl && frame) frame.classList.add('on'); 
-  if (btnOriginal) btnOriginal.classList.add('hidden'); 
-  if (btnTranslate) btnTranslate.classList.remove('active'); 
+window.showOriginal = function() {
+  viewingTrans = false;
+  if (transPanel) transPanel.classList.remove('on');
+  if (currentUrl && frame) frame.classList.add('on');
+  if (btnOriginal) btnOriginal.classList.add('hidden');
+  if (btnTranslate) btnTranslate.classList.remove('active');
 };
 
 /* ─── Extraction & Brutalist Injector ─────────────── */
@@ -547,18 +325,18 @@ function extractFromDoc(doc) {
     '[class*="bookmark"]','[class*="Bookmark"]','[data-testid*="audio"]','[data-testid*="share"]'
   ];
   junkSelectors.forEach(s => { try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch (e) {} });
-  const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || ''; 
-  const byline = doc.querySelector('[class*="byline"],[class*="author"]')?.textContent?.trim() || ''; 
-  const body = doc.querySelector('article,[class*="article-body"],[class*="post-body"],main') || doc.body; 
+  const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || '';
+  const byline = doc.querySelector('[class*="byline"],[class*="author"]')?.textContent?.trim() || '';
+  const body = doc.querySelector('article,[class*="article-body"],[class*="post-body"],main') || doc.body;
   const paras = [];
   body.querySelectorAll('p,h2,h3,blockquote,img').forEach(el => {
-    if (el.tagName.toLowerCase() === 'img') { 
-      const src = el.src || el.getAttribute('data-src'); 
-      if (src && !src.startsWith('data:image') && !src.includes('avatar')) paras.push(`[IMAGE: ${src}]`); 
-    } else { 
-      const t = el.textContent.trim(); 
+    if (el.tagName.toLowerCase() === 'img') {
+      const src = el.src || el.getAttribute('data-src');
+      if (src && !src.startsWith('data:image') && !src.includes('avatar')) paras.push(`[IMAGE: ${src}]`);
+    } else {
+      const t = el.textContent.trim();
       if (t.length > 30 && !t.includes('Connections:') && !t.includes('Spot the pattern')) {
-        paras.push(t); 
+        paras.push(t);
       }
     }
   });
@@ -567,8 +345,8 @@ function extractFromDoc(doc) {
 
 function cleanAndStyleHTML(htmlString) {
   const doc = new DOMParser().parseFromString(htmlString, 'text/html');
-  
-  // 1. Remove ad trackers, audio bars, share overlays
+
+  // 1. Dọn rác
   const junkSelectors = [
     'script', 'noscript', 'nav', 'footer', 'button', 'svg', 'form', 'input', 'aside',
     '.ad-container', '.ad-unit', '.ad-slot', '.paywall-container', '.newsletter-wrapper',
@@ -581,261 +359,163 @@ function cleanAndStyleHTML(htmlString) {
     '[data-testid*="share"]', '[data-testid*="bookmark"]',
     '[class*="game"]', '[class*="Game"]', '[class*="puzzle"]', '[class*="Connections"]'
   ];
-  junkSelectors.forEach(s => { 
-    try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch(e) {} 
+  junkSelectors.forEach(s => {
+    try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch(e) {}
   });
 
-  // 2. Remove game banners & bracket artifacts
-  doc.querySelectorAll('h2, h3, h4, p, a, span').forEach(el => {
-    const text = el.textContent.trim().toLowerCase();
-    if (text === 'connections: sports edition' || 
-        text.includes('spot the pattern. connect the terms') ||
-        text.includes('find the hidden link between sports terms') ||
-        text === 'play the mini' ||
-        text === '[' || text === ']' || text === '[]' || text === '[ ]' || text === 'share article') {
-      el.remove();
-    }
-  });
-
-  // 3. Purge broken empty iframes
-  doc.querySelectorAll('iframe').forEach(ifr => {
-    const src = (ifr.src || ifr.getAttribute('data-src') || '').toLowerCase();
-    if (!src || src === 'about:blank' || src.includes('google') || src.includes('doubleclick') || src.includes('adnxs')) {
-      ifr.remove();
-    }
-  });
-
-  // 4. Sanitize images
+  // 2. Dọn ảnh & Thêm referrerpolicy vượt rào CDN Hotlink
   doc.querySelectorAll('img').forEach(img => {
-    const src = img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.src || '';
-    const lower = src.toLowerCase();
+    let src = img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.src || '';
+    const lower = (src || '').toLowerCase();
 
-    if (!src || 
-        lower.startsWith('data:image') || 
-        lower.includes('avatar') || 
-        lower.includes('icon') || 
-        lower.includes('logo') || 
-        lower.includes('pixel') || 
-        lower.includes('spacer') || 
-        lower.endsWith('.svg') || 
+    if (!src ||
+        lower.startsWith('data:image') ||
+        lower.includes('avatar') ||
+        lower.includes('icon') ||
+        lower.includes('logo') ||
+        lower.includes('pixel') ||
+        lower.includes('spacer') ||
+        lower.endsWith('.svg') ||
         lower.endsWith('.gif')) {
       img.remove();
       return;
     }
 
     img.src = src;
+    img.setAttribute('referrerpolicy', 'no-referrer');
     img.removeAttribute('srcset');
     img.removeAttribute('sizes');
     img.removeAttribute('loading');
-    img.removeAttribute('width');
-    img.removeAttribute('height');
     img.removeAttribute('style');
-    img.setAttribute('onerror', "this.remove();");
+    img.onerror = null;
   });
 
-  // 5. Clean ghost spacer containers
-  for (let pass = 0; pass < 3; pass++) {
-    doc.querySelectorAll('div, section, figure, p, span').forEach(el => {
-      const tag = el.tagName.toLowerCase();
-      if (tag === 'body' || tag === 'html' || tag === 'main' || tag === 'article') return;
-      
-      const hasMedia = el.querySelector('img, video, iframe');
-      const text = el.textContent.trim();
-      
-      if (!hasMedia && !text) {
-        el.remove();
-      }
-    });
+  // 3. Inject thẻ meta no-referrer và Viewport
+  let metaRef = doc.querySelector('meta[name="referrer"]');
+  if (!metaRef) {
+    metaRef = doc.createElement('meta');
+    metaRef.name = 'referrer';
+    metaRef.content = 'no-referrer';
+    doc.head.appendChild(metaRef);
   }
 
-  // 6. Viewport setup
-  let metaViewport = doc.querySelector('meta[name="viewport"]'); 
-  if (!metaViewport) { 
-    metaViewport = doc.createElement('meta'); 
-    metaViewport.name = 'viewport'; 
-    doc.head.appendChild(metaViewport); 
+  let metaViewport = doc.querySelector('meta[name="viewport"]');
+  if (!metaViewport) {
+    metaViewport = doc.createElement('meta');
+    metaViewport.name = 'viewport';
+    doc.head.appendChild(metaViewport);
   }
   metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
 
-  // 7. Inject Brutalist CSS
+  // 4. Inject Neobrutalism CSS
   const style = doc.createElement('style');
   style.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&display=swap');
-    :root { 
-      --neo-black: #000000; 
-      --neo-bg: #fffdf5; 
-      --neo-yellow: #ffe600; 
+    :root {
+      --neo-black: #000000;
+      --neo-bg: #fffdf5;
+      --neo-yellow: #ffe600;
       --neo-border: 3px solid #000000;
     }
-    *, *::before, *::after { 
-      box-sizing: border-box !important; 
-    }
-    html { 
-      width: 100% !important; 
-      max-width: 100vw !important; 
-      overflow-x: hidden !important; 
-      margin: 0 !important; 
-      background: var(--neo-bg) !important; 
-    }
-    body { 
-      background: var(--neo-bg) !important; 
-      color: var(--neo-black) !important; 
-      padding: 30px 20px !important; 
-      margin: 0 auto !important; 
-      max-width: 820px !important; 
+    *, *::before, *::after { box-sizing: border-box !important; }
+    html {
       width: 100% !important;
-      font-family: 'Space Grotesk', system-ui, sans-serif !important; 
+      max-width: 100vw !important;
+      overflow-x: hidden !important;
+      margin: 0 !important;
+      background: var(--neo-bg) !important;
     }
-
-    #__next, #site-content, main, article, header, section, [class*="Grid"], [class*="Container"], [class*="Wrapper"], [class*="Hero"] { 
-      display: block !important; 
-      position: static !important; 
-      height: auto !important; 
-      min-height: 0 !important; 
-      max-height: none !important; 
-      width: 100% !important; 
-      max-width: 100% !important; 
-      transform: none !important; 
-      margin: 0 !important; 
-      padding: 0 !important; 
+    body {
+      background: var(--neo-bg) !important;
+      color: var(--neo-black) !important;
+      padding: 30px 20px !important;
+      margin: 0 auto !important;
+      max-width: 820px !important;
+      width: 100% !important;
+      font-family: 'Space Grotesk', system-ui, sans-serif !important;
     }
-
-    div, section {
-      min-height: 0 !important;
-      height: auto !important;
-    }
-
-    [class*="Article_ContentContainer"], .article-body, p, li, h1, h2, h3, h4 { 
-      position: relative !important; 
-      z-index: 9999 !important; 
-      opacity: 1 !important; 
-      visibility: visible !important; 
-      background: transparent !important; 
-      word-wrap: break-word !important; 
-      overflow-wrap: break-word !important; 
-      max-width: 100% !important; 
-    }
-
-    h1 { 
-      font-family: 'Space Grotesk', system-ui, sans-serif !important; 
-      font-size: 2.3rem !important; 
-      line-height: 1.15 !important; 
-      font-weight: 900 !important; 
-      text-transform: uppercase !important; 
-      letter-spacing: -0.02em !important; 
-      margin: 0 0 1.2rem 0 !important; 
-      background: var(--neo-yellow) !important; 
-      border: var(--neo-border) !important; 
-      box-shadow: 6px 6px 0px var(--neo-black) !important; 
-      padding: 18px 20px !important; 
-      color: var(--neo-black) !important; 
+    h1 {
+      font-size: 2.3rem !important;
+      line-height: 1.15 !important;
+      font-weight: 900 !important;
+      text-transform: uppercase !important;
+      letter-spacing: -0.02em !important;
+      margin: 0 0 1.2rem 0 !important;
+      background: var(--neo-yellow) !important;
+      border: var(--neo-border) !important;
+      box-shadow: 6px 6px 0px var(--neo-black) !important;
+      padding: 18px 20px !important;
+      color: var(--neo-black) !important;
       display: block !important;
       width: 100% !important;
     }
-
-    h2, h3, h4 { 
-      font-family: 'Space Grotesk', sans-serif !important; 
-      font-weight: 900 !important; 
-      text-transform: uppercase !important; 
-      letter-spacing: -0.01em !important;
-      margin-top: 2rem !important; 
-      margin-bottom: 0.8rem !important; 
+    h2, h3, h4 {
+      font-weight: 900 !important;
+      text-transform: uppercase !important;
+      margin-top: 2rem !important;
+      margin-bottom: 0.8rem !important;
     }
-
-    p, li { 
-      font-size: 1.15rem !important; 
-      line-height: 1.8 !important; 
-      margin-bottom: 1.4rem !important; 
-      color: #111 !important; 
+    p, li {
+      font-size: 1.15rem !important;
+      line-height: 1.8 !important;
+      margin-bottom: 1.4rem !important;
+      color: #111 !important;
     }
-
-    figure, picture, [class*="image"], [class*="Image"] {
+    figure {
       display: block !important;
       width: 100% !important;
-      max-width: 100% !important;
+      margin: 22px 0 !important;
+    }
+    img {
+      width: 100% !important;
       height: auto !important;
-      margin: 18px 0 !important;
-      padding: 0 !important;
-      position: static !important;
-      overflow: visible !important;
+      display: block !important;
+      border: var(--neo-border) !important;
+      box-shadow: 6px 6px 0px var(--neo-black) !important;
     }
-
-    img { 
-      width: 100% !important; 
-      max-width: 100% !important; 
-      height: auto !important; 
-      max-height: none !important; 
-      display: block !important; 
-      object-fit: contain !important;
-      margin: 12px auto !important; 
-      border: var(--neo-border) !important; 
-      box-shadow: 6px 6px 0px var(--neo-black) !important; 
-    }
-
-    img:not([src]), img[src=""], img[src^="data:"] {
-      display: none !important;
-    }
-
     figcaption {
-      font-family: 'Space Grotesk', sans-serif !important;
       font-size: 0.82rem !important;
       font-weight: 600 !important;
       color: #444 !important;
       margin-top: 6px !important;
       text-align: center !important;
     }
-
-    iframe {
-      width: 100% !important;
-      aspect-ratio: 16 / 9 !important;
-      height: auto !important;
+    blockquote {
+      background: #fff !important;
       border: var(--neo-border) !important;
-      box-shadow: 6px 6px 0px var(--neo-black) !important;
-      margin: 20px 0 !important;
-      display: block !important;
-    }
-
-    blockquote { 
-      background: #fff !important; 
-      border: var(--neo-border) !important; 
-      border-left: 8px solid var(--neo-black) !important; 
-      box-shadow: 4px 4px 0px var(--neo-black) !important; 
-      padding: 16px 20px !important; 
-      margin: 1.8rem 0 !important; 
-      font-style: italic !important; 
+      border-left: 8px solid var(--neo-black) !important;
+      box-shadow: 4px 4px 0px var(--neo-black) !important;
+      padding: 16px 20px !important;
+      margin: 1.8rem 0 !important;
+      font-style: italic !important;
       font-weight: 700 !important;
     }
-
-    a { 
-      color: var(--neo-black) !important; 
-      background: var(--neo-yellow) !important; 
-      padding: 2px 4px !important; 
-      text-decoration: none !important; 
-      border: 1px solid var(--neo-black) !important; 
-      font-weight: 800 !important; 
-    }
   `;
-  doc.head.appendChild(style); 
+  doc.head.appendChild(style);
   return doc.documentElement.outerHTML;
 }
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 /* ─── Event Binding ───────────────────────────────── */
-if ($('btnSettings')) $('btnSettings').addEventListener('click', openSettings);
-if ($('btnRead')) $('btnRead').addEventListener('click', () => loadArticle());
-if ($('btnTranslate')) $('btnTranslate').addEventListener('click', translateArticle);
-if ($('btnNewTab')) $('btnNewTab').addEventListener('click', openNewTab);
-if ($('btnOriginal')) $('btnOriginal').addEventListener('click', showOriginal);
-if (urlInput) { 
-  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadArticle(); }); 
-  urlInput.addEventListener('input', () => { if (btnRead) btnRead.disabled = !urlInput.value.trim(); }); 
+if ($('btnSettings'))$('btnSettings').addEventListener('click', openSettings);
+if ($('btnRead'))$('btnRead').addEventListener('click', () => loadArticle());
+if ($('btnTranslate'))$('btnTranslate').addEventListener('click', translateArticle);
+if ($('btnNewTab'))$('btnNewTab').addEventListener('click', openNewTab);
+if ($('btnOriginal'))$('btnOriginal').addEventListener('click', showOriginal);
+
+if (urlInput) {
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadArticle(); });
 }
-document.addEventListener('keydown', e => { 
-  if (e.key === 'Escape') { 
-    if ($('settingsPanel') && $('settingsPanel').classList.contains('on')) closeSettings(); 
-    else if (viewingTrans) showOriginal(); 
-  } 
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if ($('settingsPanel') &&$('settingsPanel').classList.contains('on')) closeSettings();
+    else if (viewingTrans) showOriginal();
+  }
 });
 
+// Khởi chạy
 init();

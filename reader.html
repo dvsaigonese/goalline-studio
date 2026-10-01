@@ -3,112 +3,79 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>The Athletic | Goal-Line Studio</title>
+  <title>The Athletic Reader | Goal-Line Studio</title>
+  <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/reader.css?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="css/reader.css?v=5" />
 </head>
 <body>
 <div class="app">
 
+  <!-- HEADER -->
   <header>
-    <button class="btn-icon mobile-only" id="btnToggleSidebar" aria-label="Menu">☰</button>
-    
     <a class="logo" href="index.html">
       <div class="logo-box">GL</div>
       <span class="logo-text">GOAL-LINE <em>READER</em></span>
     </a>
 
-    <div class="header-badge">PRESS FEED</div>
+    <div class="header-badge">DESKTOP FEED</div>
 
     <div class="hdr-right">
       <div class="status-pill">
-        <div id="statusDot" class="status-dot"></div>
-        <span id="statusLabel">NOT CONFIGURED</span>
+        <div id="statusDot" class="status-dot on"></div>
+        <span id="statusLabel">EXTENSION READY</span>
       </div>
       <button class="btn btn-icon btn-neo" id="btnSettings" title="Settings">⚙️</button>
     </div>
   </header>
 
+  <!-- TOOLBAR -->
   <div class="toolbar">
-    <div id="notConfiguredBanner" class="banner-neo hidden" onclick="openSettings()">
-      <span class="badge-alert">WARNING</span>
-      <span>Ladder Server Not Connected — Click here to configure API settings!</span>
-    </div>
-
     <div class="url-wrap" id="urlWrap">
       <span class="url-icon">URL:</span>
       <input type="url" id="articleUrl" spellcheck="false" autocomplete="off"
-        placeholder="Paste The Athletic article URL (https://www.nytimes.com/athletic/...)" />
+        placeholder="Waiting for dispatched article from Extension..." readonly />
     </div>
 
-    <button class="btn btn-neo btn-primary hidden" id="btnRead" disabled>⚡ READ</button>
-    <button class="btn btn-neo btn-vi hidden" id="btnTranslate" disabled>🌐 AI TRANSLATE</button>
-    <div class="sep hidden" id="sepTab"></div>
-    <button class="btn btn-neo btn-ghost hidden" id="btnNewTab">↗ NEW TAB</button>
+    <button class="btn btn-neo btn-vi" id="btnTranslate" disabled>
+      <i class="fa-solid fa-language"></i> 🌐 AI TRANSLATE
+    </button>
     <button class="btn btn-neo btn-ghost hidden" id="btnOriginal">← ORIGINAL</button>
+    <div class="sep" id="sepTab"></div>
+    <button class="btn btn-neo btn-ghost" id="btnNewTab" title="Open Archive Snapshot">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i> ↗ NEW TAB
+    </button>
   </div>
 
+  <!-- WORKSPACE (FULL-WIDTH READING AREA) -->
   <div class="workspace">
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-hdr">
-        <div class="sidebar-tag">NEWS DESK</div>
-        <button class="btn-neo btn-refresh" id="btnRefreshHL" onclick="refreshCurrentTab()" title="Refresh">↻</button>
-      </div>
-      
-      <div class="sidebar-tabs">
-        <button class="tab-btn active" data-tab="football">FOOTBALL</button>
-        <button class="tab-btn" data-tab="nba">NBA</button>
-        <button class="tab-btn" data-tab="f1">F1</button>
-        <button class="tab-btn" data-tab="tennis">TENNIS</button>
-      </div>
-
-      <div class="sidebar-sub-tabs" id="subTabsFootball">
-        <button class="sub-tab-btn active" data-tab="football-all">ALL</button>
-        <button class="sub-tab-btn" data-tab="football-epl">EPL</button>
-        <button class="sub-tab-btn" data-tab="football-ucl">UCL</button>
-        <button class="sub-tab-btn" data-tab="football-laliga">LALIGA</button>
-        <button class="sub-tab-btn" data-tab="football-bundesliga">BUNDES</button>
-        <button class="sub-tab-btn" data-tab="football-seriea">SERIE A</button>
-        <button class="sub-tab-btn" data-tab="football-wildcard">INTERNATIONAL</button>
-      </div>
-
-      <div class="hl-container">
-        <div class="hl-list active" id="list-football-all"></div>
-        <div class="hl-list" id="list-football-epl"></div>
-        <div class="hl-list" id="list-football-ucl"></div>
-        <div class="hl-list" id="list-football-laliga"></div>
-        <div class="hl-list" id="list-football-bundesliga"></div>
-        <div class="hl-list" id="list-football-seriea"></div>
-        <div class="hl-list" id="list-football-wildcard"></div>
-        <div class="hl-list" id="list-nba"></div>
-        <div class="hl-list" id="list-f1"></div>
-        <div class="hl-list" id="list-tennis"></div>
-      </div>
-    </aside>
-
     <main class="content-area">
+      <!-- Loading Overlay -->
       <div class="loading-overlay" id="loadingOverlay">
         <div class="neo-spinner"></div>
         <div class="loading-text" id="loadingText">DISPATCHING DATA…</div>
       </div>
 
+      <!-- Empty State / Guide Screen -->
       <div class="empty-state" id="emptyState">
         <div class="empty-box">
           <div class="empty-icon">📰</div>
-          <div class="empty-title">NO ARTICLE SELECTED</div>
+          <div class="empty-title">CHƯA CÓ BÀI BÁO ĐƯỢC NẠP</div>
           <div class="empty-desc">
-            Select an article from the news desk or paste an article URL in the navigation bar.<br/>
-            Press <kbd class="kbd">ENTER</kbd> or click <kbd class="kbd">⚡ READ</kbd> to render the story.
+            Mở bài viết trên The Athletic bằng Chrome và nhấn nút 
+            <kbd class="kbd">⚡ SEND TO GL READER</kbd> ở góc màn hình.<br/>
+            (Nếu chưa cài đặt Extension, hãy inbox <strong>Vinci</strong> để nhận file nén).
           </div>
         </div>
       </div>
 
+      <!-- Article Viewer Iframe -->
       <iframe id="viewerFrame" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
 
+      <!-- Translation Panel -->
       <div class="trans-panel" id="transPanel">
         <div class="trans-inner">
           <div class="trans-bar">
@@ -122,6 +89,7 @@
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
 <div class="backdrop" id="backdrop" onclick="closeSettings()"></div>
 <div class="sp" id="settingsPanel">
   <div class="sp-hdr">
@@ -129,43 +97,10 @@
     <button class="btn-x" onclick="closeSettings()">✕</button>
   </div>
   <div class="sp-body">
-    <div class="alert alert-warn">
-      <span class="alert-icon">⚠️</span>
-      <div>Data is stored exclusively in your browser's <code>localStorage</code>. No external server tracking.</div>
-    </div>
-    
-    <div class="field">
-      <label class="field-label" for="cfgServer">LADDER SERVER URL</label>
-      <input type="url" id="cfgServer" class="neo-input" placeholder="https://dvsaigonese-goal-line-ladder.hf.space"/>
-    </div>
-
-    <div class="field">
-      <label class="field-label" for="cfgUser">HTTP AUTH USERNAME</label>
-      <input type="text" id="cfgUser" class="neo-input" placeholder="goalline" autocomplete="off"/>
-    </div>
-
-    <div class="field">
-      <label class="field-label" for="cfgPass">HTTP AUTH PASSWORD</label>
-      <input type="password" id="cfgPass" class="neo-input" placeholder="••••••••" autocomplete="off"/>
-      <div class="field-hint">Leave blank if no <code>USERPASS</code> is configured on your HF Space.</div>
-    </div>
-
-    <div class="field">
-      <button class="btn btn-neo btn-ghost" style="align-self:flex-start" onclick="testConn()">🔌 TEST CONNECTION</button>
-      <div id="testResult" class="test-result"></div>
-    </div>
-
-    <hr class="divider"/>
-
     <div class="field">
       <label class="field-label" for="cfgApiKey">🔑 GEMINI API KEY</label>
       <input type="password" id="cfgApiKey" class="neo-input" placeholder="AIzaSy..." autocomplete="off"/>
-      <div class="field-hint">Required for translation features. Obtain an API key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></div>
-    </div>
-
-    <div class="alert alert-info">
-      <span class="alert-icon">💡</span>
-      <div>If the article frame appears blank, add <code>ruleset.yaml</code> to your Ladder server to strip X-Frame-Options headers.</div>
+      <div class="field-hint">Cần thiết cho tính năng Dịch AI. Lấy API key miễn phí tại <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></div>
     </div>
   </div>
   <div class="sp-footer">
@@ -174,6 +109,6 @@
   </div>
 </div>
 
-<script type="module" src="js/reader.js?v=4"></script>
+<script type="module" src="js/reader.js?v=5"></script>
 </body>
 </html>
