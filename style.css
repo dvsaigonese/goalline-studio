@@ -739,3 +739,58 @@ body.dark-mode .btn-neo-back:hover {
     gap: 8px !important;
   }
 }
+
+/* ==================================================
+   FIX MODAL CUỘN DỌC & TEXTAREA CHO BÀI LONG-FORM
+   ================================================== */
+
+/* 1. Lớp phủ Overlay: Giữ khoảng cách an toàn với mép màn hình */
+.neo-modal-overlay {
+  padding: 16px;
+  overflow-y: auto;
+  align-items: center;
+}
+
+/* 2. Khung Modal: Khóa trần 90% chiều cao màn hình & cho phép cuộn */
+.neo-modal {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Giữ header cố định ở trên */
+}
+
+/* Header modal ghim cố định ở đỉnh */
+.neo-modal .modal-header {
+  flex-shrink: 0;
+}
+
+/* Body / Form của modal: TỰ ĐỘNG CUỘN KHI DÀI */
+.neo-modal .modal-body,
+.neo-modal form.modal-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 20px;
+}
+
+/* 3. ĐẶC TRỊ CHO TEXTAREA VIẾT BÀI LONG-FORM (> 500 TỪ) */
+.neo-modal textarea,
+#input-full-content,
+#edit-input-full-content {
+  min-height: 240px !important;  /* Mặc định mở ra đã siêu to, nhìn thoáng */
+  max-height: 480px;            /* Không cho kéo dãn vô tận làm vỡ khung */
+  resize: vertical;             /* Chỉ cho kéo dọc, cấm kéo ngang phá vỡ layout */
+  font-family: var(--font-main, sans-serif);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  padding: 12px;
+  border: 2px solid #000;
+  box-sizing: border-box;
+}
+
+/* Nút Submit luôn có khoảng đệm phía dưới để không bị dính sát đáy khi cuộn */
+.neo-modal form .btn-neo-submit,
+.neo-modal form button[type="submit"] {
+  margin-top: 14px;
+  margin-bottom: 6px;
+  width: 100%;
+}
