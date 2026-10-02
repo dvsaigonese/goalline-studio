@@ -729,59 +729,91 @@ window.deleteLeave = async (id) => {
 };
 
 // ==============================================================================
-// PHẦN 8: ĐÔN TUẦN MỚI (PROMOTE WEEK - PIN: 2026)
+// PHẦN 8: ĐÔN TUẦN ĐỘC LẬP (CONTENT HOẶC DESIGN - PIN: 2026)
 // ==============================================================================
+let currentActiveTeam = 'content'; // 'content' hoặc 'design'
+
 const btnPromoteWeek = document.getElementById('btn-promote-week');
+const promoteBtnText = document.getElementById('promote-btn-text');
+
+// 1. HÀM ĐÔN TUẦN RIÊNG CHO BAN CONTENT
+async function promoteContentWeek() {
+  const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN CONTENT:');
+  if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
+
+  const nextWeek = scheduleCache['next'];
+  if (!nextWeek) return alert('Chưa tải được dữ liệu tuần sau!');
+
+  // Cập nhật tuần hiện tại (chỉ lấy dữ liệu Content từ tuần sau)
+  await window.sb.from('schedules').update({
+    writing_short_data: nextWeek.writing_short_data,
+    writing_long_data: nextWeek.writing_long_data,
+    posting_data: nextWeek.posting_data,
+    updated_at: new Date()
+  }).eq('id', 'current');
+
+  // Khởi tạo 3 bảng Content tuần sau trống hoàn toàn
+  const blankShort = [
+    { shift: "Sáng", time: "Trước 9h", slots: [[], [], [], [], [], [], []] },
+    { shift: "Trưa", time: "Trước 11h00", slots: [[], [], [], [], [], [], []] },
+    { shift: "Chiều", time: "14-18h", slots: [[], [], [], [], [], [], []] }
+  ];
+  const blankLong = [
+    { shift: "Sáng", time: "19h", slots: [[], [], [], [], [], [], []] },
+    { shift: "Trưa", time: "21h", slots: [[], [], [], [], [], [], []] }
+  ];
+  const blankPosting = [
+    { shift: "Đêm/Sáng", time: "0h - 10h30", slots: [[], [], [], [], [], [], []] },
+    { shift: "Trưa/Tối", time: "10h30 - 23h", slots: [[], [], [], [], [], [], []] }
+  ];
+
+  await window.sb.from('schedules').update({
+    writing_short_data: blankShort,
+    writing_long_data: blankLong,
+    posting_data: blankPosting,
+    updated_at: new Date()
+  }).eq('id', 'next');
+
+  alert('ĐÃ ĐÔN TUẦN BAN CONTENT THÀNH CÔNG (LỊCH DESIGN GIỮ NGUYÊN)!');
+  fetchScheduleData();
+}
+
+// 2. HÀM ĐÔN TUẦN RIÊNG CHO BAN DESIGN
+async function promoteDesignWeek() {
+  const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN DESIGN:');
+  if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
+
+  const nextWeek = scheduleCache['next'];
+  if (!nextWeek) return alert('Chưa tải được dữ liệu tuần sau!');
+
+  // Cập nhật ca trực Design tuần hiện tại từ tuần sau
+  await window.sb.from('schedules').update({
+    design_shifts_data: nextWeek.design_shifts_data,
+    updated_at: new Date()
+  }).eq('id', 'current');
+
+  // Khởi tạo bảng Des Ca tuần sau trống hoàn toàn
+  const blankDesignShifts = [
+    { shift: "Fix ảnh Page", time: "Hằng ngày", slots: [[], [], [], [], [], [], []] }
+  ];
+
+  await window.sb.from('schedules').update({
+    design_shifts_data: blankDesignShifts,
+    updated_at: new Date()
+  }).eq('id', 'next');
+
+  alert('ĐÃ ĐÔN TUẦN BAN DESIGN THÀNH CÔNG (LỊCH CONTENT GIỮ NGUYÊN)!');
+  fetchScheduleData();
+}
+
+// Bấm nút sẽ kiểm tra đang ở tab nào để gọi hàm tương ứng
 if (btnPromoteWeek) {
-  btnPromoteWeek.onclick = async () => {
-    const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN:');
-    if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
-
-    const nextWeek = scheduleCache['next'];
-    if (!nextWeek) return alert('Chưa tải được dữ liệu tuần sau!');
-
-    const newLabel = prompt('Tên hiển thị tuần sau mới:', 'ĐĂNG KÝ TUẦN MỚI');
-    if (!newLabel) return;
-
-    // 1. Chuyển tuần sau thành tuần này
-    await window.sb.from('schedules').update({
-      week_label: nextWeek.week_label.replace('ĐĂNG KÝ TUẦN SAU', 'TUẦN NÀY'),
-      writing_short_data: nextWeek.writing_short_data,
-      writing_long_data: nextWeek.writing_long_data,
-      posting_data: nextWeek.posting_data,
-      design_shifts_data: nextWeek.design_shifts_data,
-      updated_at: new Date()
-    }).eq('id', 'current');
-
-    // 2. Khởi tạo tuần sau trống hoàn toàn
-    const blankShort = [
-      { shift: "Sáng", time: "Trước 9h", slots: [[], [], [], [], [], [], []] },
-      { shift: "Trưa", time: "Trước 11h00", slots: [[], [], [], [], [], [], []] },
-      { shift: "Chiều", time: "14-18h", slots: [[], [], [], [], [], [], []] }
-    ];
-    const blankLong = [
-      { shift: "Sáng", time: "19h", slots: [[], [], [], [], [], [], []] },
-      { shift: "Trưa", time: "21h", slots: [[], [], [], [], [], [], []] }
-    ];
-    const blankPosting = [
-      { shift: "Đêm/Sáng", time: "0h - 10h30", slots: [[], [], [], [], [], [], []] },
-      { shift: "Trưa/Tối", time: "10h30 - 23h", slots: [[], [], [], [], [], [], []] }
-    ];
-    const blankDesignShifts = [
-      { shift: "Fix ảnh Page", time: "Hằng ngày", slots: [[], [], [], [], [], [], []] }
-    ];
-
-    await window.sb.from('schedules').update({
-      week_label: newLabel,
-      writing_short_data: blankShort,
-      writing_long_data: blankLong,
-      posting_data: blankPosting,
-      design_shifts_data: blankDesignShifts,
-      updated_at: new Date()
-    }).eq('id', 'next');
-
-    alert('ĐÃ ĐÔN TUẦN THÀNH CÔNG!');
-    fetchScheduleData();
+  btnPromoteWeek.onclick = () => {
+    if (currentActiveTeam === 'design') {
+      promoteDesignWeek();
+    } else {
+      promoteContentWeek();
+    }
   };
 }
 
@@ -794,18 +826,30 @@ const btnContentTab = document.getElementById('tab-btn-content');
 const btnDesignTab = document.getElementById('tab-btn-design');
 
 if (btnContentTab && btnDesignTab) {
+  // Khi chọn tab Content
   btnContentTab.onclick = () => {
+    currentActiveTeam = 'content';
     btnContentTab.classList.add('active');
     btnDesignTab.classList.remove('active');
     if (sectionContent) sectionContent.style.display = 'block';
     if (sectionDesign) sectionDesign.style.display = 'none';
+
+    // Đổi nhãn nút trên Header
+    if (promoteBtnText) promoteBtnText.innerText = 'ĐÔN TUẦN CONTENT';
+    if (btnPromoteWeek) btnPromoteWeek.style.background = 'var(--neo-yellow)';
   };
 
+  // Khi chọn tab Design
   btnDesignTab.onclick = () => {
+    currentActiveTeam = 'design';
     btnDesignTab.classList.add('active');
     btnContentTab.classList.remove('active');
     if (sectionDesign) sectionDesign.style.display = 'block';
     if (sectionContent) sectionContent.style.display = 'none';
+
+    // Đổi nhãn nút trên Header sang màu tím đồng bộ của Design
+    if (promoteBtnText) promoteBtnText.innerText = 'ĐÔN TUẦN DESIGN';
+    if (btnPromoteWeek) btnPromoteWeek.style.background = 'var(--neo-purple)';
     fetchDesignTasks();
   };
 }
