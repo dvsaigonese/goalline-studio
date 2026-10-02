@@ -471,5 +471,15 @@ window.sb.channel('realtime_stack')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'stack_posts' }, loadPostsFromDB)
   .subscribe();
 
+// TỰ ĐỘNG LÀM MỚI STACK KHI MỞ LẠI TAB / BẬT MÀN HÌNH ĐIỆN THOẠI
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    loadPostsFromDB();
+  }
+});
+window.addEventListener('focus', () => {
+  loadPostsFromDB();
+});
+
 checkIdentity();
 loadPostsFromDB();

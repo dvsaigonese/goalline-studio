@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editorial Schedule | Goal-Line Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Editorial & Design Schedule | Goal-Line Studio</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,8 +16,8 @@
 </head>
 <body class="landing-body">
 
-    <div class="landing-wrapper">
-        <!-- Top Nav -->
+    <div class="schedule-app-container">
+        <!-- Top Navigation -->
         <header class="top-nav">
             <div class="brand-badge">
                 <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
@@ -30,8 +30,12 @@
             <div class="header-status">
                 <div class="status-indicator">
                     <span class="pulse-dot"></span>
-                    <span id="current-user-display">ADMIN: HA RIF</span>
+                    <span id="current-user-display">ADMIN: VINCI</span>
                 </div>
+                <!-- Nút Làm Mới Realtime chống đơ cache khi mở lại app trên điện thoại -->
+                <button class="btn-neo-back" id="btn-refresh-all" title="Làm mới toàn bộ dữ liệu">
+                    <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i> LÀM MỚI
+                </button>
                 <button class="btn-neo-back" id="btn-change-identity">
                     <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
                 </button>
@@ -44,90 +48,176 @@
             </div>
         </header>
 
+        <!-- Thanh chọn Ban: CONTENT vs DESIGN -->
+        <div class="team-switch-bar">
+            <button class="btn-team-tab active" id="tab-btn-content">
+                <i class="fa-solid fa-pen-nib"></i> BAN CONTENT
+            </button>
+            <button class="btn-team-tab" id="tab-btn-design">
+                <i class="fa-solid fa-palette"></i> BAN DESIGN
+            </button>
+        </div>
 
-        <!-- Week Switcher -->
+        <!-- Thanh chọn Tuần (Áp dụng cho các bảng phân ca tuần) -->
         <div class="schedule-week-bar">
             <div class="week-title-box">
                 <span class="tag-label">CHU KỲ XUẤT BẢN</span>
-                <h2 id="current-week-label">TUẦN NÀY</h2>
+                <h2 id="current-week-label">TUẦN NÀY (28/09 - 04/10)</h2>
             </div>
             <div class="week-switch-buttons">
                 <button class="btn-week-toggle active" id="btn-this-week">TUẦN NÀY</button>
-                <button class="btn-week-toggle" id="btn-next-week">ĐĂNG KÝ TUẦN SAU</button>
+                <button class="btn-week-toggle" id="btn-next-week">ĐĂNG KÝ TUẦN SAU (05/10 - 11/10)</button>
             </div>
         </div>
 
-        <!-- BẢNG 1: ĐĂNG KÝ LỊCH VIẾT BÀI NGẮN (TỐI ĐA 5 SLOT) -->
-        <div class="schedule-card card-yellow">
-            <div class="schedule-card-header">
-                <div class="header-badge"><i class="fa-solid fa-bolt"></i> BÀI NGẮN</div>
-                <h3>ĐĂNG KÝ LỊCH VIẾT BÀI NGẮN (2 BÀI/NGƯỜI/TUẦN - TỐI ĐA 5 SLOT/CA)</h3>
+        <!-- ==============================================
+             KHU VỰC 1: BAN CONTENT
+             ============================================== -->
+        <div id="section-content-team">
+            <!-- BẢNG BÀI NGẮN (TỐI ĐA 5 SLOT) -->
+            <div class="schedule-card card-yellow">
+                <div class="schedule-card-header">
+                    <div class="header-badge"><i class="fa-solid fa-bolt"></i> BÀI NGẮN</div>
+                    <h3>ĐĂNG KÝ LỊCH VIẾT BÀI NGẮN (2 BÀI/NGƯỜI/TUẦN - TỐI ĐA 5 SLOT)</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 85px;">BUỔI</th>
+                                <th style="width: 120px;">GIỜ</th>
+                                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-writing-short"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="grid-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 85px;">BUỔI</th>
-                            <th style="width: 120px;">GIỜ</th>
-                            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
-                        </tr>
-                    </thead>
-                    <tbody id="body-writing-short">
-                        <!-- JS Render -->
-                    </tbody>
-                </table>
+
+            <!-- BẢNG BÀI DÀI (TỐI ĐA 3 SLOT) -->
+            <div class="schedule-card card-orange">
+                <div class="schedule-card-header" style="background:#fff4ea;">
+                    <div class="header-badge" style="background:var(--neo-orange); color:black;"><i class="fa-solid fa-newspaper"></i> BÀI DÀI</div>
+                    <h3>ĐĂNG KÝ LỊCH VIẾT BÀI DÀI (1 BÀI/NGƯỜI/TUẦN - TỐI ĐA 3 SLOT)</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 85px;">BUỔI</th>
+                                <th style="width: 120px;">GIỜ</th>
+                                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-writing-long"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BẢNG TRỰC PAGE (TỐI ĐA 2 SLOT) -->
+            <div class="schedule-card card-cyan">
+                <div class="schedule-card-header">
+                    <div class="header-badge"><i class="fa-solid fa-bullhorn"></i> TRỰC PAGE</div>
+                    <h3>ĐĂNG KÝ LỊCH ĐĂNG BÀI (CA TRỰC FANPAGE - TỐI ĐA 2 SLOT)</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 100px;">BUỔI</th>
+                                <th style="width: 130px;">KHUNG GIỜ</th>
+                                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-posting"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- BẢNG 2: ĐĂNG KÝ LỊCH VIẾT BÀI DÀI (TỐI ĐA 3 SLOT) -->
-        <div class="schedule-card card-orange">
-            <div class="schedule-card-header" style="background:#fff4ea;">
-                <div class="header-badge" style="background:var(--neo-orange); color:black;"><i class="fa-solid fa-newspaper"></i> BÀI DÀI</div>
-                <h3>ĐĂNG KÝ LỊCH VIẾT BÀI DÀI (1 BÀI/NGƯỜI/TUẦN - TỐI ĐA 3 SLOT/CA)</h3>
+        <!-- ==============================================
+             KHU VỰC 2: BAN DESIGN
+             ============================================== -->
+        <div id="section-design-team" style="display: none;">
+            <!-- BẢNG FIX ẢNH TRÊN PAGE (TỐI ĐA 2 SLOTS/Ô - CHẠY THEO TUẦN) -->
+            <div class="schedule-card card-blue">
+                <div class="schedule-card-header" style="background:#eefaff;">
+                    <div class="header-badge" style="background:var(--neo-blue); color:black;"><i class="fa-solid fa-wand-magic-sparkles"></i> DES CA</div>
+                    <h3>FIX ẢNH TRÊN PAGE (TỐI ĐA 2 DESIGNER/NGÀY)</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 140px;">CA TRỰC</th>
+                                <th style="width: 120px;">KHUNG GIỜ</th>
+                                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th>
+                                <th style="background:#ffeaa7;">T7 (CUỐI TUẦN)</th>
+                                <th style="background:#ffeaa7;">CN (CUỐI TUẦN)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-design-shifts"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="grid-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 85px;">BUỔI</th>
-                            <th style="width: 120px;">GIỜ</th>
-                            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
-                        </tr>
-                    </thead>
-                    <tbody id="body-writing-long">
-                        <!-- JS Render -->
-                    </tbody>
-                </table>
+
+            <!-- BẢNG TASK DESIGN (ĐỒNG BỘ CHUẨN STACK: FILTER, SELECT ALL, XÓA HÀNG LOẠT) -->
+            <div class="schedule-card card-purple">
+                <div class="schedule-card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="header-badge" style="background:var(--neo-purple); color:black;"><i class="fa-solid fa-list-check"></i> TASKS</div>
+                        <h3>BẢNG THEO DÕI TASK DESIGN (TOÀN BỘ BACKLOG)</h3>
+                    </div>
+                    
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <!-- Nút Xóa hàng loạt (Mặc định ẩn, khi tích chọn sẽ hiện) -->
+                        <button class="btn-neo-batch-del" id="btn-batch-del-tasks" style="display: none;">
+                            <i class="fa-solid fa-trash-can"></i> XÓA ĐÃ CHỌN (<span id="selected-task-count">0</span>)
+                        </button>
+                        <button class="btn-neo-add" id="btn-open-task-modal" style="font-size:0.95rem; padding:8px 14px;">
+                            <i class="fa-solid fa-plus"></i> THÊM TASK
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thanh lọc tab như bên Stack -->
+                <div class="task-action-bar">
+                    <div class="filter-group">
+                        <button class="task-filter-btn active" data-task-filter="all">TẤT CẢ (<span id="count-tasks-all">0</span>)</button>
+                        <button class="task-filter-btn" data-task-filter="DESIGN">ĐANG DESIGN (<span id="count-tasks-design">0</span>)</button>
+                        <button class="task-filter-btn" data-task-filter="DONE">HOÀN THÀNH (<span id="count-tasks-done">0</span>)</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="grid-table design-task-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 45px; text-align: center;">
+                                    <input type="checkbox" id="check-all-tasks" class="neo-checkbox" title="Chọn tất cả">
+                                </th>
+                                <th style="width: 150px;">TYPE</th>
+                                <th>BRIEF / TIÊU ĐỀ</th>
+                                <th style="width: 130px;">PRIORITY</th>
+                                <th>NOTE</th>
+                                <th style="width: 140px;">LINK ẢNH / HD</th>
+                                <th style="width: 130px;">STATUS</th>
+                                <th style="width: 140px; text-align: center;">HÀNH ĐỘNG</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-design-tasks"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- BẢNG 3: ĐĂNG KÝ LỊCH ĐĂNG BÀI (FANPAGE) -->
-        <div class="schedule-card card-cyan">
-            <div class="schedule-card-header">
-                <div class="header-badge"><i class="fa-solid fa-bullhorn"></i> TRỰC PAGE</div>
-                <h3>ĐĂNG KÝ LỊCH ĐĂNG BÀI (CA TRỰC FANPAGE)</h3>
-            </div>
-            <div class="table-responsive">
-                <table class="grid-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 100px;">BUỔI</th>
-                            <th style="width: 130px;">KHUNG GIỜ</th>
-                            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
-                        </tr>
-                    </thead>
-                    <tbody id="body-posting">
-                        <!-- JS Render -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- BẢNG 4: XIN NGHỈ MỘT THỜI GIAN -->
+        <!-- ==============================================
+             KHU VỰC 3: DÙNG CHUNG CẢ 2 BAN - XIN NGHỈ
+             ============================================== -->
         <div class="schedule-card card-red">
             <div class="schedule-card-header bg-red">
                 <div class="header-badge-white"><i class="fa-solid fa-bed"></i> OFF / NGHỈ PHÉP</div>
-                <h3>XIN NGHỈ MỘT THỜI GIAN!</h3>
+                <h3>XIN NGHỈ MỘT THỜI GIAN (DÙNG CHUNG TOÀN TEAM)</h3>
             </div>
             <div class="leave-notice">
                 ⚠️ <strong>Ai đang muốn off, vui lòng điền vào bảng bên dưới. Lý do nhạy cảm quá thì nhắn riêng Vinci, cảm ơn anh em!</strong>
@@ -136,14 +226,12 @@
                 <table class="grid-table leave-table">
                     <thead>
                         <tr>
-                            <th style="width: 150px;">TÊN ADMIN</th>
+                            <th style="width: 160px;">TÊN ADMIN</th>
                             <th style="width: 220px;">THỜI GIAN NGHỈ</th>
                             <th>LÝ DO / GHI CHÚ</th>
                         </tr>
                     </thead>
-                    <tbody id="body-leave">
-                        <!-- JS Render -->
-                    </tbody>
+                    <tbody id="body-leave"></tbody>
                 </table>
             </div>
             <div style="padding: 14px 16px; background: white; border-top: 2px dashed black;">
@@ -155,6 +243,150 @@
 
     </div>
 
+    <!-- MODAL 1: THÊM TASK DESIGN MỚI -->
+    <div class="neo-modal-overlay" id="task-modal">
+        <div class="neo-modal" style="max-width: 600px;">
+            <div class="modal-header" style="background:var(--neo-purple);">
+                <h3><i class="fa-solid fa-file-circle-plus"></i> THÊM TASK DESIGN MỚI</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-task-modal">&times;</button>
+            </div>
+            <form id="form-add-task" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>PHÂN LOẠI (TYPE):</label>
+                        <select id="task-type-select">
+                            <option value="SPECIAL SERIES">SPECIAL SERIES</option>
+                            <option value="IG/THREADS">IG/THREADS</option>
+                            <option value="MATCHDAY">MATCHDAY</option>
+                            <option value="BREAKING">BREAKING</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>MỨC ĐỘ ƯU TIÊN (PRIORITY):</label>
+                        <select id="task-priority-select">
+                            <option value="TRUNG BÌNH">TRUNG BÌNH</option>
+                            <option value="CAO">CAO</option>
+                            <option value="KHẨN CẤP">KHẨN CẤP</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>BRIEF / NỘI DUNG YÊU CẦU:</label>
+                    <input type="text" id="task-brief-input" placeholder="Ví dụ: Nurnberg vs Furth..." required>
+                </div>
+                <div class="form-group">
+                    <label>TẢI FILE ẢNH DESIGN LÊN (NẾU CÓ):</label>
+                    <input type="file" id="task-image-file" accept="image/*">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GHI CHÚ (NOTE):</label>
+                        <input type="text" id="task-note-input" placeholder="Yêu cầu riêng kích thước, màu sắc...">
+                    </div>
+                    <div class="form-group">
+                        <label>TRẠNG THÁI (STATUS):</label>
+                        <select id="task-status-select">
+                            <option value="DESIGN">DESIGN</option>
+                            <option value="PENDING">PENDING</option>
+                            <option value="DONE">DONE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-neo-submit">LƯU TASK DESIGN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CHỈNH SỬA TASK DESIGN -->
+    <div class="neo-modal-overlay" id="edit-task-modal">
+        <div class="neo-modal" style="max-width: 600px;">
+            <div class="modal-header" style="background:var(--neo-blue);">
+                <h3><i class="fa-solid fa-pen-to-square"></i> CHỈNH SỬA TASK DESIGN</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-edit-task-modal">&times;</button>
+            </div>
+            <form id="form-edit-task" class="modal-body">
+                <input type="hidden" id="edit-task-id">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>PHÂN LOẠI (TYPE):</label>
+                        <select id="edit-task-type">
+                            <option value="SPECIAL SERIES">SPECIAL SERIES</option>
+                            <option value="IG/THREADS">IG/THREADS</option>
+                            <option value="MATCHDAY">MATCHDAY</option>
+                            <option value="BREAKING">BREAKING</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>MỨC ĐỘ ƯU TIÊN (PRIORITY):</label>
+                        <select id="edit-task-priority">
+                            <option value="TRUNG BÌNH">TRUNG BÌNH</option>
+                            <option value="CAO">CAO</option>
+                            <option value="KHẨN CẤP">KHẨN CẤP</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>BRIEF / TIÊU ĐỀ YÊU CẦU:</label>
+                    <input type="text" id="edit-task-brief" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TẢI ẢNH MỚI TỪ MÁY (NẾU CÓ):</label>
+                        <input type="file" id="edit-task-file" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>HOẶC LINK ẢNH HIỆN TẠI:</label>
+                        <input type="text" id="edit-task-imgurl" placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GHI CHÚ (NOTE):</label>
+                        <input type="text" id="edit-task-note">
+                    </div>
+                    <div class="form-group">
+                        <label>TRẠNG THÁI (STATUS):</label>
+                        <select id="edit-task-status">
+                            <option value="DESIGN">DESIGN</option>
+                            <option value="PENDING">PENDING</option>
+                            <option value="DONE">DONE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn-neo-submit" id="btn-submit-edit-task">LƯU THAY ĐỔI</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: XEM ẢNH GỐC TO (LIGHTBOX) -->
+    <div class="neo-modal-overlay" id="image-modal">
+        <div class="neo-modal" style="max-width: 900px; background: black; border-color: black;">
+            <div class="modal-header" style="background: #222; color: white;">
+                <h3 id="image-modal-title" style="color:var(--neo-yellow); font-size:1.1rem; margin:0;">XEM ẢNH GỐC</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-image" style="color:white;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 10px; text-align: center; background: #111;">
+                <img id="image-modal-preview" src="" alt="Ảnh design" style="max-width:100%; max-height:70vh; object-fit:contain; border:2px solid var(--neo-yellow);">
+                <div style="margin-top: 15px; display:flex; justify-content:center;">
+                    <a id="btn-download-hd" href="" target="_blank" download class="btn-neo-add" style="font-size:0.95rem; text-decoration:none;">
+                        <i class="fa-solid fa-download"></i> TẢI ẢNH GỐC
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="js/theme.js"></script>
     <script src="js/schedule.js"></script>
 </body>
 </html>
