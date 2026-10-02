@@ -197,13 +197,13 @@
                                 <th style="width: 45px; text-align: center;">
                                     <input type="checkbox" id="check-all-tasks" class="neo-checkbox" title="Chọn tất cả">
                                 </th>
-                                <th style="width: 150px;">TYPE</th>
-                                <th>BRIEF / TIÊU ĐỀ</th>
-                                <th style="width: 130px;">PRIORITY</th>
-                                <th>NOTE</th>
-                                <th style="width: 140px;">LINK ẢNH / HD</th>
-                                <th style="width: 130px;">STATUS</th>
-                                <th style="width: 140px; text-align: center;">HÀNH ĐỘNG</th>
+                                <th style="width: 140px;">TYPE</th>
+                                <th style="min-width: 260px;">BRIEF / TIÊU ĐỀ</th>
+                                <th style="width: 120px;">PRIORITY</th>
+                                <th style="width: 180px;">NOTE</th>
+                                <th style="width: 120px;">LINK ẢNH / HD</th>
+                                <th style="width: 120px; text-align: center;">STATUS</th>
+                                <th style="width: 130px; text-align: center;">HÀNH ĐỘNG</th>
                             </tr>
                         </thead>
                         <tbody id="body-design-tasks"></tbody>
@@ -275,9 +275,15 @@
                     <label>BRIEF / NỘI DUNG YÊU CẦU:</label>
                     <input type="text" id="task-brief-input" placeholder="Ví dụ: Nurnberg vs Furth..." required>
                 </div>
-                <div class="form-group">
-                    <label>TẢI FILE ẢNH DESIGN LÊN (NẾU CÓ):</label>
-                    <input type="file" id="task-image-file" accept="image/*">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>TẢI ẢNH TỪ MÁY (NẾU CÓ):</label>
+                        <input type="file" id="task-image-file" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>HOẶC LINK ẢNH / GOOGLE DRIVE:</label>
+                        <input type="text" id="task-image-url" placeholder="https://drive.google.com/... hoặc link ảnh">
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -341,8 +347,8 @@
                         <input type="file" id="edit-task-file" accept="image/*">
                     </div>
                     <div class="form-group">
-                        <label>HOẶC LINK ẢNH HIỆN TẠI:</label>
-                        <input type="text" id="edit-task-imgurl" placeholder="https://...">
+                        <label>HOẶC LINK ẢNH / GOOGLE DRIVE:</label>
+                        <input type="text" id="edit-task-imgurl" placeholder="https://drive.google.com/... hoặc link ảnh">
                     </div>
                 </div>
 
@@ -378,9 +384,9 @@
             <div class="modal-body" style="padding: 10px; text-align: center; background: #111;">
                 <img id="image-modal-preview" src="" alt="Ảnh design" style="max-width:100%; max-height:70vh; object-fit:contain; border:2px solid var(--neo-yellow);">
                 <div style="margin-top: 15px; display:flex; justify-content:center;">
-                    <a id="btn-download-hd" href="" target="_blank" download class="btn-neo-add" style="font-size:0.95rem; text-decoration:none;">
+                    <button type="button" id="btn-download-hd-task" class="btn-neo-add" onclick="downloadActiveTaskImage()" style="font-size:0.95rem; background:var(--neo-green); color:#000;">
                         <i class="fa-solid fa-download"></i> TẢI ẢNH GỐC
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>

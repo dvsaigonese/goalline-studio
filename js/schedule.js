@@ -1,28 +1,78 @@
+/**
+ * ==============================================================================
+ * GOAL-LINE STUDIO - EDITORIAL & DESIGN SCHEDULE ENGINE (schedule.js)
+ * ==============================================================================
+ * Quản lý toàn bộ:
+ * 1. Cấu hình Supabase & State ứng dụng
+ * 2. Bảng mã màu độc quyền Ban Design
+ * 3. Tải & đồng bộ dữ liệu từ Database (Schedules, Design Tasks, Leaves)
+ * 4. Phân ca trực tuần (Content, Trực Page, Des Ca)
+ * 5. Bảng quản lý Task Design Backlog (Lọc, Checkbox, Xóa hàng loạt PIN 2026)
+ * 6. Lightbox & Tải ảnh gốc (Hỗ trợ Save to Photos trên iOS qua Web Share API)
+ * 7. Bảng theo dõi Nghỉ phép (Leaves)
+ * 8. Đôn tuần mới (Promote Week - PIN 2026)
+ * 9. Điều hướng Tab & Giao diện (Content / Design, Tuần này / Tuần sau)
+ * 10. Cơ chế Realtime & Tự động phục hồi khi mở lại điện thoại (Deep-Sleep)
+ * ==============================================================================
+ */
+
+// ==============================================================================
+// PHẦN 1: CẤU HÌNH SUPABASE & KHỞI TẠO STATE
+// ==============================================================================
 const SUPABASE_URL = 'https://exutfqxfwurwyfyxzskj.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4dXRmcXhmd3Vyd3lmeXh6c2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NTM0MzksImV4cCI6MjEwNjQyOTQzOX0.e3DZMEaGqgEQjMbUrll718a0lWFjY011wzPPLqh9Ls8';
 
 // Khởi tạo Supabase client toàn cục trên window
 window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let currentTab = 'current';
+// State quản lý lịch phân ca
+let currentTab = 'current'; // 'current' (Tuần này) hoặc 'next' (Tuần sau)
 let scheduleCache = { current: null, next: null };
+
+// State quản lý Task Design & Nghỉ phép
 let designTasks = [];
 let leavesList = [];
+let activeTaskFilter = 'all'; // 'all', 'DESIGN', 'DONE'
+let selectedTaskIds = new Set(); // Chứa các ID task được tick chọn
 
+// State Modal xem ảnh
+let currentTaskModalImageUrl = '';
+let currentTaskModalImageTitle = '';
+
+// ==============================================================================
+// PHẦN 2: BẢNG MÃ MÀU ĐỘC QUYỀN BAN DESIGN (DICTIONARY)
+// ==============================================================================
+// Sau này có thêm Designer mới, chỉ cần thêm tên và mã màu vào object này:
 const DESIGNER_COLORS = {
-  'Quýt':    { bg: '#FF9900', color: '#000000' },
-  'Kaiz':    { bg: '#FF0000', color: '#ffffff' },
-  'Naruto':  { bg: '#980000', color: '#ffffff' },
-  'Ruben':   { bg: '#B6D7A8', color: '#000000' },
-  'Cakashi': { bg: '#D0E0E3', color: '#000000' } 
+  'Quýt':    { bg: '#FF9900', color: '#000000' }, // Cam sáng (chữ đen)
+  'Kaiz':    { bg: '#FF0000', color: '#ffffff' }, // Đỏ tươi (chữ trắng)
+  'Naruto':  { bg: '#980000', color: '#ffffff' }, // Đỏ đô đậm (chữ trắng)
+  'Ruben':   { bg: '#B6D7A8', color: '#000000' }, // Xanh lá pastel (chữ đen)
+  'Cakashi': { bg: '#D0E0E3', color: '#000000' }  // Xanh băng nhạt (chữ đen)
 };
 
-// ==========================================
-// TẢI DỮ LIỆU
-// ==========================================
+/**
+ * Hàm lấy style màu cho thẻ slot-pill
+ */
+function getMemberPillStyle(member, columnKey, fallbackBg = '') {
+  // Nếu là bảng ca trực của Design và thành viên có tên trong danh bạ màu
+  if (columnKey === 'design_shifts_data' && DESIGNER_COLORS[member]) {
+    const config = DESIGNER_COLORS[member];
+    return `background: ${config.bg}; color: ${config.color}; border-color: #000;`;
+  }
+  // Các bảng Content, Trực page dùng màu fallback mặc định
+  if (fallbackBg) {
+    return `background: ${fallbackBg}; color: #000;`;
+  }
+  return '';
+}
+
+// ==============================================================================
+// PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE
+// ==============================================================================
 async function fetchScheduleData() {
   const { data, error } = await window.sb.from('schedules').select('*');
-  if (error) return console.error('Lỗi lấy lịch:', error.message);
+  if (error) return console.error('Lỗi lấy lịch ca trực:', error.message);
   data.forEach(item => { scheduleCache[item.id] = item; });
   renderActiveSchedule();
 }
@@ -33,36 +83,25 @@ async function fetchDesignTasks() {
     .select('*')
     .order('created_at', { ascending: true });
 
-  if (error) return console.error('Lỗi lấy tasks:', error.message);
+  if (error) return console.error('Lỗi lấy danh sách task:', error.message);
   designTasks = data || [];
   renderDesignTasks();
 }
 
 async function fetchLeavesData() {
-  const { data, error } = await window.sb.from('leaves').select('*').order('created_at', { ascending: false });
-  if (error) return console.error('Lỗi lấy leaves:', error.message);
+  const { data, error } = await window.sb
+    .from('leaves')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) return console.error('Lỗi lấy danh sách nghỉ phép:', error.message);
   leavesList = data || [];
   renderLeavesTable();
 }
 
-// Hàm lấy màu động cho từng thẻ tên (Pill)
-function getMemberPillStyle(member, columnKey, fallbackBg = '') {
-  // Ưu tiên lấy theo Dictionary nếu là bảng Design
-  if (columnKey === 'design_shifts_data' && DESIGNER_COLORS[member]) {
-    const config = DESIGNER_COLORS[member];
-    return `background: ${config.bg}; color: ${config.color}; border-color: #000;`;
-  }
-  
-  // Các bảng khác (Content, Posting) dùng màu mặc định
-  if (fallbackBg) {
-    return `background: ${fallbackBg}; color: #000;`;
-  }
-  return '';
-}
-
-// ==========================================
-// RENDER LỊCH PHÂN CA
-// ==========================================
+// ==============================================================================
+// PHẦN 4: RENDER BẢNG PHÂN CA TRỰC TUẦN
+// ==============================================================================
 function renderActiveSchedule() {
   const weekObj = scheduleCache[currentTab];
   if (!weekObj) return;
@@ -72,6 +111,7 @@ function renderActiveSchedule() {
 
   const myName = localStorage.getItem('gl_current_user') || 'Vinci';
 
+  // Hàm render ma trận ca trực linh hoạt theo số slot cho phép
   const renderMultiSlotRows = (dataMatrix, columnKey, maxCapacity, customBg = '') => {
     if (!dataMatrix) return '';
     return dataMatrix.map((row, rIdx) => `
@@ -85,7 +125,6 @@ function renderActiveSchedule() {
             <td>
               <div class="slot-container">
                 ${slotsArr.map((member, sIdx) => {
-                  // Tự động map màu riêng của từng des từ Dictionary
                   const pillStyle = getMemberPillStyle(member, columnKey, customBg);
                   return `
                     <div class="slot-pill" style="${pillStyle}" 
@@ -109,30 +148,86 @@ function renderActiveSchedule() {
     `).join('');
   };
 
+  // 1. Bảng Bài Ngắn (Tối đa 5 slots)
   const bodyWritingShort = document.getElementById('body-writing-short');
-  if (bodyWritingShort) bodyWritingShort.innerHTML = renderMultiSlotRows(weekObj.writing_short_data, 'writing_short_data', 5);
+  if (bodyWritingShort) {
+    bodyWritingShort.innerHTML = renderMultiSlotRows(weekObj.writing_short_data, 'writing_short_data', 5);
+  }
 
+  // 2. Bảng Bài Dài (Tối đa 3 slots)
   const bodyWritingLong = document.getElementById('body-writing-long');
-  if (bodyWritingLong) bodyWritingLong.innerHTML = renderMultiSlotRows(weekObj.writing_long_data, 'writing_long_data', 3);
+  if (bodyWritingLong) {
+    bodyWritingLong.innerHTML = renderMultiSlotRows(weekObj.writing_long_data, 'writing_long_data', 3);
+  }
 
+  // 3. Bảng Trực Page (Tối đa 2 slots)
   const bodyPosting = document.getElementById('body-posting');
-  if (bodyPosting) bodyPosting.innerHTML = renderMultiSlotRows(weekObj.posting_data, 'posting_data', 2, 'var(--neo-blue)');
+  if (bodyPosting) {
+    bodyPosting.innerHTML = renderMultiSlotRows(weekObj.posting_data, 'posting_data', 2, 'var(--neo-blue)');
+  }
 
+  // 4. Bảng Des Ca (Tối đa 2 slots/ngày, tự động nhận màu Designer)
   const bodyDesignShifts = document.getElementById('body-design-shifts');
-  if (bodyDesignShifts) bodyDesignShifts.innerHTML = renderMultiSlotRows(weekObj.design_shifts_data, 'design_shifts_data', 2, 'var(--neo-orange)');
+  if (bodyDesignShifts) {
+    bodyDesignShifts.innerHTML = renderMultiSlotRows(weekObj.design_shifts_data, 'design_shifts_data', 2, 'var(--neo-orange)');
+  }
 }
 
-// ==========================================
-// QUẢN LÝ TASK DESIGN (SELECT, BATCH DELETE, FILTER)
-// ==========================================
-let activeTaskFilter = 'all';
-let selectedTaskIds = new Set(); // Lưu danh sách ID task được tick chọn
+// Xử lý nhận ca trực
+window.handleAddSlot = async (columnKey, rIdx, cIdx, maxCapacity) => {
+  const myName = localStorage.getItem('gl_current_user') || 'Vinci';
+  const targetWeek = scheduleCache[currentTab];
+  if (!targetWeek) return;
 
+  const currentSlots = Array.isArray(targetWeek[columnKey][rIdx].slots[cIdx])
+    ? targetWeek[columnKey][rIdx].slots[cIdx] : [];
+
+  if (currentSlots.length >= maxCapacity) return alert(`Ca này đã đủ ${maxCapacity} thành viên!`);
+  if (currentSlots.includes(myName)) return alert(`Bạn (${myName}) đã nhận slot này rồi!`);
+
+  if (!confirm(`Nhận 1 slot ca này cho [${myName}]?`)) return;
+
+  const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
+  if (!Array.isArray(updatedMatrix[rIdx].slots[cIdx])) updatedMatrix[rIdx].slots[cIdx] = [];
+  updatedMatrix[rIdx].slots[cIdx].push(myName);
+
+  await window.sb.from('schedules').update({ 
+    [columnKey]: updatedMatrix, 
+    updated_at: new Date() 
+  }).eq('id', currentTab);
+};
+
+// Xử lý hủy ca trực (Hủy ca người khác cần PIN 2026)
+window.handleRemoveSlot = async (columnKey, rIdx, cIdx, sIdx, memberName) => {
+  const myName = localStorage.getItem('gl_current_user') || 'Vinci';
+  const targetWeek = scheduleCache[currentTab];
+  if (!targetWeek) return;
+
+  if (memberName === myName) {
+    if (!confirm(`Hủy ca của bạn (${myName})?`)) return;
+  } else {
+    const pin = prompt(`Slot của [${memberName}]. Nhập PIN Admin để xóa:`);
+    if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
+  }
+
+  const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
+  updatedMatrix[rIdx].slots[cIdx].splice(sIdx, 1);
+
+  await window.sb.from('schedules').update({ 
+    [columnKey]: updatedMatrix, 
+    updated_at: new Date() 
+  }).eq('id', currentTab);
+};
+
+// ==============================================================================
+// PHẦN 5: QUẢN LÝ TASK DESIGN BACKLOG
+// ==============================================================================
 function renderDesignTasks() {
   const tbody = document.getElementById('body-design-tasks');
   if (!tbody) return;
+  tbody.innerHTML = '';
 
-  // Lọc theo tab
+  // Lọc task theo tab đang chọn
   const filtered = designTasks.filter(t => {
     if (activeTaskFilter === 'all') return true;
     if (activeTaskFilter === 'DESIGN') return t.status === 'DESIGN' || t.status === 'PENDING';
@@ -155,50 +250,91 @@ function renderDesignTasks() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(t => {
+  filtered.forEach(t => {
+    const tr = document.createElement('tr');
     let typeClass = 'type-other';
     if (t.task_type && t.task_type.includes('SPECIAL')) typeClass = 'type-special';
     if (t.task_type && t.task_type.includes('THREADS')) typeClass = 'type-threads';
 
     const isChecked = selectedTaskIds.has(t.id) ? 'checked' : '';
 
-    return `
-      <tr>
-        <td style="text-align: center;">
-          <input type="checkbox" class="neo-checkbox task-row-checkbox" data-id="${t.id}" ${isChecked}>
-        </td>
-        <td><span class="tag-task-type ${typeClass}">${t.task_type}</span></td>
-        <td><strong>${t.brief}</strong></td>
-        <td><span class="tag-priority-badge">${t.priority}</span></td>
-        <td style="font-size:0.85rem; color:#555;">${t.note || '--'}</td>
-        <td>
-          ${t.img_url ? `
-            <button class="slot-pill" style="cursor:pointer;" onclick="openTaskImage('${t.img_url}', '${t.brief}')">
-              <i class="fa-solid fa-image"></i> Xem file
-            </button>
-          ` : `<span style="color:#aaa; font-size:0.75rem;">(Chưa đính kèm)</span>`}
-        </td>
-        <td>
-          <span class="tag-status-pill ${t.status === 'DONE' ? 'tag-status-done' : ''}" onclick="toggleTaskStatus('${t.id}', '${t.status}')" title="Click để chuyển trạng thái">
-            ${t.status}
-          </span>
-        </td>
-        <td>
-          <div class="table-actions">
-            <button class="btn-action-icon" onclick="openEditTaskModal('${t.id}')" style="color:#0984e3;" title="Chỉnh sửa task">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button class="btn-action-icon" onclick="copyBrief('${t.brief}')" title="Copy tiêu đề / brief">
-              <i class="fa-solid fa-copy"></i>
-            </button>
-            <button class="btn-action-icon" onclick="deleteDesignTask('${t.id}')" style="color:red;" title="Xóa task">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+    // Xử lý hiển thị Link Google Drive hoặc Thumbnail ảnh
+    let imageCellMarkup = `<span style="color:#aaa; font-size:0.75rem;">(Chưa đính kèm)</span>`;
+    const cleanUrl = (t.img_url || '').trim();
+
+    if (cleanUrl !== '') {
+      if (cleanUrl.includes('drive.google.com')) {
+        imageCellMarkup = `
+          <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="slot-pill" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:var(--neo-yellow); color:#000; font-size:0.75rem; font-weight:900;" title="Mở Google Drive">
+            <i class="fa-brands fa-google-drive"></i> Link Drive
+          </a>
+        `;
+      } else if (cleanUrl.startsWith('http')) {
+        imageCellMarkup = `
+          <div class="img-thumb-box img-thumb-clickable" title="Click để phóng to ảnh">
+            <img src="${cleanUrl}" alt="Thumbnail" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null; this.src='assets/img/GL_logo.jpg';">
           </div>
-        </td>
-      </tr>
+        `;
+      }
+    }
+
+    tr.innerHTML = `
+      <td style="text-align: center;">
+        <input type="checkbox" class="neo-checkbox task-row-checkbox" data-id="${t.id}" ${isChecked}>
+      </td>
+      <td><span class="tag-task-type ${typeClass}">${t.task_type}</span></td>
+      <td><strong>${t.brief}</strong></td>
+      <td><span class="tag-priority-badge">${t.priority}</span></td>
+      <td style="font-size:0.85rem; color:#555;">${t.note || '--'}</td>
+      <td>${imageCellMarkup}</td>
+      <td style="text-align:center;">
+        <span class="tag-status-pill ${t.status === 'DONE' ? 'tag-status-done' : ''}" title="Click để chuyển trạng thái">
+          ${t.status}
+        </span>
+      </td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-action-icon btn-task-edit" style="color:#0984e3;" title="Chỉnh sửa task">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button class="btn-action-icon btn-task-copy" title="Copy tiêu đề / brief">
+            <i class="fa-solid fa-copy"></i>
+          </button>
+          <button class="btn-action-icon btn-task-del" style="color:red;" title="Xóa task">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </td>
     `;
-  }).join('');
+
+    // Gắn sự kiện qua Closure JS an toàn tuyệt đối
+    const thumbBox = tr.querySelector('.img-thumb-clickable');
+    if (thumbBox) {
+      thumbBox.onclick = () => openTaskImage(cleanUrl, t.brief);
+    }
+
+    const statusPill = tr.querySelector('.tag-status-pill');
+    if (statusPill) {
+      statusPill.onclick = () => toggleTaskStatus(t.id, t.status);
+    }
+
+    const btnEdit = tr.querySelector('.btn-task-edit');
+    if (btnEdit) {
+      btnEdit.onclick = () => openEditTaskModal(t.id);
+    }
+
+    const btnCopy = tr.querySelector('.btn-task-copy');
+    if (btnCopy) {
+      btnCopy.onclick = () => copyBrief(t.brief);
+    }
+
+    const btnDel = tr.querySelector('.btn-task-del');
+    if (btnDel) {
+      btnDel.onclick = () => deleteDesignTask(t.id);
+    }
+
+    tbody.appendChild(tr);
+  });
 
   // Gắn sự kiện Checkbox từng dòng
   document.querySelectorAll('.task-row-checkbox').forEach(cb => {
@@ -216,7 +352,7 @@ function renderDesignTasks() {
   updateTaskBatchUI();
 }
 
-// Cập nhật trạng thái nút XÓA ĐÃ CHỌN và CHECK ALL
+// Cập nhật hiển thị nút XÓA ĐÃ CHỌN
 function updateTaskBatchUI() {
   const btnBatch = document.getElementById('btn-batch-del-tasks');
   const countEl = document.getElementById('selected-task-count');
@@ -235,7 +371,7 @@ function updateTaskBatchUI() {
   }
 }
 
-// Check All
+// Checkbox chọn tất cả
 const checkAllTasksBox = document.getElementById('check-all-tasks');
 if (checkAllTasksBox) {
   checkAllTasksBox.onchange = (e) => {
@@ -263,13 +399,13 @@ if (checkAllTasksBox) {
   };
 }
 
-// Xóa hàng loạt Task có mã PIN 2026
+// Xóa hàng loạt Task Design (PIN: 2026)
 const btnBatchDelTasks = document.getElementById('btn-batch-del-tasks');
 if (btnBatchDelTasks) {
   btnBatchDelTasks.onclick = async () => {
     if (selectedTaskIds.size === 0) return;
 
-    const pin = prompt(`Bạn đang chọn xóa ${selectedTaskIds.size} task design.\nNhập mã PIN Admin để xác nhận xóa hàng loạt:`);
+    const pin = prompt(`Bạn đang chọn xóa ${selectedTaskIds.size} task design.\nNhập mã PIN Admin để xác nhận:`);
     if (pin !== '2026') {
       if (pin !== null) alert("Sai mã PIN Admin!");
       return;
@@ -291,14 +427,29 @@ if (btnBatchDelTasks) {
   };
 }
 
-// Hàm Copy Brief nhanh
+// Đổi trạng thái DESIGN <-> DONE
+window.toggleTaskStatus = async (id, currentStatus) => {
+  const nextStatus = currentStatus === 'DESIGN' ? 'DONE' : 'DESIGN';
+  await window.sb.from('design_tasks').update({ status: nextStatus }).eq('id', id);
+  fetchDesignTasks();
+};
+
+// Xóa 1 task đơn lẻ
+window.deleteDesignTask = async (id) => {
+  if (confirm('Bạn có chắc chắn muốn xóa task design này?')) {
+    await window.sb.from('design_tasks').delete().eq('id', id);
+    fetchDesignTasks();
+  }
+};
+
+// Copy brief nhanh
 window.copyBrief = (text) => {
   navigator.clipboard.writeText(text).then(() => {
-    alert(`Đã copy: "${text}"`);
+    alert(`Đã copy brief: "${text}"`);
   });
 };
 
-// Gắn sự kiện cho các nút Tab Filter
+// Bộ lọc tab Task Design
 document.querySelectorAll('.task-filter-btn').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.task-filter-btn').forEach(b => b.classList.remove('active'));
@@ -308,62 +459,81 @@ document.querySelectorAll('.task-filter-btn').forEach(btn => {
   };
 });
 
-// GẮN CHẶT CÁC HÀM TÁC VỤ VÀO WINDOW ĐỂ GỌI ĐƯỢC TỪ ONCLICK
-window.openTaskImage = (url, title) => {
-  const prevEl = document.getElementById('image-modal-preview');
-  const titleEl = document.getElementById('image-modal-title');
-  const dlEl = document.getElementById('btn-download-hd');
-  const modalEl = document.getElementById('image-modal');
-  if (prevEl) prevEl.src = url;
-  if (titleEl) titleEl.innerText = title;
-  if (dlEl) dlEl.href = url;
-  if (modalEl) modalEl.classList.add('active');
-};
+// Modal Thêm Task Design mới
+const taskModal = document.getElementById('task-modal');
+const btnOpenTaskModal = document.getElementById('btn-open-task-modal');
+const btnCloseTaskModal = document.getElementById('btn-close-task-modal');
+if (btnOpenTaskModal && taskModal) btnOpenTaskModal.onclick = () => taskModal.classList.add('active');
+if (btnCloseTaskModal && taskModal) btnCloseTaskModal.onclick = () => taskModal.classList.remove('active');
 
-const btnCloseImg = document.getElementById('btn-close-image');
-if (btnCloseImg) {
-  btnCloseImg.onclick = () => {
-    const modalEl = document.getElementById('image-modal');
-    if (modalEl) modalEl.classList.remove('active');
+const formAddTask = document.getElementById('form-add-task');
+if (formAddTask) {
+  formAddTask.onsubmit = async (e) => {
+    e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.innerText = 'ĐANG LƯU...';
+    submitBtn.disabled = true;
+
+    try {
+      let finalImgUrl = document.getElementById('task-image-url')?.value.trim() || '';
+      const fileInput = document.getElementById('task-image-file');
+      const file = fileInput ? fileInput.files[0] : null;
+
+      if (file) {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileName = `task_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        let mimeType = file.type || (fileExt === 'webp' ? 'image/webp' : (fileExt === 'png' ? 'image/png' : 'image/jpeg'));
+
+        const { error: upErr } = await window.sb.storage
+          .from('stack-assets')
+          .upload(fileName, file, { contentType: mimeType, upsert: true });
+
+        if (!upErr) {
+          const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
+          finalImgUrl = data.publicUrl;
+        }
+      }
+
+      await window.sb.from('design_tasks').insert([{
+        task_type: document.getElementById('task-type-select').value,
+        priority: document.getElementById('task-priority-select').value,
+        brief: document.getElementById('task-brief-input').value.trim(),
+        note: document.getElementById('task-note-input').value.trim(),
+        img_url: finalImgUrl,
+        status: document.getElementById('task-status-select').value
+      }]);
+
+      e.target.reset();
+      if (taskModal) taskModal.classList.remove('active');
+      fetchDesignTasks();
+    } catch (err) {
+      console.error(err);
+      alert('Có lỗi xảy ra khi thêm task!');
+    } finally {
+      submitBtn.innerText = 'LƯU TASK DESIGN';
+      submitBtn.disabled = false;
+    }
   };
 }
 
-window.toggleTaskStatus = async (id, currentStatus) => {
-  const nextStatus = currentStatus === 'DESIGN' ? 'DONE' : 'DESIGN';
-  await window.sb.from('design_tasks').update({ status: nextStatus }).eq('id', id);
-};
-
-window.deleteDesignTask = async (id) => {
-  if (confirm('Xóa task design này?')) {
-    await window.sb.from('design_tasks').delete().eq('id', id);
-  }
-};
-
-// HÀM MỞ MODAL SỬA TASK (ĐÃ GẮN VÀO WINDOW)
+// Modal Chỉnh sửa Task Design
 window.openEditTaskModal = (id) => {
   const task = designTasks.find(t => t.id === id);
   if (!task) return;
 
-  const idInput = document.getElementById('edit-task-id');
-  const typeInput = document.getElementById('edit-task-type');
-  const priInput = document.getElementById('edit-task-priority');
-  const briefInput = document.getElementById('edit-task-brief');
-  const imgInput = document.getElementById('edit-task-imgurl');
-  const noteInput = document.getElementById('edit-task-note');
-  const statInput = document.getElementById('edit-task-status');
+  document.getElementById('edit-task-id').value = task.id;
+  document.getElementById('edit-task-type').value = task.task_type;
+  document.getElementById('edit-task-priority').value = task.priority;
+  document.getElementById('edit-task-brief').value = task.brief;
+  document.getElementById('edit-task-imgurl').value = task.img_url || '';
+  document.getElementById('edit-task-note').value = task.note || '';
+  document.getElementById('edit-task-status').value = task.status;
+  
   const fileInput = document.getElementById('edit-task-file');
-  const modal = document.getElementById('edit-task-modal');
-
-  if (idInput) idInput.value = task.id;
-  if (typeInput) typeInput.value = task.task_type;
-  if (priInput) priInput.value = task.priority;
-  if (briefInput) briefInput.value = task.brief;
-  if (imgInput) imgInput.value = task.img_url || '';
-  if (noteInput) noteInput.value = task.note || '';
-  if (statInput) statInput.value = task.status;
   if (fileInput) fileInput.value = '';
 
-  if (modal) modal.classList.add('active');
+  const editModal = document.getElementById('edit-task-modal');
+  if (editModal) editModal.classList.add('active');
 };
 
 const btnCloseEditModal = document.getElementById('btn-close-edit-task-modal');
@@ -380,10 +550,8 @@ if (formEditTask) {
     e.preventDefault();
     const id = document.getElementById('edit-task-id').value;
     const submitBtn = document.getElementById('btn-submit-edit-task');
-    if (submitBtn) {
-      submitBtn.innerText = 'ĐANG LƯU...';
-      submitBtn.disabled = true;
-    }
+    submitBtn.innerText = 'ĐANG LƯU...';
+    submitBtn.disabled = true;
 
     try {
       let finalImgUrl = document.getElementById('edit-task-imgurl').value.trim();
@@ -391,9 +559,14 @@ if (formEditTask) {
       const file = fileInput ? fileInput.files[0] : null;
 
       if (file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `task_${Date.now()}.${fileExt}`;
-        const { error: upErr } = await window.sb.storage.from('stack-assets').upload(fileName, file);
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileName = `task_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        let mimeType = file.type || (fileExt === 'webp' ? 'image/webp' : (fileExt === 'png' ? 'image/png' : 'image/jpeg'));
+
+        const { error: upErr } = await window.sb.storage
+          .from('stack-assets')
+          .upload(fileName, file, { contentType: mimeType, upsert: true });
+
         if (!upErr) {
           const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
           finalImgUrl = data.publicUrl;
@@ -403,8 +576,8 @@ if (formEditTask) {
       await window.sb.from('design_tasks').update({
         task_type: document.getElementById('edit-task-type').value,
         priority: document.getElementById('edit-task-priority').value,
-        brief: document.getElementById('edit-task-brief').value,
-        note: document.getElementById('edit-task-note').value,
+        brief: document.getElementById('edit-task-brief').value.trim(),
+        note: document.getElementById('edit-task-note').value.trim(),
         img_url: finalImgUrl,
         status: document.getElementById('edit-task-status').value
       }).eq('id', id);
@@ -414,57 +587,98 @@ if (formEditTask) {
       fetchDesignTasks();
     } catch (err) {
       console.error(err);
+      alert('Có lỗi khi cập nhật task!');
     } finally {
-      if (submitBtn) {
-        submitBtn.innerText = 'LƯU THAY ĐỔI';
-        submitBtn.disabled = false;
-      }
+      submitBtn.innerText = 'LƯU THAY ĐỔI';
+      submitBtn.disabled = false;
     }
   };
 }
 
-// Modal Thêm Task
-const taskModal = document.getElementById('task-modal');
-const btnOpenTaskModal = document.getElementById('btn-open-task-modal');
-const btnCloseTaskModal = document.getElementById('btn-close-task-modal');
-if (btnOpenTaskModal && taskModal) btnOpenTaskModal.onclick = () => taskModal.classList.add('active');
-if (btnCloseTaskModal && taskModal) btnCloseTaskModal.onclick = () => taskModal.classList.remove('active');
+// ==============================================================================
+// PHẦN 6: LIGHTBOX & TẢI ẢNH GỐC CHO TASK (ĐẶC TRỊ SAVE TO PHOTOS TRÊN IOS)
+// ==============================================================================
+window.openTaskImage = (url, title) => {
+  if (!url) return;
+  currentTaskModalImageUrl = url;
+  currentTaskModalImageTitle = title || 'Task-Design';
 
-const formAddTask = document.getElementById('form-add-task');
-if (formAddTask) {
-  formAddTask.onsubmit = async (e) => {
-    e.preventDefault();
-    let uploadedUrl = '';
-    const fileInput = document.getElementById('task-image-file');
-    const file = fileInput ? fileInput.files[0] : null;
+  const prevEl = document.getElementById('image-modal-preview');
+  const titleEl = document.getElementById('image-modal-title');
+  const modalEl = document.getElementById('image-modal');
 
-    if (file) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `task_${Date.now()}.${fileExt}`;
-      const { error: upErr } = await window.sb.storage.from('stack-assets').upload(fileName, file);
-      if (!upErr) {
-        const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
-        uploadedUrl = data.publicUrl;
-      }
-    }
+  if (prevEl) {
+    prevEl.referrerPolicy = "no-referrer";
+    prevEl.src = url;
+  }
+  if (titleEl) titleEl.innerText = `ẢNH TASK: ${title}`;
+  if (modalEl) modalEl.classList.add('active');
+};
 
-    await window.sb.from('design_tasks').insert([{
-      task_type: document.getElementById('task-type-select').value,
-      priority: document.getElementById('task-priority-select').value,
-      brief: document.getElementById('task-brief-input').value,
-      note: document.getElementById('task-note-input').value,
-      img_url: uploadedUrl,
-      status: document.getElementById('task-status-select').value
-    }]);
-
-    e.target.reset();
-    if (taskModal) taskModal.classList.remove('active');
+const btnCloseImg = document.getElementById('btn-close-image');
+if (btnCloseImg) {
+  btnCloseImg.onclick = () => {
+    const modalEl = document.getElementById('image-modal');
+    if (modalEl) modalEl.classList.remove('active');
   };
 }
 
-// ==========================================
-// BẢNG NGHỈ PHÉP
-// ==========================================
+window.downloadActiveTaskImage = async function () {
+  if (!currentTaskModalImageUrl) return;
+
+  const btn = document.getElementById('btn-download-hd-task');
+  const oldHtml = btn ? btn.innerHTML : '';
+  if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ĐANG TẢI...`;
+
+  try {
+    const response = await fetch(currentTaskModalImageUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error('CORS error');
+    const blob = await response.blob();
+
+    let ext = 'jpg';
+    let mimeType = blob.type || 'image/jpeg';
+    if (mimeType.includes('png')) ext = 'png';
+    else if (mimeType.includes('webp')) ext = 'webp';
+
+    const cleanTitle = (currentTaskModalImageTitle || 'Goal-Line-Task')
+      .replace(/[^a-zA-Z0-9à-ỹÀ-Ỹ\s-_]/g, '')
+      .trim() || 'Goal-Line-Task';
+    const fileName = `${cleanTitle}.${ext}`;
+
+    // NATIVE SHARE SHEET TRÊN IPHONE: LƯU THẲNG VÀO ALBUM ẢNH (PHOTOS)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile && navigator.canShare) {
+      const file = new File([blob], fileName, { type: mimeType });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: cleanTitle });
+        return;
+      }
+    }
+
+    // TẢI TRỰC TIẾP TRÊN PC / LAPTOP
+    const blobUrl = window.URL.createObjectURL(blob);
+    const tempLink = document.createElement('a');
+    tempLink.style.display = 'none';
+    tempLink.href = blobUrl;
+    tempLink.download = fileName;
+    document.body.appendChild(tempLink);
+    tempLink.click();
+
+    setTimeout(() => {
+      window.URL.revokeObjectURL(blobUrl);
+      document.body.removeChild(tempLink);
+    }, 1500);
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    window.open(currentTaskModalImageUrl, '_blank');
+  } finally {
+    if (btn) btn.innerHTML = oldHtml;
+  }
+};
+
+// ==============================================================================
+// PHẦN 7: BẢNG THEO DÕI NGHỈ PHÉP (LEAVES)
+// ==============================================================================
 function renderLeavesTable() {
   const bodyLeave = document.getElementById('body-leave');
   if (!bodyLeave) return;
@@ -488,44 +702,6 @@ function renderLeavesTable() {
   `).join('');
 }
 
-window.handleAddSlot = async (columnKey, rIdx, cIdx, maxCapacity) => {
-  const myName = localStorage.getItem('gl_current_user') || 'Vinci';
-  const targetWeek = scheduleCache[currentTab];
-  if (!targetWeek) return;
-
-  const currentSlots = Array.isArray(targetWeek[columnKey][rIdx].slots[cIdx])
-    ? targetWeek[columnKey][rIdx].slots[cIdx] : [];
-
-  if (currentSlots.length >= maxCapacity) return alert(`Ca này đã đủ ${maxCapacity} thành viên!`);
-  if (currentSlots.includes(myName)) return alert(`Bạn (${myName}) đã nhận slot này rồi!`);
-
-  if (!confirm(`Nhận 1 slot ca này cho [${myName}]?`)) return;
-
-  const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
-  if (!Array.isArray(updatedMatrix[rIdx].slots[cIdx])) updatedMatrix[rIdx].slots[cIdx] = [];
-  updatedMatrix[rIdx].slots[cIdx].push(myName);
-
-  await window.sb.from('schedules').update({ [columnKey]: updatedMatrix, updated_at: new Date() }).eq('id', currentTab);
-};
-
-window.handleRemoveSlot = async (columnKey, rIdx, cIdx, sIdx, memberName) => {
-  const myName = localStorage.getItem('gl_current_user') || 'Vinci';
-  const targetWeek = scheduleCache[currentTab];
-  if (!targetWeek) return;
-
-  if (memberName === myName) {
-    if (!confirm(`Hủy ca của bạn (${myName})?`)) return;
-  } else {
-    const pin = prompt(`Slot của [${memberName}]. Nhập PIN Admin để xóa:`);
-    if (pin !== '2026') return pin !== null && alert('Sai PIN!');
-  }
-
-  const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
-  updatedMatrix[rIdx].slots[cIdx].splice(sIdx, 1);
-
-  await window.sb.from('schedules').update({ [columnKey]: updatedMatrix, updated_at: new Date() }).eq('id', currentTab);
-};
-
 const btnAddLeave = document.getElementById('btn-add-leave');
 if (btnAddLeave) {
   btnAddLeave.onclick = async () => {
@@ -536,22 +712,30 @@ if (btnAddLeave) {
     if (!time) return;
     const reason = prompt('Ghi chú / lý do:', 'Đã báo Vinci');
 
-    await window.sb.from('leaves').insert([{ admin_name: name.trim(), time_range: time.trim(), reason: reason ? reason.trim() : 'Đã báo Vinci' }]);
+    await window.sb.from('leaves').insert([{ 
+      admin_name: name.trim(), 
+      time_range: time.trim(), 
+      reason: reason ? reason.trim() : 'Đã báo Vinci' 
+    }]);
+    fetchLeavesData();
   };
 }
 
 window.deleteLeave = async (id) => {
-  if (confirm('Xóa đơn xin nghỉ này?')) await window.sb.from('leaves').delete().eq('id', id);
+  if (confirm('Xóa đơn xin nghỉ này?')) {
+    await window.sb.from('leaves').delete().eq('id', id);
+    fetchLeavesData();
+  }
 };
 
-// ==========================================
-// ĐÔN TUẦN MỚI
-// ==========================================
+// ==============================================================================
+// PHẦN 8: ĐÔN TUẦN MỚI (PROMOTE WEEK - PIN: 2026)
+// ==============================================================================
 const btnPromoteWeek = document.getElementById('btn-promote-week');
 if (btnPromoteWeek) {
   btnPromoteWeek.onclick = async () => {
     const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN:');
-    if (pin !== '2026') return pin !== null && alert('Sai PIN!');
+    if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
 
     const nextWeek = scheduleCache['next'];
     if (!nextWeek) return alert('Chưa tải được dữ liệu tuần sau!');
@@ -559,6 +743,7 @@ if (btnPromoteWeek) {
     const newLabel = prompt('Tên hiển thị tuần sau mới:', 'ĐĂNG KÝ TUẦN MỚI');
     if (!newLabel) return;
 
+    // 1. Chuyển tuần sau thành tuần này
     await window.sb.from('schedules').update({
       week_label: nextWeek.week_label.replace('ĐĂNG KÝ TUẦN SAU', 'TUẦN NÀY'),
       writing_short_data: nextWeek.writing_short_data,
@@ -568,6 +753,7 @@ if (btnPromoteWeek) {
       updated_at: new Date()
     }).eq('id', 'current');
 
+    // 2. Khởi tạo tuần sau trống hoàn toàn
     const blankShort = [
       { shift: "Sáng", time: "Trước 9h", slots: [[], [], [], [], [], [], []] },
       { shift: "Trưa", time: "Trước 11h00", slots: [[], [], [], [], [], [], []] },
@@ -595,12 +781,13 @@ if (btnPromoteWeek) {
     }).eq('id', 'next');
 
     alert('ĐÃ ĐÔN TUẦN THÀNH CÔNG!');
+    fetchScheduleData();
   };
 }
 
-// ==========================================
-// CHUYỂN BAN & CHUYỂN TUẦN
-// ==========================================
+// ==============================================================================
+// PHẦN 9: ĐIỀU HƯỚNG TAB BAN & CHUYỂN TUẦN
+// ==============================================================================
 const sectionContent = document.getElementById('section-content-team');
 const sectionDesign = document.getElementById('section-design-team');
 const btnContentTab = document.getElementById('tab-btn-content');
@@ -642,9 +829,14 @@ if (btnThisWeek && btnNextWeek) {
   };
 }
 
-// ==========================================
-// TỰ ĐỘNG LÀM MỚI KHI BẬT ĐIỆN THOẠI
-// ==========================================
+// Lắng nghe tín hiệu khi người dùng đổi tên ở thanh Header
+window.addEventListener('identityChanged', () => {
+  renderActiveSchedule();
+});
+
+// ==============================================================================
+// PHẦN 10: TỰ ĐỘNG PHỤC HỒI DỮ LIỆU & REALTIME SYNC
+// ==============================================================================
 async function refreshAllData() {
   const icon = document.getElementById('refresh-icon');
   if (icon) icon.classList.add('fa-spin');
@@ -660,19 +852,20 @@ async function refreshAllData() {
 const btnRefreshAll = document.getElementById('btn-refresh-all');
 if (btnRefreshAll) btnRefreshAll.onclick = refreshAllData;
 
+// Tự động tải lại khi bật máy điện thoại từ chế độ ngủ (Deep-Sleep Recovery)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshAllData();
 });
 window.addEventListener('focus', refreshAllData);
 
-// Realtime
+// Supabase Realtime Channels
 window.sb.channel('realtime_schedules_all')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, fetchScheduleData)
   .on('postgres_changes', { event: '*', schema: 'public', table: 'design_tasks' }, fetchDesignTasks)
   .on('postgres_changes', { event: '*', schema: 'public', table: 'leaves' }, fetchLeavesData)
   .subscribe();
 
-// Khởi chạy
+// Khởi chạy khi tải trang
 fetchScheduleData();
 fetchDesignTasks();
 fetchLeavesData();

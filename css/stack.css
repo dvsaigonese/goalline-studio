@@ -81,15 +81,19 @@
   background: var(--neo-white);
   border: var(--neo-border-w) solid var(--neo-black);
   box-shadow: var(--neo-shadow-lg);
-  overflow-x: auto;
+  overflow-x: auto; /* BẬT CUỘN NGANG KHI Ở MÀN HÌNH NHỎ */
+  -webkit-overflow-scrolling: touch; /* Vuốt cực mượt trên iOS */
   margin-bottom: 40px;
+  width: 100%;
 }
 
 .neo-table {
   width: 100%;
+  min-width: 1050px; /* KHÓA TRẦN TỐI THIỂU: CẤM MOBILE TỰ Ý ÉP CO RÚM BẢNG */
   border-collapse: collapse;
   text-align: left;
   font-size: 0.9rem;
+  table-layout: auto; /* ĐỂ TỰ NHIÊN: CÁC CỘT TỰ CO GIÃN HỢP LÝ, TUYỆT ĐỐI KHÔNG BAO GIỜ ĐÈ CHỮ */
 }
 
 .neo-table thead {
@@ -104,6 +108,7 @@
   font-size: 1.05rem;
   letter-spacing: 0.05em;
   border-right: 2px solid var(--neo-black);
+  vertical-align: middle;
 }
 
 .neo-table td {
@@ -111,6 +116,11 @@
   border-bottom: 2px solid var(--neo-black);
   border-right: 2px solid var(--neo-black);
   vertical-align: middle;
+  word-break: break-word; /* Tự ngắt dòng các tiêu đề/nội dung dài */
+}
+
+.neo-table tbody tr:hover {
+  background: #fffcee;
 }
 
 .neo-table tbody tr:hover {

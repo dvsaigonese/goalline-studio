@@ -532,3 +532,57 @@
   opacity: 1;
   transform: scale(1.2);
 }
+
+/* ==================================================
+   FIX TỈ LỆ BẢNG TASK DESIGN & CỘT CHECKBOX
+   ================================================== */
+.design-task-table {
+  width: 100%;
+  min-width: 1050px;
+  table-layout: auto;
+}
+
+/* XÓA BỎ MIN-WIDTH 135px CỦA GRID-TABLE ĐÈ LÊN BẢNG TASK */
+.design-task-table td {
+  min-width: unset !important;
+  vertical-align: middle !important;
+  padding: 10px 14px;
+}
+
+/* KHÓA CHẶT Ô CHECKBOX VỀ ĐÚNG 45px */
+.design-task-table th:first-child,
+.design-task-table td:first-child {
+  width: 45px !important;
+  min-width: 45px !important;
+  max-width: 45px !important;
+  text-align: center;
+  padding: 8px 4px !important;
+}
+
+/* KHUNG THUMBNAIL ẢNH CHO TASK DESIGN */
+.img-thumb-box {
+  width: 90px;
+  height: 52px;
+  border: 2px solid var(--neo-black);
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.img-thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.img-thumb-clickable {
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.img-thumb-clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 2px 2px 0 var(--neo-black);
+}
