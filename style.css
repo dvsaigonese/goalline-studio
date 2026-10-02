@@ -794,3 +794,36 @@ body.dark-mode .btn-neo-back:hover {
   margin-bottom: 6px;
   width: 100%;
 }
+
+/* ==================================================
+   FIX BẢNG STACK TRÊN MOBILE: KHÓA TỈ LỆ & VUỐT NGANG
+   ================================================== */
+
+/* 1. Khung bọc ngoài: Bật cuộn ngang mượt mà trên iPhone/Android */
+.stack-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Vuốt cực mượt trên iOS Safari */
+  margin-bottom: 24px;
+}
+
+/* 2. Bảng: Khóa độ rộng tối thiểu, CẤM TRÌNH DUYỆT TỰ ĐỘNG BÓP CỘT */
+.stack-table-container .neo-table {
+  width: 100%;
+  min-width: 980px; /* Bắt buộc bảng phải rộng ít nhất 980px */
+  table-layout: fixed; /* Ép trình duyệt TUÂN THỦ TUYỆT ĐỐI width ở các thẻ <th> */
+  border-collapse: collapse;
+}
+
+/* 3. Tiêu đề cột: Không cho tự bẻ gãy chữ */
+.stack-table-container .neo-table th {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* 4. Nội dung các ô: Không bóp nghẹt, ngắt chữ hợp lý */
+.stack-table-container .neo-table td {
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
