@@ -464,36 +464,62 @@ if (btnCloseImgViewer) {
   };
 }
 
-// Hàm ép tải ảnh về máy (hoạt động cho cả WebP, PNG, JPG, GIF trên iOS & PC)
+// ==========================================
+// TẢI ẢNH GỐC: SAVE THẲNG VÀO PHOTOS TRÊN IOS/ANDROID
+// ==========================================
 window.downloadActiveImage = async function () {
   if (!currentModalImageUrl) return;
 
   const btn = document.getElementById('btn-download-hd-image');
   const oldHtml = btn ? btn.innerHTML : '';
-  if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ĐANG TẢI...`;
+  if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ĐANG XỬ LÝ...`;
 
   try {
-    // 1. Kéo dữ liệu ảnh dạng Blob để vượt rào cản Cross-Origin của iOS Safari
+    // 1. Kéo dữ liệu ảnh dạng Blob từ Supabase
     const response = await fetch(currentModalImageUrl, { mode: 'cors' });
     if (!response.ok) throw new Error('Không thể fetch ảnh qua CORS');
     const blob = await response.blob();
 
-    // 2. Tự nhận diện đuôi file thật (webp, png, jpg...)
+    // 2. Xác định đuôi file và MIME type chuẩn xác
     let ext = 'jpg';
-    if (blob.type) {
-      ext = blob.type.split('/')[1] || 'jpg';
-      if (ext === 'jpeg') ext = 'jpg';
+    let mimeType = blob.type || 'image/jpeg';
+    
+    if (mimeType.includes('png')) {
+      ext = 'png';
+    } else if (mimeType.includes('webp')) {
+      ext = 'webp';
+    } else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
+      ext = 'jpg';
+      mimeType = 'image/jpeg';
     } else {
       const match = currentModalImageUrl.match(/\.([a-zA-Z0-9]+)(\?|$)/);
-      if (match) ext = match[1];
+      if (match) ext = match[1].toLowerCase();
     }
 
-    // 3. Kích hoạt lệnh tải trực tiếp vào thư viện máy
+    const cleanTitle = (currentModalImageTitle || 'Goal-Line-Asset')
+      .replace(/[^a-zA-Z0-9à-ỹÀ-Ỹ\s-_]/g, '')
+      .trim() || 'Goal-Line-Asset';
+    const fileName = `${cleanTitle}.${ext}`;
+
+    // 3. ĐẶC TRỊ CHO MOBILE (IOS / ANDROID): GỌI NATIVE SHARE SHEET ĐỂ LƯU VÀO ALBUM ẢNH
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile && navigator.canShare) {
+      const file = new File([blob], fileName, { type: mimeType });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: cleanTitle
+        });
+        return; // Chia sẻ / Lưu vào Photos thành công thì dừng ở đây
+      }
+    }
+
+    // 4. FALLBACK CHO PC / LAPTOP (Tự động tải về thư mục Downloads)
     const blobUrl = window.URL.createObjectURL(blob);
     const tempLink = document.createElement('a');
     tempLink.style.display = 'none';
     tempLink.href = blobUrl;
-    tempLink.download = `${currentModalImageTitle.replace(/[^a-zA-Z0-9à-ỹÀ-Ỹ\s-_]/g, '')}.${ext}`;
+    tempLink.download = fileName;
     document.body.appendChild(tempLink);
     tempLink.click();
 
@@ -501,9 +527,13 @@ window.downloadActiveImage = async function () {
       window.URL.revokeObjectURL(blobUrl);
       document.body.removeChild(tempLink);
     }, 1500);
+
   } catch (err) {
-    console.warn('Tải Blob không thành công, mở trực tiếp để lưu thủ công:', err);
-    // Fallback cho Safari: Mở thẳng file gốc sang tab riêng để người dùng đè ngón tay lưu
+    // Nếu người dùng bấm "Hủy" trên menu Share Sheet thì bỏ qua, không báo lỗi
+    if (err.name === 'AbortError') return;
+
+    console.warn('Lỗi xử lý tải/share ảnh:', err);
+    // Phương án dự phòng cuối cùng: Mở tab mới để người dùng đè ngón tay lưu ảnh
     window.open(currentModalImageUrl, '_blank');
   } finally {
     if (btn) btn.innerHTML = oldHtml;
