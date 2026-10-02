@@ -873,3 +873,54 @@ body.roster-body {
   padding: 1px 3px;
   line-height: 1;
 }
+
+/* ==================================================
+   FIX TRÀN HEADER CHO SQUAD ROSTER
+   ================================================== */
+.roster-nav {
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.nav-metrics {
+  display: flex;
+  flex-wrap: wrap; /* Bật rớt dòng cho các thẻ metric & định danh */
+  gap: 8px;
+  align-items: center;
+}
+
+@media screen and (max-width: 768px) {
+  .roster-nav {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .nav-left {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-metrics {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap; /* Tự động xuống dòng gọn gàng */
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .nav-metrics .metric-card {
+    min-width: 70px;
+    padding: 6px 10px;
+    flex: 1 1 auto; /* Tự chia đều độ rộng */
+  }
+
+  .nav-metrics .btn-back,
+  .nav-metrics .status-indicator {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+}

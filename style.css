@@ -686,3 +686,56 @@ body.dark-mode .btn-neo-back:hover {
   background: var(--neo-yellow, #ffe600);
   color: #000000;
 }
+
+/* ==================================================
+   FIX TRÀN HEADER TRÊN MOBILE (CHO TOÀN HỆ THỐNG)
+   ================================================== */
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Cho phép rớt khối khi không đủ chỗ */
+  gap: 12px;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap; /* TỰ ĐỘNG RỚT DÒNG CÁC NÚT */
+  gap: 8px;
+}
+
+/* Tinh chỉnh riêng cho màn hình Mobile (dưới 768px) */
+@media screen and (max-width: 768px) {
+  .top-nav {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .header-status {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap; /* Rớt dòng các nút như bộ lọc */
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  /* Nút và badge co giãn vừa vặn, không bị phình to */
+  .header-status .status-indicator,
+  .header-status .btn-neo-back,
+  .header-status .pill-badge {
+    margin: 0;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    box-sizing: border-box;
+  }
+
+  /* Writer Desk Top Navigation */
+  .writer-header,
+  .writer-nav-actions {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+}
