@@ -515,3 +515,20 @@
   .week-title-box h2 { font-size: 1.4rem; }
   .btn-team-tab { font-size: 1.1rem; padding: 10px; }
 }
+
+/* Đảm bảo icon x và text trên pill kế thừa chuẩn màu chữ */
+.slot-pill span, 
+.slot-pill strong {
+  color: inherit;
+}
+
+.slot-pill .btn-del-mini {
+  color: inherit;
+  opacity: 0.85;
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.slot-pill .btn-del-mini:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}

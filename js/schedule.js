@@ -9,6 +9,14 @@ let scheduleCache = { current: null, next: null };
 let designTasks = [];
 let leavesList = [];
 
+const DESIGNER_COLORS = {
+  'Quýt':    { bg: '#FF9900', color: '#000000' },
+  'Kaiz':    { bg: '#FF0000', color: '#ffffff' },
+  'Naruto':  { bg: '#980000', color: '#ffffff' },
+  'Ruben':   { bg: '#B6D7A8', color: '#000000' },
+  'Cakashi': { bg: '#D0E0E3', color: '#000000' } 
+};
+
 // ==========================================
 // TẢI DỮ LIỆU
 // ==========================================
@@ -37,6 +45,21 @@ async function fetchLeavesData() {
   renderLeavesTable();
 }
 
+// Hàm lấy màu động cho từng thẻ tên (Pill)
+function getMemberPillStyle(member, columnKey, fallbackBg = '') {
+  // Ưu tiên lấy theo Dictionary nếu là bảng Design
+  if (columnKey === 'design_shifts_data' && DESIGNER_COLORS[member]) {
+    const config = DESIGNER_COLORS[member];
+    return `background: ${config.bg}; color: ${config.color}; border-color: #000;`;
+  }
+  
+  // Các bảng khác (Content, Posting) dùng màu mặc định
+  if (fallbackBg) {
+    return `background: ${fallbackBg}; color: #000;`;
+  }
+  return '';
+}
+
 // ==========================================
 // RENDER LỊCH PHÂN CA
 // ==========================================
@@ -61,14 +84,18 @@ function renderActiveSchedule() {
           return `
             <td>
               <div class="slot-container">
-                ${slotsArr.map((member, sIdx) => `
-                  <div class="slot-pill" style="${customBg ? `background:${customBg};` : ''}" 
-                       onclick="handleRemoveSlot('${columnKey}', ${rIdx}, ${cIdx}, ${sIdx}, '${member}')" 
-                       title="Click để hủy ca">
-                    <span>${member}</span>
-                    ${member === myName ? `<i class="fa-solid fa-xmark btn-del-mini"></i>` : ''}
-                  </div>
-                `).join('')}
+                ${slotsArr.map((member, sIdx) => {
+                  // Tự động map màu riêng của từng des từ Dictionary
+                  const pillStyle = getMemberPillStyle(member, columnKey, customBg);
+                  return `
+                    <div class="slot-pill" style="${pillStyle}" 
+                         onclick="handleRemoveSlot('${columnKey}', ${rIdx}, ${cIdx}, ${sIdx}, '${member}')" 
+                         title="Click để hủy ca">
+                      <strong>${member}</strong>
+                      ${member === myName ? `<i class="fa-solid fa-xmark btn-del-mini" style="color: inherit;"></i>` : ''}
+                    </div>
+                  `;
+                }).join('')}
                 ${!isFull ? `
                   <button class="btn-slot-join" onclick="handleAddSlot('${columnKey}', ${rIdx}, ${cIdx}, ${maxCapacity})">
                     + Nhận (${slotsArr.length}/${maxCapacity})

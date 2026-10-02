@@ -46,7 +46,7 @@ async function loadPostsFromDB() {
 }
 
 // ==========================================
-// RENDER BẢNG STACK VÀ XỬ LÝ ẢNH / LINK DRIVE
+// RENDER BẢNG STACK (AN TOÀN TUYỆT ĐỐI - KHÔNG LỖI TOKEN)
 // ==========================================
 function renderTable() {
   const tbody = document.getElementById('stack-table-body');
@@ -79,36 +79,34 @@ function renderTable() {
 
     const isChecked = selectedPostIds.has(post.id) ? 'checked' : '';
 
-    // Xử lý hiển thị cột HÌNH ẢNH (Tự nhận diện Google Drive hoặc URL ảnh trực tiếp)
+    // Khởi tạo HTML cho cột ảnh (Không gán onclick chuỗi ở đây)
     let imageCellMarkup = `<span style="font-size:0.75rem; color:#888;">(Chưa có ảnh)</span>`;
-    if (post.imgUrl && post.imgUrl.trim() !== '') {
-      const cleanUrl = post.imgUrl.trim();
+    const cleanUrl = (post.imgUrl || '').trim();
+
+    if (cleanUrl !== '') {
       if (cleanUrl.includes('drive.google.com')) {
         imageCellMarkup = `
-          <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="slot-pill" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:var(--neo-yellow); color:#000; font-size:0.75rem; font-weight:900;" title="Mở thư mục Google Drive">
+          <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="slot-pill" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:var(--neo-yellow); color:#000; font-size:0.75rem; font-weight:900;" title="Mở Google Drive">
             <i class="fa-brands fa-google-drive"></i> Link Drive
           </a>
         `;
       } else if (cleanUrl.startsWith('http')) {
-        const safeTitle = (post.title || '').replace(/'/g, "\\'");
         imageCellMarkup = `
-          <div class="img-thumb-box img-thumb-clickable" onclick="openImageViewer('${cleanUrl}', '${safeTitle}')" title="Click để phóng to ảnh">
-            <img src="${cleanUrl}" alt="Thumbnail" onerror="this.parentElement.innerHTML='<a href=\\'${cleanUrl}\\' target=\\'_blank\\' style=\\'font-size:0.75rem; color:#0984e3; font-weight:800;\\'>🔗 Mở link</a>'">
+          <div class="img-thumb-box img-thumb-clickable" title="Click để phóng to ảnh">
+            <img src="${cleanUrl}" alt="Thumbnail" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null; this.src='assets/img/GL_logo.jpg';">
           </div>
         `;
       }
     }
 
-    const safeTitleForCopy = (post.title || '').replace(/'/g, "\\'");
-
     tr.innerHTML = `
       <td style="text-align: center;">
         <input type="checkbox" class="neo-checkbox row-checkbox" data-id="${post.id}" ${isChecked}>
       </td>
-      <td><span class="author-pill">${post.author}</span></td>
+      <td><span class="author-pill">${post.author || 'Vinci'}</span></td>
       <td>
-        <div class="post-clickable-title" onclick="openReader('${post.id}')">
-          <i class="fa-solid fa-file-lines" style="color:#2b7de9;"></i> ${post.title}
+        <div class="post-clickable-title btn-open-reader" style="cursor:pointer;">
+          <i class="fa-solid fa-file-lines" style="color:#2b7de9;"></i> ${post.title || 'Không có tiêu đề'}
         </div>
         <br>
         ${statusBadge}
@@ -116,26 +114,58 @@ function renderTable() {
       <td>
         ${imageCellMarkup}
       </td>
-      <td><strong>${post.designer}</strong></td>
-      <td style="font-size:0.85rem; max-width:180px;">${post.note}</td>
-      <td><span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700;">${post.scheduleNote}</span></td>
+      <td><strong>${post.designer || '--'}</strong></td>
+      <td style="font-size:0.85rem; max-width:180px;">${post.note || '--'}</td>
+      <td><span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700;">${post.scheduleNote || '--'}</span></td>
       <td>
         <div class="table-actions">
-          <button class="btn-action-icon" title="Đọc & duyệt bài" onclick="openReader('${post.id}')">
+          <button class="btn-action-icon btn-action-read" title="Đọc & duyệt bài">
             <i class="fa-solid fa-eye"></i>
           </button>
-          <button class="btn-action-icon" title="Chỉnh sửa mọi thông tin" onclick="openEditModal('${post.id}')" style="color:#0984e3;">
+          <button class="btn-action-icon btn-action-edit" title="Chỉnh sửa mọi thông tin" style="color:#0984e3;">
             <i class="fa-solid fa-pen-to-square"></i>
           </button>
-          <button class="btn-action-icon" title="Copy tiêu đề" onclick="copyText('${safeTitleForCopy}')">
+          <button class="btn-action-icon btn-action-copy" title="Copy tiêu đề">
             <i class="fa-solid fa-copy"></i>
           </button>
-          <button class="btn-action-icon" style="color:red;" title="Xóa bài viết" onclick="deleteSinglePost('${post.id}')">
+          <button class="btn-action-icon btn-action-delete" style="color:red;" title="Xóa bài viết">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
       </td>
     `;
+
+    // GẮN SỰ KIỆN TRỰC TIẾP QUA BIẾN JS (TRÁNH LỖI INVALID TOKEN 100%)
+    const thumbBox = tr.querySelector('.img-thumb-clickable');
+    if (thumbBox) {
+      thumbBox.onclick = () => openImageViewer(cleanUrl, post.title);
+    }
+
+    const titleBtn = tr.querySelector('.btn-open-reader');
+    if (titleBtn) {
+      titleBtn.onclick = () => openReader(post.id);
+    }
+
+    const readBtn = tr.querySelector('.btn-action-read');
+    if (readBtn) {
+      readBtn.onclick = () => openReader(post.id);
+    }
+
+    const editBtn = tr.querySelector('.btn-action-edit');
+    if (editBtn) {
+      editBtn.onclick = () => openEditModal(post.id);
+    }
+
+    const copyBtn = tr.querySelector('.btn-action-copy');
+    if (copyBtn) {
+      copyBtn.onclick = () => copyText(post.title || '');
+    }
+
+    const deleteBtn = tr.querySelector('.btn-action-delete');
+    if (deleteBtn) {
+      deleteBtn.onclick = () => deleteSinglePost(post.id);
+    }
+
     tbody.appendChild(tr);
   });
 
@@ -402,16 +432,87 @@ document.getElementById('btn-toggle-approval').onclick = async () => {
   }
 };
 
-window.openImageViewer = (url, title) => {
-  document.getElementById('image-modal-preview').src = url;
-  document.getElementById('image-modal-title').innerText = `ẢNH: ${title}`;
-  document.getElementById('btn-download-hd').href = url;
-  document.getElementById('image-modal').classList.add('active');
+// ==========================================
+// TRÌNH XEM ẢNH & TẢI ẢNH GỐC TOÀN NĂNG (FIT MỌI ĐỊNH DẠNG)
+// ==========================================
+let currentModalImageUrl = '';
+let currentModalImageTitle = '';
+
+window.openImageViewer = function (url, title) {
+  if (!url) return;
+  currentModalImageUrl = url;
+  currentModalImageTitle = title || 'goal-line-asset';
+
+  const modal = document.getElementById('image-viewer-modal');
+  const imgEl = document.getElementById('image-viewer-img');
+  const titleEl = document.getElementById('image-viewer-title');
+
+  if (titleEl) titleEl.innerText = `ẢNH: ${currentModalImageTitle}`;
+  if (imgEl) {
+    imgEl.referrerPolicy = "no-referrer";
+    imgEl.src = currentModalImageUrl;
+  }
+
+  if (modal) modal.classList.add('active');
 };
 
-document.getElementById('btn-close-image').onclick = () => {
-  document.getElementById('image-modal').classList.remove('active');
+const btnCloseImgViewer = document.getElementById('btn-close-image-viewer');
+if (btnCloseImgViewer) {
+  btnCloseImgViewer.onclick = () => {
+    const modal = document.getElementById('image-viewer-modal');
+    if (modal) modal.classList.remove('active');
+  };
+}
+
+// Hàm ép tải ảnh về máy (hoạt động cho cả WebP, PNG, JPG, GIF trên iOS & PC)
+window.downloadActiveImage = async function () {
+  if (!currentModalImageUrl) return;
+
+  const btn = document.getElementById('btn-download-hd-image');
+  const oldHtml = btn ? btn.innerHTML : '';
+  if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ĐANG TẢI...`;
+
+  try {
+    // 1. Kéo dữ liệu ảnh dạng Blob để vượt rào cản Cross-Origin của iOS Safari
+    const response = await fetch(currentModalImageUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error('Không thể fetch ảnh qua CORS');
+    const blob = await response.blob();
+
+    // 2. Tự nhận diện đuôi file thật (webp, png, jpg...)
+    let ext = 'jpg';
+    if (blob.type) {
+      ext = blob.type.split('/')[1] || 'jpg';
+      if (ext === 'jpeg') ext = 'jpg';
+    } else {
+      const match = currentModalImageUrl.match(/\.([a-zA-Z0-9]+)(\?|$)/);
+      if (match) ext = match[1];
+    }
+
+    // 3. Kích hoạt lệnh tải trực tiếp vào thư viện máy
+    const blobUrl = window.URL.createObjectURL(blob);
+    const tempLink = document.createElement('a');
+    tempLink.style.display = 'none';
+    tempLink.href = blobUrl;
+    tempLink.download = `${currentModalImageTitle.replace(/[^a-zA-Z0-9à-ỹÀ-Ỹ\s-_]/g, '')}.${ext}`;
+    document.body.appendChild(tempLink);
+    tempLink.click();
+
+    setTimeout(() => {
+      window.URL.revokeObjectURL(blobUrl);
+      document.body.removeChild(tempLink);
+    }, 1500);
+  } catch (err) {
+    console.warn('Tải Blob không thành công, mở trực tiếp để lưu thủ công:', err);
+    // Fallback cho Safari: Mở thẳng file gốc sang tab riêng để người dùng đè ngón tay lưu
+    window.open(currentModalImageUrl, '_blank');
+  } finally {
+    if (btn) btn.innerHTML = oldHtml;
+  }
 };
+
+// document.getElementById('btn-close-image').onclick = () => {
+//   document.getElementById('image-modal').classList.remove('active');
+// };
 
 // ==========================================
 // HÀM COPY BẤT TỬ (HỖ TRỢ CẢ MOBILE, SAFARI & LOCAL DEV)
@@ -510,9 +611,25 @@ if (formAddPost) {
       const file = fileInput ? fileInput.files[0] : null;
 
       if (file) {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split('.').pop().toLowerCase();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const { error: uploadError } = await window.sb.storage.from('stack-assets').upload(fileName, file);
+        
+        // Nhận diện MIME type chuẩn xác cho WebP, PNG, JPG, GIF
+        let mimeType = file.type;
+        if (!mimeType) {
+          if (fileExt === 'webp') mimeType = 'image/webp';
+          else if (fileExt === 'png') mimeType = 'image/png';
+          else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg';
+          else mimeType = 'image/*';
+        }
+
+        // Bổ sung contentType để Supabase trả về đúng header ảnh
+        const { error: uploadError } = await window.sb.storage
+          .from('stack-assets')
+          .upload(fileName, file, {
+            contentType: mimeType,
+            upsert: true
+          });
 
         if (!uploadError) {
           const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);

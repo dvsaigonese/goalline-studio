@@ -68,10 +68,10 @@
                         </th>
                         <th style="width: 110px;">ADMIN</th>
                         <th>BÀI VIẾT (CLICK ĐỂ ĐỌC DUYỆT)</th>
-                        <th style="width: 140px;">HÌNH ẢNH</th>
+                        <th style="width: 130px;">HÌNH ẢNH</th>
                         <th style="width: 130px;">NGƯỜI DES</th>
-                        <th>NOTE</th>
-                        <th style="width: 160px;">LỊCH ĐĂNG MONG ĐỢI</th>
+                        <th style="width: 200px;">NOTE</th>
+                        <th style="width: 130px;">LỊCH ĐĂNG MONG ĐỢI</th>
                         <th style="width: 140px;">HÀNH ĐỘNG</th>
                     </tr>
                 </thead>
@@ -239,19 +239,19 @@
         </div>
     </div>
 
-    <!-- MODAL 3: XEM ẢNH TO (IMAGE LIGHTBOX MODAL) -->
-    <div class="neo-modal-overlay" id="image-modal">
-        <div class="neo-modal" style="max-width: 900px; background: black; border-color: black;">
-            <div class="modal-header" style="background: #222; color: white; border-bottom: 2px solid #444;">
-                <h3 id="image-modal-title" style="color:var(--neo-yellow); font-size:1.2rem;">XEM ẢNH HD</h3>
-                <button class="btn-modal-close" id="btn-close-image" style="color:white;">&times;</button>
+    <!-- MODAL XEM ẢNH GỐC (LIGHTBOX) -->
+    <div class="neo-modal-overlay" id="image-viewer-modal">
+        <div class="neo-modal" style="max-width: 900px; background: #111; border-color: #000;">
+            <div class="modal-header" style="background: #222; color: #fff; border-bottom: 2px solid #000;">
+                <h3 id="image-viewer-title" style="color:var(--neo-yellow); font-size:1.1rem; margin:0;">ẢNH BÀI VIẾT</h3>
+                <button type="button" class="btn-modal-close" id="btn-close-image-viewer" style="color:#fff;">&times;</button>
             </div>
-            <div class="modal-body" style="padding: 10px; text-align: center; background: #111;">
-                <img id="image-modal-preview" src="" alt="Ảnh thiết kế" style="max-width: 100%; max-height: 70vh; object-fit: contain; border: 2px solid var(--neo-yellow);">
-                <div style="margin-top: 15px; display: flex; justify-content: center; gap: 12px;">
-                    <a id="btn-download-hd" href="" target="_blank" download class="btn-neo-add" style="font-size: 0.95rem; text-decoration:none;">
+            <div class="modal-body" style="padding: 12px; text-align: center; background: #18181b;">
+                <img id="image-viewer-img" src="" alt="Preview" referrerpolicy="no-referrer" style="max-width:100%; max-height:70vh; object-fit:contain; border:2px solid var(--neo-yellow);">
+                <div style="margin-top: 15px; display:flex; justify-content:center;">
+                    <button type="button" id="btn-download-hd-image" class="btn-neo-add" onclick="downloadActiveImage()" style="font-size:0.95rem; padding:10px 20px; background:var(--neo-green); color:#000;">
                         <i class="fa-solid fa-download"></i> TẢI ẢNH GỐC XUỐNG
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
