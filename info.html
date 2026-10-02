@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>System Manual &amp; Guidelines | Goal-Line Studio</title>
+  <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .manual-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+    .manual-section {
+      background: var(--neo-white, #fff);
+      border: 3px solid #000;
+      box-shadow: 6px 6px 0 #000;
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+    .sec-header {
+      padding: 14px 20px;
+      border-bottom: 3px solid #000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .sec-header h2 {
+      font-family: var(--font-cond);
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin: 0;
+      letter-spacing: 0.03em;
+    }
+    .sec-badge {
+      background: #000;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 8px;
+    }
+    .sec-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .rule-card {
+      background: #fafafa;
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      padding: 14px 16px;
+    }
+    .rule-card h3 {
+      font-family: var(--font-cond);
+      font-weight: 900;
+      font-size: 1.15rem;
+      margin: 0 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pin-box {
+      background: #fff0f3;
+      border: 2px dashed #ff4757;
+      padding: 10px 14px;
+      font-weight: 700;
+      display: inline-block;
+    }
+    .quick-nav-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .btn-anchor {
+      background: #fff;
+      border: 2px solid #000;
+      box-shadow: 2px 2px 0 #000;
+      padding: 8px 14px;
+      font-family: var(--font-cond);
+      font-weight: 900;
+      font-size: 0.95rem;
+      text-decoration: none;
+      color: #000;
+      transition: all 0.1s;
+    }
+    .btn-anchor:hover {
+      background: var(--neo-yellow, #ffe600);
+      transform: translate(-1px, -1px);
+    }
+  </style>
+</head>
+<body class="landing-body">
+
+  <div class="manual-container">
+    <!-- Top Bar -->
+    <header class="top-nav" style="margin-bottom: 24px;">
+      <div class="brand-badge">
+        <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
+        <div class="brand-text">
+          <span class="studio-title">STUDIO <em>FIELD GUIDE</em></span>
+          <span class="system-tag">HƯỚNG DẪN VẬN HÀNH TOÀN BỘ HỆ THỐNG</span>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span id="current-user-display">ADMIN: VINCI</span>
+        </div>
+        <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()">
+          <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+        </button>
+        <a href="index.html" class="btn-neo-back">
+          <i class="fa-solid fa-arrow-left"></i> VỀ DASHBOARD
+        </a>
+      </div>
+    </header>
+
+    <!-- Quick Navigation Anchor -->
+    <nav class="quick-nav-bar">
+      <a href="#sec-identity" class="btn-anchor"><i class="fa-solid fa-id-card"></i> 1. ĐỊNH DANH</a>
+      <a href="#sec-stack" class="btn-anchor"><i class="fa-solid fa-layer-group"></i> 2. CONTENT STACK</a>
+      <a href="#sec-writer" class="btn-anchor"><i class="fa-solid fa-pen-fancy"></i> 3. WRITER DESK</a>
+      <a href="#sec-schedule" class="btn-anchor"><i class="fa-solid fa-calendar-days"></i> 4. LỊCH &amp; TASK DESIGN</a>
+      <a href="#sec-roster" class="btn-anchor"><i class="fa-solid fa-users"></i> 5. SQUAD &amp; HALL OF FAME</a>
+      <a href="#sec-pin" class="btn-anchor" style="background:#ff4757; color:#fff;"><i class="fa-solid fa-key"></i> 6. MÃ PIN ADMIN</a>
+    </nav>
+
+    <!-- PHẦN 1: ĐỊNH DANH HỆ THỐNG -->
+    <section class="manual-section" id="sec-identity" style="border-top: 10px solid var(--neo-yellow, #ffe600);">
+      <div class="sec-header" style="background: #fffde0;">
+        <span class="sec-badge">MODULE 01</span>
+        <h2>GIAO THỨC ĐỊNH DANH TOÀN CỤC (GLOBAL IDENTITY)</h2>
+      </div>
+      <div class="sec-body">
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-lock"></i> Cơ chế khóa màn hình lần đầu</h3>
+          <p>Mỗi khi có thiết bị hoặc IP mới truy cập web lần đầu tiên, hệ thống sẽ kích hoạt modal toàn màn hình buộc bạn phải chọn tên tài khoản Goal-Line của mình. Nút đóng bị khóa cho đến khi hoàn tất định danh.</p>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-arrows-rotate"></i> Đồng bộ xuyên suốt đa trang</h3>
+          <p>Tên của bạn được lưu vào bộ nhớ cục bộ (<code>localStorage</code>). Khi chuyển đổi giữa Dashboard, Stack, Schedule, Writer hay Roster, hệ thống tự động ghi nhận tên tác giả mà không yêu cầu chọn lại.</p>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-user-pen"></i> Đổi tên khi mượn máy</h3>
+          <p>Bất kỳ lúc nào, bạn chỉ cần bấm nút <strong>ĐỔI TÊN</strong> trên Header để chọn lại nhân sự phù hợp. Toàn bộ dữ liệu ca trực trên bảng sẽ lập tức gán đúng quyền sở hữu theo tên mới.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 2: CONTENT STACK -->
+    <section class="manual-section" id="sec-stack" style="border-top: 10px solid var(--neo-green, #00f076);">
+      <div class="sec-header" style="background: #eafff3;">
+        <span class="sec-badge">MODULE 02</span>
+        <h2>CONTENT STACK (PIPELINE BIÊN TẬP &amp; DUYỆT BÀI)</h2>
+      </div>
+      <div class="sec-body">
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-plus-circle"></i> Đẩy bài mới vào Stack</h3>
+          <p>Bấm nút <strong>+ ĐẨY BÀI VÀO STACK</strong>. Bạn có thể:</p>
+          <ul>
+            <li>Dán link tài liệu Google Docs hoặc toàn bộ nội dung bài nháp vào khung nội dung.</li>
+            <li>Tải file ảnh trực tiếp từ máy tính/điện thoại, <strong>HOẶC</strong> dán link Google Drive (thường team design sẽ làm thế). Hệ thống tự động nhận diện link Drive và tạo nút bấm mở tab mới.</li>
+          </ul>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-check-double"></i> Quy trình đọc &amp; Duyệt bài</h3>
+          <p>Bài mới vào sẽ ở trạng thái <code>CHƯA DUYỆT</code> trên stack. Anh em check/post bấm vào tiêu đề hoặc icon <strong>Con mắt</strong> để mở trình đọc toàn văn và chuyển trạng thái sang <code>ĐÃ DUYỆT</code>. Cơ mà cái này chắc để cho có chứ chưa cần lắm, lỡ code rồi code luôn.</p>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-thumbs-up"></i> Đăng bài</h3>
+          <p>Căn bản là bài nằm trên stack rồi, nhấn vào, nhấn copy toàn bộ, rồi nhấn vô cái ảnh là ra full hết. Nên sẽ tiện hơn cho anh em đăng bài thay vì cứ phải vào sheet xong nhấn qua tab mới (kiểu kiểu thế).</p>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-mobile-screen"></i> Cơ chế chống đóng băng trên điện thoại (Deep-Sleep Recovery)</h3>
+          <p>Khi tắt màn hình điện thoại hoặc chuyển app, trình duyệt sẽ tạm dừng kết nối ngầm. Hệ thống tích hợp sẵn sự kiện tự động kéo dữ liệu mới nhất ngay khi bạn mở máy lại, hoặc bạn có thể bấm nút <strong>LÀM MỚI</strong> trên header để ép tải lại dữ liệu mà không làm chớp trắng web.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 3: WRITER DESK -->
+    <section class="manual-section" id="sec-writer" style="border-top: 10px solid var(--neo-blue, #4deeea);">
+      <div class="sec-header" style="background: #effeff;">
+        <span class="sec-badge">MODULE 03</span>
+        <h2>WRITER DESK (GÓC VIẾT BÀI NHANH CHO CONTENT)</h2>
+      </div>
+      <div class="sec-body">
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-floppy-disk"></i> Tự động lưu bản nháp (Auto-Save)</h3>
+          <p>Mọi ký tự bạn gõ vào khung soạn thảo được lưu tự động sau mỗi 1 giây. Nếu vô tình tắt trình duyệt, hết pin hoặc đóng tab, nội dung vẫn được giữ nguyên vẹn khi bạn mở lại.</p>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-paper-plane"></i> Đẩy 1-Click sang Stack</h3>
+          <p>Sau khi hoàn tất bài viết, bấm nút <strong>ĐẨY BÀI VÀO STACK</strong>. Bài viết sẽ được chuyển thẳng vào danh sách chờ duyệt, không cần copy paste thủ công.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 4: LỊCH TRỰC & TASK DESIGN -->
+    <section class="manual-section" id="sec-schedule" style="border-top: 10px solid var(--neo-orange, #ff944d);">
+      <div class="sec-header" style="background: #fff4ec;">
+        <span class="sec-badge">MODULE 04</span>
+        <h2>LỊCH ĐĂNG CHO CẢ CONTENT &amp; DESIGN</h2>
+      </div>
+      <div class="sec-body">
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-pen-nib"></i>Content (Quy chuẩn định mức ca)</h3>
+          <ul>
+            <li><strong>Bài ngắn:</strong> Giới hạn 2 bài/người/tuần. Mỗi ô nhận tối đa <strong>5 slots</strong>.</li>
+            <li><strong>Bài dài:</strong> Giới hạn 1 bài/người/tuần. Mỗi ô nhận tối đa <strong>3 slots</strong>.</li>
+            <li><strong>Trực Page:</strong> Mỗi ca tối đa <strong>2 slots</strong>.</li>
+          </ul>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-palette"></i>Design (Fix ảnh Page &amp; Backlog Tasks)</h3>
+          <ul>
+            <li><strong>Bảng Task Design độc lập:</strong> Toàn bộ backlog task được lưu dài hạn và <strong>không bị xóa</strong> khi đôn tuần mới. Hỗ trợ gắn link ảnh, đổi trạng thái <code>DESIGN</code> / <code>DONE</code>, copy brief nhanh và xóa chọn lọc hàng loạt.</li>
+          </ul>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-forward-step"></i> Đôn tuần mới (Promote Week)</h3>
+          <p>Vào cuối tuần, Head bấm nút <strong>ĐÔN TUẦN MỚI</strong> và nhập mã PIN. Toàn bộ lịch ca đăng ký ở "Tuần sau" sẽ được đôn lên thành "Tuần này", đồng thời khởi tạo tuần kế tiếp trống hoàn toàn để anh em đăng ký tiếp.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 5: SQUAD ROSTER & HALL OF FAME -->
+    <section class="manual-section" id="sec-roster" style="border-top: 10px solid var(--neo-purple, #c084fc);">
+      <div class="sec-header" style="background: #fbf5ff;">
+        <span class="sec-badge">MODULE 05</span>
+        <h2>SQUAD DIRECTORY &amp; HALL OF FAME</h2>
+      </div>
+      <div class="sec-body">
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-magnifying-glass"></i> Tra cứu hồ sơ (Scouting Dossier)</h3>
+          <p>Click vào thẻ thành viên để xem hồ sơ chi tiết (Năm sinh, vai trò, ban, hub làm việc, email và Admin Memo/Note). Bấm vào ô Avatar để mở kính lúp xem ảnh phóng to kích thước lớn.</p>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-crown"></i> Quyền tự cập nhật của thành viên</h3>
+          <p>Để bảo đảm an toàn dữ liệu, thành viên chỉ được phép chỉnh sửa 2 mục duy nhất:</p>
+          <ol>
+            <li><strong>Link Avatar:</strong> Thay đổi ảnh đại diện cá nhân. Cứ dán cái link dẫn đến cái ảnh là được, thường thì mọi người cứ copy cái link mà đã mở sau khi <strong>Open Link In New Tab</strong> trên trình duyệt ấy, là oke.</li>
+            <li><strong>Hall of Fame:</strong> Tự ghim/xóa các bài viết tâm huyết của mình kèm đường dẫn.</li>
+          </ol>
+          <p><em>Lưu ý: Mọi trường thông tin khác (Chức vụ, Hub, Nhóm, Ghi chú) đã được khóa chỉ xem.</em></p>
+        </div>
+        <div class="rule-card">
+          <h3><i class="fa-solid fa-shield-halved"></i> Master Admin Control Center</h3>
+          <p>Only Vinci thôi, giống cái sheet Starting XI cũng khóa ấy.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 6: CHEAT-SHEET MÃ PIN -->
+    <section class="manual-section" id="sec-pin" style="border-top: 10px solid #ff4757;">
+      <div class="sec-header" style="background: #ffebee;">
+        <span class="sec-badge" style="background:#ff4757;">SECURITY</span>
+        <h2>QUY CHUẨN BẢO MẬT &amp; MÃ PIN QUẢN TRỊ</h2>
+      </div>
+      <div class="sec-body">
+        <p>Hệ thống Goal-Line Studio sử dụng mã PIN dùng chung cho các hành động can thiệp đặc biệt:</p>
+        <div class="pin-box">
+          <i class="fa-solid fa-key"></i>   Inbox Vinci để nhận mã PIN</span>
+        </div>
+        <p><strong>Các trường hợp bắt buộc phải nhập mã PIN:</strong></p>
+        <ul>
+          <li>Hủy đăng ký lịch trên Schedule thay cho thành viên khác (hủy ca của chính mình không cần PIN).</li>
+          <li>Xóa hàng loạt bài viết trên Content Stack hoặc task thiết kế bên Design.</li>
+          <li>Chỉnh sửa Avatar &amp; Hall of Fame thay cho thành viên khác.</li>
+          <li>Thực hiện lệnh <strong>ĐÔN TUẦN MỚI</strong> trên bảng lịch.</li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="js/identity.js"></script>
+</body>
+</html>

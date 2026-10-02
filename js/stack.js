@@ -413,8 +413,77 @@ document.getElementById('btn-close-image').onclick = () => {
   document.getElementById('image-modal').classList.remove('active');
 };
 
-window.copyText = (text) => {
-  navigator.clipboard.writeText(text).then(() => alert(`Đã copy: "${text}"`));
+// ==========================================
+// HÀM COPY BẤT TỬ (HỖ TRỢ CẢ MOBILE, SAFARI & LOCAL DEV)
+// ==========================================
+window.copyToClipboard = async function (text) {
+  if (!text) {
+    alert("Không có nội dung để copy!");
+    return false;
+  }
+
+  // Cách 1: Dùng Clipboard API hiện đại
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn("Clipboard API bị chặn, chuyển sang fallback:", err);
+    }
+  }
+
+  // Cách 2: Fallback bằng Textarea ẩn (hoạt động 100% trên mọi trình duyệt/IP)
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand("copy");
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error("Lỗi copy fallback:", err);
+    return false;
+  }
+};
+
+// ==========================================
+// LOGIC COPY TOÀN BỘ BÀI VIẾT TRONG READER MODAL
+// ==========================================
+window.copyCurrentPostContent = async function () {
+  if (!currentReadingPost || !currentReadingPost.content) {
+    alert("Bài viết này không có nội dung văn bản để copy!");
+    return;
+  }
+
+  const btn = document.getElementById("btn-copy-full-post");
+  const originalHtml = btn ? btn.innerHTML : "";
+
+  // Tạo nội dung format đầy đủ gồm Tiêu đề + Nội dung (hoặc chỉ nội dung tùy bạn)
+  const fullTextToCopy = `${currentReadingPost.title}\n\n${currentReadingPost.content}`;
+
+  const success = await window.copyToClipboard(fullTextToCopy);
+
+  if (success) {
+    if (btn) {
+      btn.innerHTML = `<i class="fa-solid fa-check" style="color:var(--neo-green);"></i> ĐÃ COPY THÀNH CÔNG!`;
+      btn.style.background = "#000";
+      btn.style.color = "#fff";
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.style.background = "";
+        btn.style.color = "";
+      }, 1800);
+    } else {
+      alert("Đã copy toàn bộ bài viết vào clipboard!");
+    }
+  } else {
+    alert("Không thể copy tự động, vui lòng bôi đen văn bản để copy thủ công!");
+  }
 };
 
 // Form Đẩy bài mới
