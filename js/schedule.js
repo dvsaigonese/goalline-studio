@@ -729,22 +729,41 @@ window.deleteLeave = async (id) => {
 };
 
 // ==============================================================================
-// PHẦN 8: ĐÔN TUẦN ĐỘC LẬP (CONTENT HOẶC DESIGN - PIN: 2026)
+// PHẦN 8: ĐÔN TUẦN & ROLLBACK ĐỘC LẬP (ROW backup_content & backup_design)
 // ==============================================================================
 let currentActiveTeam = 'content'; // 'content' hoặc 'design'
 
 const btnPromoteWeek = document.getElementById('btn-promote-week');
 const promoteBtnText = document.getElementById('promote-btn-text');
+const btnRollbackWeek = document.getElementById('btn-rollback-week');
+const rollbackBtnText = document.getElementById('rollback-btn-text');
 
-// 1. HÀM ĐÔN TUẦN RIÊNG CHO BAN CONTENT
+// --------------------------------------------------
+// A. BAN CONTENT: ĐÔN TUẦN & ROLLBACK (ROW: backup_content)
+// --------------------------------------------------
 async function promoteContentWeek() {
   const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN CONTENT:');
   if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
 
+  const currentWeek = scheduleCache['current'];
   const nextWeek = scheduleCache['next'];
-  if (!nextWeek) return alert('Chưa tải được dữ liệu tuần sau!');
+  if (!currentWeek || !nextWeek) return alert('Chưa tải được dữ liệu lịch!');
 
-  // Cập nhật tuần hiện tại (chỉ lấy dữ liệu Content từ tuần sau)
+  // 1. Cất tuần hiện tại của Content vào row 'backup_content'
+  const { error: backupErr } = await window.sb.from('schedules').upsert({
+    id: 'backup_content',
+    week_label: 'BACKUP CONTENT ' + new Date().toLocaleTimeString('vi-VN'),
+    writing_short_data: currentWeek.writing_short_data,
+    writing_long_data: currentWeek.writing_long_data,
+    posting_data: currentWeek.posting_data,
+    updated_at: new Date()
+  });
+
+  if (backupErr) {
+    if (!confirm('Không thể ghi backup vào database (' + backupErr.message + '). Tiếp tục đôn?')) return;
+  }
+
+  // 2. Đôn tuần Content: Next -> Current
   await window.sb.from('schedules').update({
     writing_short_data: nextWeek.writing_short_data,
     writing_long_data: nextWeek.writing_long_data,
@@ -752,7 +771,7 @@ async function promoteContentWeek() {
     updated_at: new Date()
   }).eq('id', 'current');
 
-  // Khởi tạo 3 bảng Content tuần sau trống hoàn toàn
+  // 3. Xóa trắng tuần sau của Content
   const blankShort = [
     { shift: "Sáng", time: "Trước 9h", slots: [[], [], [], [], [], [], []] },
     { shift: "Trưa", time: "Trước 11h00", slots: [[], [], [], [], [], [], []] },
@@ -774,25 +793,90 @@ async function promoteContentWeek() {
     updated_at: new Date()
   }).eq('id', 'next');
 
-  alert('ĐÃ ĐÔN TUẦN BAN CONTENT THÀNH CÔNG (LỊCH DESIGN GIỮ NGUYÊN)!');
+  alert('ĐÃ ĐÔN TUẦN CONTENT THÀNH CÔNG!\n(Đã cất lịch cũ vào row backup_content)');
   fetchScheduleData();
 }
 
-// 2. HÀM ĐÔN TUẦN RIÊNG CHO BAN DESIGN
+async function rollbackContentWeek() {
+  const pin = prompt('KHÔI PHỤC LỊCH CONTENT\nNhập mã PIN Admin để ROLLBACK:');
+  if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
+
+  // Lấy row backup_content từ Supabase
+  const { data: backupRow, error } = await window.sb
+    .from('schedules')
+    .select('*')
+    .eq('id', 'backup_content')
+    .single();
+
+  // Kiểm tra nếu chưa từng đôn hoặc đã rollback rồi
+  if (error || !backupRow || !backupRow.writing_short_data) {
+    return alert('Không tìm thấy bản backup nào của Content (hoặc bạn đã rollback rồi)!');
+  }
+
+  const currentWeek = scheduleCache['current'];
+  const confirmMsg = `XÁC NHẬN ROLLBACK LỊCH BAN CONTENT?\n\n- Toàn bộ ca Content tuần trước sẽ trả về 'Tuần Này'.\n- Ca đang có ở 'Tuần Này' sẽ chuyển về 'Tuần Sau'.\n(Lịch Design hoàn toàn không bị ảnh hưởng)`;
+  if (!confirm(confirmMsg)) return;
+
+  // 1. Phục hồi Content từ backup_content -> Current
+  await window.sb.from('schedules').update({
+    writing_short_data: backupRow.writing_short_data,
+    writing_long_data: backupRow.writing_long_data,
+    posting_data: backupRow.posting_data,
+    updated_at: new Date()
+  }).eq('id', 'current');
+
+  // 2. Chuyển ca trực hiện tại về lại Next
+  if (currentWeek) {
+    await window.sb.from('schedules').update({
+      writing_short_data: currentWeek.writing_short_data,
+      writing_long_data: currentWeek.writing_long_data,
+      posting_data: currentWeek.posting_data,
+      updated_at: new Date()
+    }).eq('id', 'next');
+  }
+
+  // 3. Xóa trắng backup_content để không cho bấm rollback liên tiếp
+  await window.sb.from('schedules').update({
+    writing_short_data: null,
+    writing_long_data: null,
+    posting_data: null,
+    updated_at: new Date()
+  }).eq('id', 'backup_content');
+
+  alert('ROLLBACK CONTENT THÀNH CÔNG!');
+  fetchScheduleData();
+}
+
+// --------------------------------------------------
+// B. BAN DESIGN: ĐÔN TUẦN & ROLLBACK (ROW: backup_design)
+// --------------------------------------------------
 async function promoteDesignWeek() {
   const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN DESIGN:');
   if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
 
+  const currentWeek = scheduleCache['current'];
   const nextWeek = scheduleCache['next'];
-  if (!nextWeek) return alert('Chưa tải được dữ liệu tuần sau!');
+  if (!currentWeek || !nextWeek) return alert('Chưa tải được dữ liệu lịch!');
 
-  // Cập nhật ca trực Design tuần hiện tại từ tuần sau
+  // 1. Cất tuần hiện tại của Design vào row 'backup_design'
+  const { error: backupErr } = await window.sb.from('schedules').upsert({
+    id: 'backup_design',
+    week_label: 'BACKUP DESIGN ' + new Date().toLocaleTimeString('vi-VN'),
+    design_shifts_data: currentWeek.design_shifts_data,
+    updated_at: new Date()
+  });
+
+  if (backupErr) {
+    if (!confirm('Không thể ghi backup Design vào database (' + backupErr.message + '). Tiếp tục đôn?')) return;
+  }
+
+  // 2. Đôn tuần Design: Next -> Current
   await window.sb.from('schedules').update({
     design_shifts_data: nextWeek.design_shifts_data,
     updated_at: new Date()
   }).eq('id', 'current');
 
-  // Khởi tạo bảng Des Ca tuần sau trống hoàn toàn
+  // 3. Xóa trắng Design tuần sau
   const blankDesignShifts = [
     { shift: "Fix ảnh Page", time: "Hằng ngày", slots: [[], [], [], [], [], [], []] }
   ];
@@ -802,11 +886,57 @@ async function promoteDesignWeek() {
     updated_at: new Date()
   }).eq('id', 'next');
 
-  alert('ĐÃ ĐÔN TUẦN BAN DESIGN THÀNH CÔNG (LỊCH CONTENT GIỮ NGUYÊN)!');
+  alert('ĐÃ ĐÔN TUẦN DESIGN THÀNH CÔNG!\n(Đã cất lịch cũ vào row backup_design)');
   fetchScheduleData();
 }
 
-// Bấm nút sẽ kiểm tra đang ở tab nào để gọi hàm tương ứng
+async function rollbackDesignWeek() {
+  const pin = prompt('KHÔI PHỤC LỊCH DESIGN\nNhập mã PIN Admin để ROLLBACK:');
+  if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
+
+  // Lấy row backup_design từ Supabase
+  const { data: backupRow, error } = await window.sb
+    .from('schedules')
+    .select('*')
+    .eq('id', 'backup_design')
+    .single();
+
+  // Kiểm tra nếu chưa từng đôn hoặc đã rollback rồi
+  if (error || !backupRow || !backupRow.design_shifts_data) {
+    return alert('Không tìm thấy bản backup nào của Design (hoặc bạn đã rollback rồi)!');
+  }
+
+  const currentWeek = scheduleCache['current'];
+  const confirmMsg = `XÁC NHẬN ROLLBACK LỊCH BAN DESIGN?\n\n- Ca trực Design tuần trước sẽ trả về 'Tuần Này'.\n- Ca đang có ở 'Tuần Này' sẽ chuyển về 'Tuần Sau'.\n(Lịch Content hoàn toàn không bị ảnh hưởng)`;
+  if (!confirm(confirmMsg)) return;
+
+  // 1. Phục hồi Design từ backup_design -> Current
+  await window.sb.from('schedules').update({
+    design_shifts_data: backupRow.design_shifts_data,
+    updated_at: new Date()
+  }).eq('id', 'current');
+
+  // 2. Chuyển ca trực hiện tại về lại Next
+  if (currentWeek) {
+    await window.sb.from('schedules').update({
+      design_shifts_data: currentWeek.design_shifts_data,
+      updated_at: new Date()
+    }).eq('id', 'next');
+  }
+
+  // 3. Xóa trắng backup_design để không cho bấm rollback liên tiếp
+  await window.sb.from('schedules').update({
+    design_shifts_data: null,
+    updated_at: new Date()
+  }).eq('id', 'backup_design');
+
+  alert('ROLLBACK DESIGN THÀNH CÔNG!');
+  fetchScheduleData();
+}
+
+// --------------------------------------------------
+// GẮN SỰ KIỆN CLICK THEO BAN ĐANG CHỌN
+// --------------------------------------------------
 if (btnPromoteWeek) {
   btnPromoteWeek.onclick = () => {
     if (currentActiveTeam === 'design') {
@@ -817,8 +947,18 @@ if (btnPromoteWeek) {
   };
 }
 
+if (btnRollbackWeek) {
+  btnRollbackWeek.onclick = () => {
+    if (currentActiveTeam === 'design') {
+      rollbackDesignWeek();
+    } else {
+      rollbackContentWeek();
+    }
+  };
+}
+
 // ==============================================================================
-// PHẦN 9: ĐIỀU HƯỚNG TAB BAN & CHUYỂN TUẦN
+// PHẦN 9: ĐIỀU HƯỚNG TAB BAN & CHUYỂN TUẦN (ĐẦY ĐỦ CẢ TAB VÀ NÚT TUẦN)
 // ==============================================================================
 const sectionContent = document.getElementById('section-content-team');
 const sectionDesign = document.getElementById('section-design-team');
@@ -834,9 +974,20 @@ if (btnContentTab && btnDesignTab) {
     if (sectionContent) sectionContent.style.display = 'block';
     if (sectionDesign) sectionDesign.style.display = 'none';
 
-    // Đổi nhãn nút trên Header
-    if (promoteBtnText) promoteBtnText.innerText = 'ĐÔN TUẦN CONTENT';
+    // Đổi nhãn nút Đôn tuần sang Content (Vàng)
+    if (promoteBtnText) {
+      promoteBtnText.innerText = 'ĐÔN TUẦN CONTENT';
+    } else if (btnPromoteWeek) {
+      btnPromoteWeek.innerHTML = '<i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN CONTENT';
+    }
     if (btnPromoteWeek) btnPromoteWeek.style.background = 'var(--neo-yellow)';
+
+    // Đổi nhãn nút Rollback sang Content
+    if (rollbackBtnText) {
+      rollbackBtnText.innerText = 'ROLLBACK CONTENT';
+    } else if (btnRollbackWeek) {
+      btnRollbackWeek.innerHTML = '<i class="fa-solid fa-rotate-left"></i> ROLLBACK CONTENT';
+    }
   };
 
   // Khi chọn tab Design
@@ -847,13 +998,28 @@ if (btnContentTab && btnDesignTab) {
     if (sectionDesign) sectionDesign.style.display = 'block';
     if (sectionContent) sectionContent.style.display = 'none';
 
-    // Đổi nhãn nút trên Header sang màu tím đồng bộ của Design
-    if (promoteBtnText) promoteBtnText.innerText = 'ĐÔN TUẦN DESIGN';
+    // Đổi nhãn nút Đôn tuần sang Design (Tím)
+    if (promoteBtnText) {
+      promoteBtnText.innerText = 'ĐÔN TUẦN DESIGN';
+    } else if (btnPromoteWeek) {
+      btnPromoteWeek.innerHTML = '<i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN DESIGN';
+    }
     if (btnPromoteWeek) btnPromoteWeek.style.background = 'var(--neo-purple)';
+
+    // Đổi nhãn nút Rollback sang Design
+    if (rollbackBtnText) {
+      rollbackBtnText.innerText = 'ROLLBACK DESIGN';
+    } else if (btnRollbackWeek) {
+      btnRollbackWeek.innerHTML = '<i class="fa-solid fa-rotate-left"></i> ROLLBACK DESIGN';
+    }
+
     fetchDesignTasks();
   };
 }
 
+// --------------------------------------------------
+// CÁC SỰ KIỆN CHUYỂN TUẦN (TUẦN NÀY / TUẦN SAU)
+// --------------------------------------------------
 const btnThisWeek = document.getElementById('btn-this-week');
 const btnNextWeek = document.getElementById('btn-next-week');
 
