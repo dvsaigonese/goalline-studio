@@ -29,10 +29,12 @@
             <div class="header-status">
                 <span class="status-indicator">
                     <span class="pulse-dot"></span>
-                    <span id="current-user-display">ĐANG ĐỊNH DANH...</span>
+                    <span id="current-user-display">ADMIN: ?</span>
                 </span>
+                <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
+                    <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+                </button>
                 <button class="btn-neo-back" onclick="loadPostsFromDB()"><i class="fa-solid fa-arrows-rotate"></i> LÀM MỚI</button>
-                <button class="btn-neo-back" id="btn-change-identity" style="cursor:pointer;"><i class="fa-solid fa-user-pen"></i> ĐỔI TÊN</button>
                 <a href="index.html" class="btn-neo-back"><i class="fa-solid fa-arrow-left"></i> VỀ HOME</a>
             </div>
         </header>
@@ -252,5 +254,6 @@
     </div>
 
     <script src="js/stack.js"></script>
+    <script src="js/identity.js"></script>
 </body>
 </html>

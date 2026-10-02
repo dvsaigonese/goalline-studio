@@ -44,8 +44,12 @@
             </div>
 
             <div class="header-status">
-                <button class="status-indicator" onclick="toggleDarkMode()" style="cursor: pointer;" title="Bật/Tắt Dark Mode">
-                    <i id="theme-toggle-icon" class="fa-solid fa-moon"></i>
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span id="current-user-display">ADMIN: ?</span>
+                </div>
+                <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
+                    <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
                 </button>
                 <div class="status-indicator">
                     <span class="pulse-dot"></span>
@@ -227,6 +231,6 @@
     </div>
 
     <script type="module" src="js/landing.js"></script>
-    <script src="js/theme.js"></script>
+    <script src="js/identity.js"></script>
 </body>
 </html>

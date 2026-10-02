@@ -30,15 +30,16 @@
             <div class="header-status">
                 <div class="status-indicator">
                     <span class="pulse-dot"></span>
-                    <span id="current-user-display">ADMIN: VINCI</span>
+                    <span id="current-user-display">ADMIN: ?</span>
                 </div>
+                <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
+                    <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+                </button>
                 <!-- Nút Làm Mới Realtime chống đơ cache khi mở lại app trên điện thoại -->
                 <button class="btn-neo-back" id="btn-refresh-all" title="Làm mới toàn bộ dữ liệu">
                     <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i> LÀM MỚI
                 </button>
-                <button class="btn-neo-back" id="btn-change-identity">
-                    <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
-                </button>
+                
                 <button class="btn-neo-back btn-neo-promote" id="btn-promote-week" title="Chốt tuần này và đôn tuần sau lên">
                     <i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN MỚI
                 </button>
@@ -386,7 +387,7 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script src="js/theme.js"></script>
     <script src="js/schedule.js"></script>
+    <script src="js/identity.js"></script>
 </body>
 </html>

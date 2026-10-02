@@ -15,7 +15,7 @@
 <body class="roster-body">
 
   <div class="roster-container">
-    <!-- Header -->
+    <!-- Top Header -->
     <header class="roster-nav">
       <div class="nav-left">
         <a href="index.html" class="btn-back" title="Return to Dashboard">
@@ -26,7 +26,7 @@
             <span class="logo-box">GL</span>
             <h1>SQUAD DIRECTORY</h1>
           </div>
-          <span class="sub-badge">PERSONNEL REGISTRY</span>
+          <span class="sub-badge">PERSONNEL REGISTRY &amp; HALL OF FAME</span>
         </div>
       </div>
 
@@ -42,12 +42,12 @@
       </div>
     </header>
 
-    <!-- Filter Dock -->
+    <!-- Control Dock (Filters & Search) -->
     <section class="control-dock">
       <div class="search-box">
         <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
         <input type="text" id="roster-search" placeholder="Filter by handle, name, role, email..." autocomplete="off"/>
-        <button id="clear-search" class="btn-clear hidden" title="Clear">✕</button>
+        <button id="clear-search" class="btn-clear hidden" title="Clear Search">✕</button>
       </div>
 
       <div class="filters-row">
@@ -98,7 +98,7 @@
       <!-- Grid Container -->
       <div id="roster-grid" class="cards-grid"></div>
 
-      <!-- Table Container (Sortable Table Headers) -->
+      <!-- Table Container -->
       <div id="roster-table-wrap" class="table-wrap hidden">
         <table class="neo-table">
           <thead>
@@ -110,14 +110,14 @@
               <th class="sortable-th" data-sort="gen">GEN / DATE <span class="sort-icon"></span></th>
               <th class="sortable-th" data-sort="location">LOCATION <span class="sort-icon"></span></th>
               <th class="sortable-th" data-sort="status">STATUS <span class="sort-icon"></span></th>
-              <th>ACTION</th>
+              <th style="text-align:center;">ACTION</th>
             </tr>
           </thead>
           <tbody id="table-body"></tbody>
         </table>
       </div>
 
-      <!-- Empty Fallback -->
+      <!-- Empty State Fallback -->
       <div id="empty-results" class="empty-state hidden">
         <div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>
         <h3>NO MEMBERS FOUND</h3>
@@ -127,7 +127,7 @@
     </main>
   </div>
 
-  <!-- SCOUTING REPORT MODAL (DOSSIER) -->
+  <!-- SCOUTING REPORT MODAL (VIEW DOSSIER) -->
   <div id="dossier-modal" class="modal-backdrop">
     <div class="dossier-card">
       <div class="dossier-header">
@@ -137,7 +137,6 @@
 
       <div class="dossier-body">
         <div class="profile-hero">
-          <!-- Hỗ trợ avatar ảnh thật hoặc Monogram fallback -->
           <div class="avatar-box" id="m-avatar-wrap">
             <span id="m-avatar-text">GL</span>
           </div>
@@ -176,19 +175,103 @@
           </div>
         </div>
 
-        <!-- Multiple Signature Works Section -->
+        <!-- Hall of Fame Section -->
         <div class="signature-section" id="signature-block">
           <div class="sig-header">
             <i class="fa-solid fa-crown"></i>
             <span>HALL OF FAME • SIGNATURE WORKS</span>
           </div>
-          <!-- Container chứa nhiều bài viết -->
           <div class="sig-works-list" id="m-works-container"></div>
+        </div>
+
+        <!-- Open Edit Modal Button -->
+        <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+          <button id="btn-open-edit-member" class="btn-inspect" style="padding: 10px 16px; font-size: 0.95rem; width: 100%;">
+            <i class="fa-solid fa-pen-to-square"></i> UPDATE PROFILE &amp; HALL OF FAME
+          </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- MODAL: EDIT PROFILE & HALL OF FAME -->
+  <div id="edit-member-modal" class="modal-backdrop">
+    <div class="dossier-card" style="max-width: 620px;">
+      <div class="dossier-header" style="background: var(--neo-purple);">
+        <div class="dossier-tag">EDIT PROFILE &amp; HALL OF FAME</div>
+        <button id="btn-close-edit-member" class="btn-close-modal">✕</button>
+      </div>
+
+      <form id="form-edit-member" class="dossier-body">
+        <input type="hidden" id="edit-m-id"/>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="meta-item">
+            <span class="meta-key">NICKNAME (HANDLE):</span>
+            <input type="text" id="edit-m-handle" readonly style="background:#eee; font-weight:900; padding:8px; border:2px solid #000; outline:none;"/>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">FULL NAME:</span>
+            <input type="text" id="edit-m-fullname" style="padding:8px; border:2px solid #000; font-family:var(--font-main); outline:none;"/>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
+          <div class="meta-item">
+            <span class="meta-key">BIRTH YEAR:</span>
+            <input type="text" id="edit-m-dob" placeholder="e.g. 2003" style="padding:8px; border:2px solid #000; font-family:var(--font-mono); outline:none;"/>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">HUB / LOCATION:</span>
+            <select id="edit-m-loc" style="padding:8px; border:2px solid #000; font-family:var(--font-main); font-weight:700; outline:none;">
+              <option value="HCM">HCM</option>
+              <option value="Hanoi">Hanoi</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">STATUS:</span>
+            <select id="edit-m-status" style="padding:8px; border:2px solid #000; font-family:var(--font-main); font-weight:700; outline:none;">
+              <option value="active">ACTIVE</option>
+              <option value="on leave">ON LEAVE</option>
+              <option value="inactive">INACTIVE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="meta-item">
+          <span class="meta-key">AVATAR IMAGE URL (OPTIONAL):</span>
+          <input type="text" id="edit-m-avatar" placeholder="https://..." style="padding:8px; border:2px solid #000; outline:none;"/>
+        </div>
+
+        <!-- Hall of Fame Entries Repeater -->
+        <div style="background:#fffbe6; border:2px solid #000; padding:14px; margin-top:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <strong style="font-family:var(--font-cond); font-size:1.1rem;">
+              <i class="fa-solid fa-crown" style="color:var(--neo-orange);"></i> HALL OF FAME ARTICLES
+            </strong>
+            <button type="button" id="btn-add-work-item" class="btn-inspect" style="padding:4px 8px; font-size:0.8rem;">
+              + ADD ARTICLE
+            </button>
+          </div>
+          
+          <div id="edit-works-list" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <button type="submit" id="btn-save-member" class="btn-inspect" style="width:100%; padding:12px; background:var(--neo-green); font-size:1.1rem;">
+            SAVE PROFILE CHANGES
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Supabase & Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="js/roster.js"></script>
+  <script src="js/identity.js"></script>
 </body>
 </html>

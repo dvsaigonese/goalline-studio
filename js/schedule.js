@@ -4,36 +4,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Khởi tạo Supabase client toàn cục trên window
 window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const GL_TEAM = [
-  'Maztermind', 'Vinci', 'Voet', 'Quýt', 'Tiryth', 'Tizzy', 'Nikolaj', 
-  'Cakashi', 'Nedu', 'Terry', 'Naruto', 'Ruben', 'Dante', 'Daugust', 
-  'Draco', 'Harif', 'Giáo 5ư', 'Tom', 'Brunson', 'Vate', 'Zenriot', 
-  'Kaiz', 'Metis', 'Genie', 'Dmoney'
-];
-
-function checkIdentity() {
-  let currentUser = localStorage.getItem('gl_current_user');
-  if (!currentUser) {
-    const chosen = prompt(`CHÀO MỪNG ĐẾN VỚI LỊCH GOAL-LINE!\nBạn là ai trong team?\n(${GL_TEAM.join(', ')})`, 'Vinci');
-    currentUser = chosen ? chosen.trim() : 'Vinci';
-    localStorage.setItem('gl_current_user', currentUser);
-  }
-  const displayEl = document.getElementById('current-user-display');
-  if (displayEl) displayEl.innerText = `ADMIN: ${currentUser.toUpperCase()}`;
-  return currentUser;
-}
-
-const btnChangeId = document.getElementById('btn-change-identity');
-if (btnChangeId) {
-  btnChangeId.onclick = () => {
-    const chosen = prompt(`Chọn lại tên của bạn:\n(${GL_TEAM.join(', ')})`, localStorage.getItem('gl_current_user') || 'Vinci');
-    if (chosen) {
-      localStorage.setItem('gl_current_user', chosen.trim());
-      checkIdentity();
-    }
-  };
-}
-
 let currentTab = 'current';
 let scheduleCache = { current: null, next: null };
 let designTasks = [];
@@ -676,7 +646,6 @@ window.sb.channel('realtime_schedules_all')
   .subscribe();
 
 // Khởi chạy
-checkIdentity();
 fetchScheduleData();
 fetchDesignTasks();
 fetchLeavesData();

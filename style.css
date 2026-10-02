@@ -639,3 +639,50 @@ html, body {
 .card-pink { border-top: 10px solid var(--neo-pink); }
 
 .card-cyan { border-top: 10px solid #00f0ff !important; }
+
+/* ==================================================
+   GLOBAL IDENTITY BUTTON & BADGE (NEOBRUTALISM)
+   ================================================== */
+.btn-neo-back {
+  background: var(--neo-white, #ffffff);
+  color: var(--neo-black, #000000);
+  padding: 6px 12px;
+  font-family: var(--font-cond, 'Barlow Condensed', sans-serif);
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border: var(--neo-border-w, 3px) solid var(--neo-black, #000000);
+  box-shadow: var(--neo-shadow-sm, 2px 2px 0 #000000);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  outline: none;
+}
+
+.btn-neo-back:hover {
+  background: var(--neo-yellow, #ffe600);
+  color: var(--neo-black, #000000);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--neo-shadow, 4px 4px 0 #000000);
+}
+
+.btn-neo-back:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--neo-black, #000000);
+}
+
+/* Khi ở Dark Mode */
+body.dark-mode .btn-neo-back {
+  background: #27272a;
+  color: #ffffff;
+  border-color: #f4f4f5;
+  box-shadow: 2px 2px 0 #f4f4f5;
+}
+
+body.dark-mode .btn-neo-back:hover {
+  background: var(--neo-yellow, #ffe600);
+  color: #000000;
+}

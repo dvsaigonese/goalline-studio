@@ -4,38 +4,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Khởi tạo Supabase client toàn cục trên window
 window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const GL_TEAM = [
-  'Maztermind', 'Vinci', 'Voet', 'Quýt', 'Tiryth', 'Tizzy', 'Nikolaj', 
-  'Cakashi', 'Nedu', 'Terry', 'Naruto', 'Ruben', 'Dante', 'Daugust', 
-  'Draco', 'Harif', 'Giáo 5ư', 'Tom', 'Brunson', 'Vate', 'Zenriot', 
-  'Kaiz', 'Metis', 'Genie', 'Dmoney'
-];
-
-function checkIdentity() {
-  let currentUser = localStorage.getItem('gl_current_user');
-  if (!currentUser) {
-    const chosen = prompt(`CHÀO MỪNG ĐẾN VỚI GOAL-LINE STUDIO!\nBạn là ai trong team?\n(${GL_TEAM.join(', ')})`, 'Vinci');
-    currentUser = chosen ? chosen.trim() : 'Vinci';
-    localStorage.setItem('gl_current_user', currentUser);
-  }
-  
-  const displayEl = document.getElementById('current-user-display');
-  if (displayEl) displayEl.innerText = `ADMIN: ${currentUser.toUpperCase()}`;
-  
-  const authorInput = document.getElementById('input-author');
-  if (authorInput) authorInput.value = currentUser;
-  
-  return currentUser;
-}
-
-document.getElementById('btn-change-identity').onclick = () => {
-  const chosen = prompt(`Chọn lại tên của bạn:\n(${GL_TEAM.join(', ')})`, localStorage.getItem('gl_current_user') || 'Vinci');
-  if (chosen) {
-    localStorage.setItem('gl_current_user', chosen.trim());
-    checkIdentity();
-  }
-};
-
 let posts = [];
 let activeFilter = 'all';
 let currentReadingPost = null;
@@ -123,7 +91,7 @@ function renderTable() {
       <td>
         ${hasValidImage ? `
           <div class="img-thumb-box img-thumb-clickable" onclick="openImageViewer('${post.imgUrl}', '${post.title}')" title="Click xem ảnh to">
-            <img src="${post.imgUrl}" alt="Thumbnail" onerror="this.parentElement.innerHTML='(Lỗi ảnh)'">
+            <img src="${post.imgUrl}" alt="Thumbnail" onerror="this.parentElement.innerHTML='(Nhấn tải để xem)'">
           </div>
         ` : `<span style="font-size:0.75rem; color:#888;">(Chưa có ảnh)</span>`}
       </td>
@@ -481,5 +449,4 @@ window.addEventListener('focus', () => {
   loadPostsFromDB();
 });
 
-checkIdentity();
 loadPostsFromDB();

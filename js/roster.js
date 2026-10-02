@@ -1,3 +1,9 @@
+const SUPABASE_URL = 'https://exutfqxfwurwyfyxzskj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4dXRmcXhmd3Vyd3lmeXh6c2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NTM0MzksImV4cCI6MjEwNjQyOTQzOX0.e3DZMEaGqgEQjMbUrll718a0lWFjY011wzPPLqh9Ls8';
+
+// Khởi tạo Supabase client toàn cục trên window
+window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let rosterData = [];
 let activeTeam = 'all';
 let activeLoc = 'all';
@@ -5,35 +11,17 @@ let activeStatus = 'active';
 let searchQuery = '';
 let currentView = 'grid'; // 'grid' | 'table'
 
-// Sorting State
 let sortCol = 'role';
 let sortAsc = true;
 
-// Bảng thứ bậc chức vụ (Càng nhỏ càng cao: CEO -> COO -> Director -> Support -> Specialist)
+let currentViewingMemberId = null;
+
 const ROLE_HIERARCHY = {
-  'CEO': 1,
-  'COO': 2,
-  'Creative Director': 3,
-  'Executive Support': 4,
-  'Content': 5,
-  'Design': 6,
-  'Video Editor': 7,
-  'Publisher': 8
+  'CEO': 1, 'COO': 2, 'Creative Director': 3, 'Executive Support': 4,
+  'Content': 5, 'Design': 6, 'Video Editor': 7, 'Publisher': 8
 };
-
-// Thứ bậc phòng ban & trạng thái
-const TEAM_HIERARCHY = {
-  'Executive': 1,
-  'Management': 2,
-  'Production': 3,
-  'Support': 4
-};
-
-const STATUS_HIERARCHY = {
-  'active': 1,
-  'on leave': 2,
-  'inactive': 3
-};
+const TEAM_HIERARCHY = { 'Executive': 1, 'Management': 2, 'Production': 3, 'Support': 4 };
+const STATUS_HIERARCHY = { 'active': 1, 'on leave': 2, 'inactive': 3 };
 
 // DOM Elements
 const gridContainer = document.getElementById('roster-grid');
@@ -42,11 +30,10 @@ const tableBody = document.getElementById('table-body');
 const searchInput = document.getElementById('roster-search');
 const clearSearchBtn = document.getElementById('clear-search');
 const emptyState = document.getElementById('empty-results');
-
 const statTotal = document.getElementById('stat-total');
 const statActive = document.getElementById('stat-active');
 
-// Modal Elements
+// Dossier View Elements
 const modal = document.getElementById('dossier-modal');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const mAvatarWrap = document.getElementById('m-avatar-wrap');
@@ -62,30 +49,47 @@ const mEmail = document.getElementById('m-email');
 const mWorksContainer = document.getElementById('m-works-container');
 const copyEmailBtn = document.getElementById('btn-copy-email');
 
-// --- INITIALIZATION ---
-async function initRoster() {
+// Edit Elements
+const editModal = document.getElementById('edit-member-modal');
+const btnCloseEditModal = document.getElementById('btn-close-edit-member');
+const btnOpenEditMember = document.getElementById('btn-open-edit-member');
+const formEditMember = document.getElementById('form-edit-member');
+const editWorksList = document.getElementById('edit-works-list');
+const btnAddWorkItem = document.getElementById('btn-add-work-item');
+
+// --- TẢI DỮ LIỆU TỪ SUPABASE ---
+async function fetchRosterData() {
   try {
-    const res = await fetch('./assets/data/roster.json');
-    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-    
-    const rawData = await res.json();
-    
-    // Phòng vệ dữ liệu: nhận diện cả mảng thuần [...] hoặc object bọc { roster: [...] } / { data: [...] }
-    if (Array.isArray(rawData)) {
-      rosterData = rawData;
-    } else if (rawData && typeof rawData === 'object') {
-      rosterData = rawData.roster || rawData.data || rawData.members || [];
-    } else {
-      rosterData = [];
-    }
+    const { data, error } = await sb
+      .from('squad_members')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) throw error;
+
+    rosterData = (data || []).map(m => ({
+      id: m.id,
+      handle: m.handle,
+      fullName: m.full_name || '',
+      dob: m.dob || '',
+      email: m.email || '',
+      role: m.role || 'Content',
+      team: m.team || 'Production',
+      gen: m.gen || '',
+      location: m.location || 'HCM',
+      status: m.status || 'active',
+      avatar: m.avatar || '',
+      masterpieces: Array.isArray(m.masterpieces) ? m.masterpieces : []
+    }));
 
     renderAll();
-    setupEvents();
-  } catch (err) {
-    console.error("Failed to load squad data:", err);
-    if (gridContainer) {
-      gridContainer.innerHTML = `<div class="empty-state"><h3>FAILED TO LOAD ROSTER DATA</h3><p>${err.message}</p></div>`;
+
+    // Nếu đang mở Dossier của ai thì refresh luôn nội dung modal đó
+    if (currentViewingMemberId) {
+      openDossier(currentViewingMemberId);
     }
+  } catch (err) {
+    console.error("Lỗi lấy dữ liệu Squad:", err);
   }
 }
 
@@ -93,7 +97,6 @@ async function initRoster() {
 function getFilteredAndSortedData() {
   if (!Array.isArray(rosterData)) return [];
 
-  // 1. Filter
   const filtered = rosterData.filter(member => {
     if (!member) return false;
     if (activeTeam !== 'all' && member.team !== activeTeam) return false;
@@ -120,43 +123,27 @@ function getFilteredAndSortedData() {
     return true;
   });
 
-  // 2. Hierarchical & Custom Sorting
   filtered.sort((a, b) => {
     let valA = a[sortCol] || '';
     let valB = b[sortCol] || '';
 
-    // Phân cấp vai trò: CEO -> COO -> Lead -> Staff
     if (sortCol === 'role') {
-      const rankA = ROLE_HIERARCHY[valA] || 99;
-      const rankB = ROLE_HIERARCHY[valB] || 99;
-      return sortAsc ? rankA - rankB : rankB - rankA;
+      return sortAsc ? (ROLE_HIERARCHY[valA] || 99) - (ROLE_HIERARCHY[valB] || 99) : (ROLE_HIERARCHY[valB] || 99) - (ROLE_HIERARCHY[valA] || 99);
     }
-
-    // Phân cấp phòng ban: Executive -> Management -> Production -> Support
     if (sortCol === 'team') {
-      const rankA = TEAM_HIERARCHY[valA] || 99;
-      const rankB = TEAM_HIERARCHY[valB] || 99;
-      return sortAsc ? rankA - rankB : rankB - rankA;
+      return sortAsc ? (TEAM_HIERARCHY[valA] || 99) - (TEAM_HIERARCHY[valB] || 99) : (TEAM_HIERARCHY[valB] || 99) - (TEAM_HIERARCHY[valA] || 99);
     }
-
-    // Phân cấp trạng thái: Active -> On leave -> Inactive
     if (sortCol === 'status') {
-      const rankA = STATUS_HIERARCHY[valA] || 99;
-      const rankB = STATUS_HIERARCHY[valB] || 99;
-      return sortAsc ? rankA - rankB : rankB - rankA;
+      return sortAsc ? (STATUS_HIERARCHY[valA] || 99) - (STATUS_HIERARCHY[valB] || 99) : (STATUS_HIERARCHY[valB] || 99) - (STATUS_HIERARCHY[valA] || 99);
     }
-
-    // Sort Gen theo số nguyên (Gen 0 -> Gen 9)
     if (sortCol === 'gen') {
-      const genNumA = parseInt(valA) || 0;
-      const genNumB = parseInt(valB) || 0;
-      return sortAsc ? genNumA - genNumB : genNumB - genNumA;
+      const gA = parseInt(valA) || 0;
+      const gB = parseInt(valB) || 0;
+      return sortAsc ? gA - gB : gB - gA;
     }
 
-    // Sort Alphabet mặc định cho Handle, Full Name, Location
     valA = valA.toString().toLowerCase();
     valB = valB.toString().toLowerCase();
-
     if (valA < valB) return sortAsc ? -1 : 1;
     if (valA > valB) return sortAsc ? 1 : -1;
     return 0;
@@ -165,11 +152,10 @@ function getFilteredAndSortedData() {
   return filtered;
 }
 
-// --- RENDER MAIN VIEW ---
+// --- RENDER MAIN ---
 function renderAll() {
   const data = getFilteredAndSortedData();
 
-  // Cập nhật số liệu Metrics
   if (statTotal) statTotal.textContent = rosterData.length;
   if (statActive) statActive.textContent = rosterData.filter(m => m.status === 'active').length;
 
@@ -195,15 +181,12 @@ function renderAll() {
   updateSortHeadersUI();
 }
 
-// --- RENDER GRID VIEW ---
 function renderGrid(members) {
   if (!gridContainer) return;
-
   gridContainer.innerHTML = members.map(m => {
     const initials = (m.handle || 'GL').substring(0, 2).toUpperCase();
     const statusClass = m.status === 'active' ? 'active' : (m.status === 'on leave' ? 'on-leave' : 'inactive');
     const genDisplay = m.gen ? m.gen.split('-')[0].trim() : '0';
-
     const avatarMarkup = m.avatar 
       ? `<img src="${m.avatar}" alt="${m.handle}" onerror="this.outerHTML='<span>${initials}</span>'"/>`
       : `<span>${initials}</span>`;
@@ -243,13 +226,10 @@ function renderGrid(members) {
   }).join('');
 }
 
-// --- RENDER TABLE VIEW ---
 function renderTable(members) {
   if (!tableBody) return;
-
   tableBody.innerHTML = members.map(m => {
     const statusClass = m.status === 'active' ? 'active' : (m.status === 'on leave' ? 'on-leave' : 'inactive');
-
     return `
       <tr>
         <td><strong>${escapeHtml(m.handle)}</strong></td>
@@ -265,13 +245,11 @@ function renderTable(members) {
   }).join('');
 }
 
-// --- CẬP NHẬT BIỂU TƯỢNG SORT ---
 function updateSortHeadersUI() {
   document.querySelectorAll('.sortable-th').forEach(th => {
     const col = th.dataset.sort;
     const iconSpan = th.querySelector('.sort-icon');
     if (!iconSpan) return;
-
     if (col === sortCol) {
       iconSpan.textContent = sortAsc ? ' ▲' : ' ▼';
       th.style.color = 'var(--neo-yellow)';
@@ -282,10 +260,11 @@ function updateSortHeadersUI() {
   });
 }
 
-// --- MODAL DOSSIER ---
+// --- DOSSIER MODAL ---
 function openDossier(memberId) {
   const m = rosterData.find(item => String(item.id) === String(memberId));
   if (!m || !modal) return;
+  currentViewingMemberId = m.id;
 
   const initials = (m.handle || 'GL').substring(0, 2).toUpperCase();
 
@@ -318,7 +297,6 @@ function openDossier(memberId) {
   if (mGen) mGen.textContent = `GEN ${m.gen || '--'}`;
   if (mEmail) mEmail.textContent = m.email || 'N/A';
 
-  // Render nhiều bài viết vinh danh
   if (mWorksContainer) {
     if (m.masterpieces && m.masterpieces.length > 0) {
       mWorksContainer.innerHTML = m.masterpieces.map(post => `
@@ -328,7 +306,7 @@ function openDossier(memberId) {
         </a>
       `).join('');
     } else {
-      mWorksContainer.innerHTML = `<p class="sig-empty-notice">No featured articles assigned yet. Ready for the next breakout story.</p>`;
+      mWorksContainer.innerHTML = `<p class="sig-empty-notice">Chưa có bài viết nổi bật nào được ghim. Sẵn sàng cho siêu phẩm tiếp theo!</p>`;
     }
   }
 
@@ -337,11 +315,101 @@ function openDossier(memberId) {
 
 function closeDossier() {
   modal?.classList.remove('active');
+  currentViewingMemberId = null;
 }
 
-// --- EVENTS BINDING ---
+// --- LOGIC CHỈNH SỬA PROFILE & HALL OF FAME ---
+btnOpenEditMember?.addEventListener('click', () => {
+  const m = rosterData.find(item => String(item.id) === String(currentViewingMemberId));
+  if (!m) return;
+
+  const currentAdmin = localStorage.getItem('gl_current_user') || 'Vinci';
+
+  // Nếu sửa bài của người khác -> Yêu cầu nhập PIN Admin 2026
+  if (m.handle.toLowerCase() !== currentAdmin.toLowerCase()) {
+    const pin = prompt(`Bạn đang sửa Profile của [${m.handle}].\nNếu không phải chính chủ, vui lòng nhập mã PIN Admin:`);
+    if (pin !== '2026') {
+      if (pin !== null) alert("Sai mã PIN Admin!");
+      return;
+    }
+  }
+
+  document.getElementById('edit-m-id').value = m.id;
+  document.getElementById('edit-m-handle').value = m.handle;
+  document.getElementById('edit-m-fullname').value = m.fullName;
+  document.getElementById('edit-m-dob').value = m.dob;
+  document.getElementById('edit-m-loc').value = m.location;
+  document.getElementById('edit-m-status').value = m.status;
+  document.getElementById('edit-m-avatar').value = m.avatar || '';
+
+  renderEditWorksInputs(m.masterpieces || []);
+  editModal.classList.add('active');
+});
+
+btnCloseEditModal?.addEventListener('click', () => editModal.classList.remove('active'));
+
+function renderEditWorksInputs(works) {
+  editWorksList.innerHTML = '';
+  works.forEach(w => addWorkRow(w.title, w.url));
+}
+
+function addWorkRow(title = '', url = '') {
+  const row = document.createElement('div');
+  row.className = 'edit-work-row';
+  row.style.cssText = 'display:flex; gap:6px; align-items:center;';
+  row.innerHTML = `
+    <input type="text" class="work-title" placeholder="Tiêu đề bài viết..." value="${escapeHtml(title)}" style="flex:1.5; padding:6px; border:1.5px solid #000; font-size:0.85rem;" required/>
+    <input type="url" class="work-url" placeholder="https://facebook.com/..." value="${escapeHtml(url)}" style="flex:1; padding:6px; border:1.5px solid #000; font-size:0.85rem;" required/>
+    <button type="button" class="btn-del-work" style="background:none; border:none; color:red; cursor:pointer; font-size:1.1rem;" title="Xóa bài này">✕</button>
+  `;
+  row.querySelector('.btn-del-work').onclick = () => row.remove();
+  editWorksList.appendChild(row);
+}
+
+btnAddWorkItem?.addEventListener('click', () => addWorkRow('', ''));
+
+formEditMember?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('edit-m-id').value;
+  const submitBtn = document.getElementById('btn-save-member');
+  submitBtn.innerText = 'ĐANG LƯU...';
+  submitBtn.disabled = true;
+
+  // Gom danh sách bài viết Hall of Fame
+  const rows = editWorksList.querySelectorAll('.edit-work-row');
+  const masterpieces = [];
+  rows.forEach(r => {
+    const t = r.querySelector('.work-title').value.trim();
+    const u = r.querySelector('.work-url').value.trim();
+    if (t && u) masterpieces.push({ title: t, url: u });
+  });
+
+  const updatePayload = {
+    full_name: document.getElementById('edit-m-fullname').value.trim(),
+    dob: document.getElementById('edit-m-dob').value.trim(),
+    location: document.getElementById('edit-m-loc').value,
+    status: document.getElementById('edit-m-status').value,
+    avatar: document.getElementById('edit-m-avatar').value.trim(),
+    masterpieces: masterpieces,
+    updated_at: new Date()
+  };
+
+  const { error } = await sb.from('squad_members').update(updatePayload).eq('id', id);
+
+  if (error) {
+    alert("Lỗi khi cập nhật profile: " + error.message);
+  } else {
+    editModal.classList.remove('active');
+    fetchRosterData();
+    alert("ĐÃ CẬP NHẬT PROFILE & HALL OF FAME THÀNH CÔNG!");
+  }
+
+  submitBtn.innerText = 'LƯU THAY ĐỔI';
+  submitBtn.disabled = false;
+});
+
+// --- EVENTS ---
 function setupEvents() {
-  // Search
   searchInput?.addEventListener('input', (e) => {
     searchQuery = e.target.value.trim();
     clearSearchBtn?.classList.toggle('hidden', !searchQuery);
@@ -355,7 +423,6 @@ function setupEvents() {
     renderAll();
   });
 
-  // Team Filter
   document.getElementById('team-chips')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.chip-btn');
     if (!btn) return;
@@ -365,7 +432,6 @@ function setupEvents() {
     renderAll();
   });
 
-  // Location Filter
   document.getElementById('location-chips')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.chip-btn');
     if (!btn) return;
@@ -375,7 +441,6 @@ function setupEvents() {
     renderAll();
   });
 
-  // Status Filter
   document.getElementById('status-chips')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.chip-btn');
     if (!btn) return;
@@ -385,17 +450,14 @@ function setupEvents() {
     renderAll();
   });
 
-  // View Switcher
   const btnGrid = document.getElementById('view-grid');
   const btnTable = document.getElementById('view-table');
-
   btnGrid?.addEventListener('click', () => {
     currentView = 'grid';
     btnGrid.classList.add('active');
     btnTable?.classList.remove('active');
     renderAll();
   });
-
   btnTable?.addEventListener('click', () => {
     currentView = 'table';
     btnTable.classList.add('active');
@@ -403,7 +465,6 @@ function setupEvents() {
     renderAll();
   });
 
-  // Table Sort Click
   document.querySelectorAll('.sortable-th').forEach(th => {
     th.addEventListener('click', () => {
       const clickedCol = th.dataset.sort;
@@ -417,7 +478,6 @@ function setupEvents() {
     });
   });
 
-  // Open Modal Click
   gridContainer?.addEventListener('click', (e) => {
     const card = e.target.closest('.member-card');
     if (card) openDossier(card.dataset.id);
@@ -428,38 +488,32 @@ function setupEvents() {
     if (btn) openDossier(btn.dataset.id);
   });
 
-  // Close Modal
   modalCloseBtn?.addEventListener('click', closeDossier);
   modal?.addEventListener('click', (e) => {
     if (e.target === modal) closeDossier();
   });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal?.classList.contains('active')) closeDossier();
-  });
-
-  // Copy Email
-  copyEmailBtn?.addEventListener('click', async () => {
-    const email = mEmail?.textContent;
-    if (!email || email === 'N/A') return;
-    try {
-      await navigator.clipboard.writeText(email);
-      copyEmailBtn.innerHTML = '<i class="fa-solid fa-check" style="color:#00f076;"></i>';
-      setTimeout(() => {
-        copyEmailBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
-      }, 1500);
-    } catch (err) {
-      console.warn("Clipboard access error", err);
+    if (e.key === 'Escape') {
+      closeDossier();
+      editModal?.classList.remove('active');
     }
   });
 
-  // Reset Filters Button
+  copyEmailBtn?.addEventListener('click', async () => {
+    const email = mEmail?.textContent;
+    if (!email || email === 'N/A') return;
+    await navigator.clipboard.writeText(email);
+    copyEmailBtn.innerHTML = '<i class="fa-solid fa-check" style="color:#00f076;"></i>';
+    setTimeout(() => { copyEmailBtn.innerHTML = '<i class="fa-regular fa-copy"></i>'; }, 1500);
+  });
+
   document.getElementById('reset-filters-btn')?.addEventListener('click', () => {
     if (searchInput) searchInput.value = '';
     searchQuery = '';
     activeTeam = 'all';
     activeLoc = 'all';
     activeStatus = 'all';
-    sortCol = 'handle';
+    sortCol = 'role';
     sortAsc = true;
     document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('#team-chips [data-filter="all"]')?.classList.add('active');
@@ -478,4 +532,15 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
-initRoster();
+// Bật đồng bộ Realtime cho cả team
+sb.channel('realtime_squad_members')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_members' }, fetchRosterData)
+  .subscribe();
+
+// Tự động làm mới khi mở lại điện thoại
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') fetchRosterData();
+});
+
+setupEvents();
+fetchRosterData();
