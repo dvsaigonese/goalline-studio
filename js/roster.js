@@ -4,16 +4,16 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Khởi tạo Supabase client toàn cục trên window
 window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+
 let rosterData = [];
 let activeTeam = 'all';
 let activeLoc = 'all';
 let activeStatus = 'active';
 let searchQuery = '';
-let currentView = 'grid'; // 'grid' | 'table'
+let currentView = 'grid';
 
 let sortCol = 'role';
 let sortAsc = true;
-
 let currentViewingMemberId = null;
 
 const ROLE_HIERARCHY = {
@@ -23,7 +23,7 @@ const ROLE_HIERARCHY = {
 const TEAM_HIERARCHY = { 'Executive': 1, 'Management': 2, 'Production': 3, 'Support': 4 };
 const STATUS_HIERARCHY = { 'active': 1, 'on leave': 2, 'inactive': 3 };
 
-// DOM Elements
+// DOM
 const gridContainer = document.getElementById('roster-grid');
 const tableWrap = document.getElementById('roster-table-wrap');
 const tableBody = document.getElementById('table-body');
@@ -33,7 +33,7 @@ const emptyState = document.getElementById('empty-results');
 const statTotal = document.getElementById('stat-total');
 const statActive = document.getElementById('stat-active');
 
-// Dossier View Elements
+// Dossier View
 const modal = document.getElementById('dossier-modal');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const mAvatarWrap = document.getElementById('m-avatar-wrap');
@@ -46,18 +46,19 @@ const mLoc = document.getElementById('m-loc');
 const mDob = document.getElementById('m-dob');
 const mGen = document.getElementById('m-gen');
 const mEmail = document.getElementById('m-email');
+const mNote = document.getElementById('m-note');
 const mWorksContainer = document.getElementById('m-works-container');
 const copyEmailBtn = document.getElementById('btn-copy-email');
 
-// Edit Elements
+// Edit Works Only
 const editModal = document.getElementById('edit-member-modal');
 const btnCloseEditModal = document.getElementById('btn-close-edit-member');
 const btnOpenEditMember = document.getElementById('btn-open-edit-member');
 const formEditMember = document.getElementById('form-edit-member');
 const editWorksList = document.getElementById('edit-works-list');
 const btnAddWorkItem = document.getElementById('btn-add-work-item');
+const editHandleTitle = document.getElementById('edit-m-handle-title');
 
-// --- TẢI DỮ LIỆU TỪ SUPABASE ---
 async function fetchRosterData() {
   try {
     const { data, error } = await sb
@@ -79,21 +80,17 @@ async function fetchRosterData() {
       location: m.location || 'HCM',
       status: m.status || 'active',
       avatar: m.avatar || '',
+      note: m.note || '',
       masterpieces: Array.isArray(m.masterpieces) ? m.masterpieces : []
     }));
 
     renderAll();
-
-    // Nếu đang mở Dossier của ai thì refresh luôn nội dung modal đó
-    if (currentViewingMemberId) {
-      openDossier(currentViewingMemberId);
-    }
+    if (currentViewingMemberId) openDossier(currentViewingMemberId);
   } catch (err) {
     console.error("Lỗi lấy dữ liệu Squad:", err);
   }
 }
 
-// --- FILTER & SORT PIPELINE ---
 function getFilteredAndSortedData() {
   if (!Array.isArray(rosterData)) return [];
 
@@ -119,7 +116,6 @@ function getFilteredAndSortedData() {
       const matchEmail = (member.email || '').toLowerCase().includes(q);
       if (!matchHandle && !matchName && !matchRole && !matchEmail) return false;
     }
-
     return true;
   });
 
@@ -127,20 +123,10 @@ function getFilteredAndSortedData() {
     let valA = a[sortCol] || '';
     let valB = b[sortCol] || '';
 
-    if (sortCol === 'role') {
-      return sortAsc ? (ROLE_HIERARCHY[valA] || 99) - (ROLE_HIERARCHY[valB] || 99) : (ROLE_HIERARCHY[valB] || 99) - (ROLE_HIERARCHY[valA] || 99);
-    }
-    if (sortCol === 'team') {
-      return sortAsc ? (TEAM_HIERARCHY[valA] || 99) - (TEAM_HIERARCHY[valB] || 99) : (TEAM_HIERARCHY[valB] || 99) - (TEAM_HIERARCHY[valA] || 99);
-    }
-    if (sortCol === 'status') {
-      return sortAsc ? (STATUS_HIERARCHY[valA] || 99) - (STATUS_HIERARCHY[valB] || 99) : (STATUS_HIERARCHY[valB] || 99) - (STATUS_HIERARCHY[valA] || 99);
-    }
-    if (sortCol === 'gen') {
-      const gA = parseInt(valA) || 0;
-      const gB = parseInt(valB) || 0;
-      return sortAsc ? gA - gB : gB - gA;
-    }
+    if (sortCol === 'role') return sortAsc ? (ROLE_HIERARCHY[valA] || 99) - (ROLE_HIERARCHY[valB] || 99) : (ROLE_HIERARCHY[valB] || 99) - (ROLE_HIERARCHY[valA] || 99);
+    if (sortCol === 'team') return sortAsc ? (TEAM_HIERARCHY[valA] || 99) - (TEAM_HIERARCHY[valB] || 99) : (TEAM_HIERARCHY[valB] || 99) - (TEAM_HIERARCHY[valA] || 99);
+    if (sortCol === 'status') return sortAsc ? (STATUS_HIERARCHY[valA] || 99) - (STATUS_HIERARCHY[valB] || 99) : (STATUS_HIERARCHY[valB] || 99) - (STATUS_HIERARCHY[valA] || 99);
+    if (sortCol === 'gen') return sortAsc ? (parseInt(valA) || 0) - (parseInt(valB) || 0) : (parseInt(valB) || 0) - (parseInt(valA) || 0);
 
     valA = valA.toString().toLowerCase();
     valB = valB.toString().toLowerCase();
@@ -152,10 +138,8 @@ function getFilteredAndSortedData() {
   return filtered;
 }
 
-// --- RENDER MAIN ---
 function renderAll() {
   const data = getFilteredAndSortedData();
-
   if (statTotal) statTotal.textContent = rosterData.length;
   if (statActive) statActive.textContent = rosterData.filter(m => m.status === 'active').length;
 
@@ -167,7 +151,6 @@ function renderAll() {
   }
 
   emptyState?.classList.add('hidden');
-
   if (currentView === 'grid') {
     gridContainer?.classList.remove('hidden');
     tableWrap?.classList.add('hidden');
@@ -177,8 +160,6 @@ function renderAll() {
     tableWrap?.classList.remove('hidden');
     renderTable(data);
   }
-
-  updateSortHeadersUI();
 }
 
 function renderGrid(members) {
@@ -239,63 +220,42 @@ function renderTable(members) {
         <td><code style="font-family:var(--font-mono);">${m.gen || '--'}</code></td>
         <td>${escapeHtml(m.location)}</td>
         <td><span class="s-dot ${statusClass}" style="display:inline-block; margin-right:4px;"></span> ${m.status}</td>
-        <td><button class="btn-inspect" data-id="${m.id}">VIEW</button></td>
+        <td style="text-align:center;"><button class="btn-inspect" data-id="${m.id}">VIEW</button></td>
       </tr>
     `;
   }).join('');
 }
 
-function updateSortHeadersUI() {
-  document.querySelectorAll('.sortable-th').forEach(th => {
-    const col = th.dataset.sort;
-    const iconSpan = th.querySelector('.sort-icon');
-    if (!iconSpan) return;
-    if (col === sortCol) {
-      iconSpan.textContent = sortAsc ? ' ▲' : ' ▼';
-      th.style.color = 'var(--neo-yellow)';
-    } else {
-      iconSpan.textContent = '';
-      th.style.color = '';
-    }
-  });
-}
-
-// --- DOSSIER MODAL ---
 function openDossier(memberId) {
   const m = rosterData.find(item => String(item.id) === String(memberId));
   if (!m || !modal) return;
   currentViewingMemberId = m.id;
 
   const initials = (m.handle || 'GL').substring(0, 2).toUpperCase();
-
   if (mAvatarWrap) {
-    if (m.avatar) {
-      mAvatarWrap.innerHTML = `<img src="${m.avatar}" alt="${m.handle}" onerror="this.outerHTML='<span>${initials}</span>'"/>`;
-    } else {
-      mAvatarWrap.innerHTML = `<span>${initials}</span>`;
-    }
+    mAvatarWrap.innerHTML = m.avatar 
+      ? `<img src="${m.avatar}" alt="${m.handle}" onerror="this.outerHTML='<span>${initials}</span>'"/>`
+      : `<span>${initials}</span>`;
   }
 
   if (mHandle) mHandle.textContent = (m.handle || '').toUpperCase();
   if (mFullName) mFullName.textContent = m.fullName || '';
-  
   if (mStatus) {
     mStatus.textContent = (m.status || '').toUpperCase();
-    const statusClass = m.status === 'active' ? '' : (m.status === 'on leave' ? 'on-leave' : 'inactive');
-    mStatus.className = `status-badge ${statusClass}`;
+    mStatus.className = `status-badge ${m.status === 'active' ? '' : (m.status === 'on leave' ? 'on-leave' : 'inactive')}`;
   }
-
   if (mRole) mRole.textContent = (m.role || '').toUpperCase();
   if (mTeam) mTeam.textContent = (m.team || '').toUpperCase();
   if (mLoc) mLoc.textContent = `HUB: ${(m.location || '').toUpperCase()}`;
 
   const birthYear = parseInt(m.dob);
   const currentYear = new Date().getFullYear();
-  const ageDisplay = isNaN(birthYear) ? (m.dob || '--') : `${m.dob} (${currentYear - birthYear} yo)`;
-
-  if (mDob) mDob.textContent = ageDisplay;
+  if (mDob) mDob.textContent = isNaN(birthYear) ? (m.dob || '--') : `${m.dob} (${currentYear - birthYear} yo)`;
   if (mGen) mGen.textContent = `GEN ${m.gen || '--'}`;
   if (mEmail) mEmail.textContent = m.email || 'N/A';
+  
+  // Hiển thị Note (Chỉ xem)
+  if (mNote) mNote.textContent = m.note || 'None recorded';
 
   if (mWorksContainer) {
     if (m.masterpieces && m.masterpieces.length > 0) {
@@ -306,7 +266,7 @@ function openDossier(memberId) {
         </a>
       `).join('');
     } else {
-      mWorksContainer.innerHTML = `<p class="sig-empty-notice">Chưa có bài viết nổi bật nào được ghim. Sẵn sàng cho siêu phẩm tiếp theo!</p>`;
+      mWorksContainer.innerHTML = `<p class="sig-empty-notice">No featured articles assigned yet.</p>`;
     }
   }
 
@@ -318,32 +278,74 @@ function closeDossier() {
   currentViewingMemberId = null;
 }
 
-// --- LOGIC CHỈNH SỬA PROFILE & HALL OF FAME ---
+// MỞ MODAL SỬA CHỈ CHO PHÉP SỬA HALL OF FAME
+// MỞ MODAL SỬA: LẤY AVATAR VÀ HALL OF FAME HIỆN TẠI
 btnOpenEditMember?.addEventListener('click', () => {
   const m = rosterData.find(item => String(item.id) === String(currentViewingMemberId));
   if (!m) return;
 
   const currentAdmin = localStorage.getItem('gl_current_user') || 'Vinci';
-
-  // Nếu sửa bài của người khác -> Yêu cầu nhập PIN Admin 2026
   if (m.handle.toLowerCase() !== currentAdmin.toLowerCase()) {
-    const pin = prompt(`Bạn đang sửa Profile của [${m.handle}].\nNếu không phải chính chủ, vui lòng nhập mã PIN Admin:`);
+    const pin = prompt(`Editing Profile for [${m.handle}].\nIf this is not your profile, please enter Admin PIN:`);
     if (pin !== '2026') {
-      if (pin !== null) alert("Sai mã PIN Admin!");
+      if (pin !== null) alert("Incorrect Admin PIN!");
       return;
     }
   }
 
   document.getElementById('edit-m-id').value = m.id;
-  document.getElementById('edit-m-handle').value = m.handle;
-  document.getElementById('edit-m-fullname').value = m.fullName;
-  document.getElementById('edit-m-dob').value = m.dob;
-  document.getElementById('edit-m-loc').value = m.location;
-  document.getElementById('edit-m-status').value = m.status;
-  document.getElementById('edit-m-avatar').value = m.avatar || '';
+  if (editHandleTitle) editHandleTitle.textContent = m.handle.toUpperCase();
+
+  // Đổ link avatar hiện tại vào input
+  const avatarInput = document.getElementById('edit-m-avatar');
+  if (avatarInput) avatarInput.value = m.avatar || '';
 
   renderEditWorksInputs(m.masterpieces || []);
   editModal.classList.add('active');
+});
+
+btnCloseEditModal?.addEventListener('click', () => editModal.classList.remove('active'));
+
+// LƯU CẢ LINK AVATAR VÀ DANH SÁCH HALL OF FAME XUỐNG DATABASE
+formEditMember?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('edit-m-id').value;
+  const submitBtn = document.getElementById('btn-save-member');
+  submitBtn.innerText = 'SAVING...';
+  submitBtn.disabled = true;
+
+  // 1. Lấy link Avatar
+  const avatarUrl = document.getElementById('edit-m-avatar').value.trim();
+
+  // 2. Lấy danh sách bài viết Hall of Fame
+  const rows = editWorksList.querySelectorAll('.edit-work-row');
+  const masterpieces = [];
+  rows.forEach(r => {
+    const t = r.querySelector('.work-title').value.trim();
+    const u = r.querySelector('.work-url').value.trim();
+    if (t && u) masterpieces.push({ title: t, url: u });
+  });
+
+  // 3. Cập nhật đồng thời avatar và masterpieces vào Supabase
+  const { error } = await sb
+    .from('squad_members')
+    .update({ 
+      avatar: avatarUrl,
+      masterpieces: masterpieces, 
+      updated_at: new Date() 
+    })
+    .eq('id', id);
+
+  if (error) {
+    alert("Error updating profile: " + error.message);
+  } else {
+    editModal.classList.remove('active');
+    fetchRosterData();
+    alert("PROFILE & HALL OF FAME UPDATED SUCCESSFULLY!");
+  }
+
+  submitBtn.innerText = 'SAVE PROFILE CHANGES';
+  submitBtn.disabled = false;
 });
 
 btnCloseEditModal?.addEventListener('click', () => editModal.classList.remove('active'));
@@ -358,9 +360,9 @@ function addWorkRow(title = '', url = '') {
   row.className = 'edit-work-row';
   row.style.cssText = 'display:flex; gap:6px; align-items:center;';
   row.innerHTML = `
-    <input type="text" class="work-title" placeholder="Tiêu đề bài viết..." value="${escapeHtml(title)}" style="flex:1.5; padding:6px; border:1.5px solid #000; font-size:0.85rem;" required/>
-    <input type="url" class="work-url" placeholder="https://facebook.com/..." value="${escapeHtml(url)}" style="flex:1; padding:6px; border:1.5px solid #000; font-size:0.85rem;" required/>
-    <button type="button" class="btn-del-work" style="background:none; border:none; color:red; cursor:pointer; font-size:1.1rem;" title="Xóa bài này">✕</button>
+    <input type="text" class="work-title" placeholder="Article Title..." value="${escapeHtml(title)}" style="flex:1.6; padding:8px; border:2px solid #000; font-size:0.85rem;" required/>
+    <input type="url" class="work-url" placeholder="https://..." value="${escapeHtml(url)}" style="flex:1; padding:8px; border:2px solid #000; font-size:0.85rem;" required/>
+    <button type="button" class="btn-del-work" style="background:none; border:none; color:red; cursor:pointer; font-size:1.2rem; padding:0 4px;" title="Delete">✕</button>
   `;
   row.querySelector('.btn-del-work').onclick = () => row.remove();
   editWorksList.appendChild(row);
@@ -368,14 +370,14 @@ function addWorkRow(title = '', url = '') {
 
 btnAddWorkItem?.addEventListener('click', () => addWorkRow('', ''));
 
+// CHỈ CẬP NHẬT TRƯỜNG MASTERPIECES VÀO DATABASE
 formEditMember?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('edit-m-id').value;
   const submitBtn = document.getElementById('btn-save-member');
-  submitBtn.innerText = 'ĐANG LƯU...';
+  submitBtn.innerText = 'SAVING...';
   submitBtn.disabled = true;
 
-  // Gom danh sách bài viết Hall of Fame
   const rows = editWorksList.querySelectorAll('.edit-work-row');
   const masterpieces = [];
   rows.forEach(r => {
@@ -384,31 +386,24 @@ formEditMember?.addEventListener('submit', async (e) => {
     if (t && u) masterpieces.push({ title: t, url: u });
   });
 
-  const updatePayload = {
-    full_name: document.getElementById('edit-m-fullname').value.trim(),
-    dob: document.getElementById('edit-m-dob').value.trim(),
-    location: document.getElementById('edit-m-loc').value,
-    status: document.getElementById('edit-m-status').value,
-    avatar: document.getElementById('edit-m-avatar').value.trim(),
-    masterpieces: masterpieces,
-    updated_at: new Date()
-  };
-
-  const { error } = await sb.from('squad_members').update(updatePayload).eq('id', id);
+  const { error } = await sb
+    .from('squad_members')
+    .update({ masterpieces: masterpieces, updated_at: new Date() })
+    .eq('id', id);
 
   if (error) {
-    alert("Lỗi khi cập nhật profile: " + error.message);
+    alert("Error updating Hall of Fame: " + error.message);
   } else {
     editModal.classList.remove('active');
     fetchRosterData();
-    alert("ĐÃ CẬP NHẬT PROFILE & HALL OF FAME THÀNH CÔNG!");
+    alert("HALL OF FAME UPDATED SUCCESSFULLY!");
   }
 
-  submitBtn.innerText = 'LƯU THAY ĐỔI';
+  submitBtn.innerText = 'SAVE HALL OF FAME';
   submitBtn.disabled = false;
 });
 
-// --- EVENTS ---
+// Setup Events
 function setupEvents() {
   searchInput?.addEventListener('input', (e) => {
     searchQuery = e.target.value.trim();
@@ -465,19 +460,6 @@ function setupEvents() {
     renderAll();
   });
 
-  document.querySelectorAll('.sortable-th').forEach(th => {
-    th.addEventListener('click', () => {
-      const clickedCol = th.dataset.sort;
-      if (sortCol === clickedCol) {
-        sortAsc = !sortAsc;
-      } else {
-        sortCol = clickedCol;
-        sortAsc = true;
-      }
-      renderAll();
-    });
-  });
-
   gridContainer?.addEventListener('click', (e) => {
     const card = e.target.closest('.member-card');
     if (card) openDossier(card.dataset.id);
@@ -489,9 +471,7 @@ function setupEvents() {
   });
 
   modalCloseBtn?.addEventListener('click', closeDossier);
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) closeDossier();
-  });
+  modal?.addEventListener('click', (e) => { if (e.target === modal) closeDossier(); });
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeDossier();
@@ -513,14 +493,20 @@ function setupEvents() {
     activeTeam = 'all';
     activeLoc = 'all';
     activeStatus = 'all';
-    sortCol = 'role';
-    sortAsc = true;
     document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('#team-chips [data-filter="all"]')?.classList.add('active');
     document.querySelector('#location-chips [data-loc="all"]')?.classList.add('active');
     document.querySelector('#status-chips [data-status="all"]')?.classList.add('active');
     renderAll();
   });
+
+  window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeDossier();
+    editModal?.classList.remove('active');
+    avatarModal?.classList.remove('active'); // Thêm dòng này
+  }
+});
 }
 
 function escapeHtml(str) {
@@ -532,15 +518,56 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
-// Bật đồng bộ Realtime cho cả team
+// ==========================================
+// AVATAR LIGHTBOX VIEWER
+// ==========================================
+const avatarModal = document.getElementById('avatar-viewer-modal');
+const btnCloseAvatarModal = document.getElementById('btn-close-avatar-modal');
+const avModalContent = document.getElementById('av-modal-content');
+const avModalTitle = document.getElementById('av-modal-title');
+const btnOpenAvatarRaw = document.getElementById('btn-open-avatar-raw');
+
+// Bấm vào ô avatar trong Scouting Report Dossier
+mAvatarWrap?.addEventListener('click', () => {
+  const m = rosterData.find(item => String(item.id) === String(currentViewingMemberId));
+  if (!m || !avatarModal) return;
+
+  const initials = (m.handle || 'GL').substring(0, 2).toUpperCase();
+  if (avModalTitle) avModalTitle.innerHTML = `<i class="fa-solid fa-image"></i> ${escapeHtml(m.handle.toUpperCase())}'S AVATAR`;
+
+  if (m.avatar && m.avatar.trim() !== '') {
+    // Trường hợp 1: Có ảnh avatar thật
+    avModalContent.innerHTML = `
+      <img src="${m.avatar}" alt="${escapeHtml(m.handle)}" style="max-width: 100%; max-height: 60vh; object-fit: contain; border: 3px solid var(--neo-yellow); box-shadow: 6px 6px 0 #000;" onerror="this.outerHTML='<div class=\\'avatar-box\\' style=\\'width:200px;height:200px;font-size:5rem;border:3px solid #fff;\\'><span>${initials}</span></div>'"/>
+    `;
+    if (btnOpenAvatarRaw) {
+      btnOpenAvatarRaw.href = m.avatar;
+      btnOpenAvatarRaw.style.display = 'inline-flex';
+    }
+  } else {
+    // Trường hợp 2: Chưa gắn link ảnh -> Hiển thị huy hiệu Monogram chữ to nguyên bản
+    avModalContent.innerHTML = `
+      <div class="avatar-box" style="width: 220px; height: 220px; font-size: 5.5rem; background: var(--neo-blue); border: 4px solid #fff; box-shadow: 8px 8px 0 var(--neo-yellow);">
+        <span>${initials}</span>
+      </div>
+    `;
+    if (btnOpenAvatarRaw) {
+      btnOpenAvatarRaw.style.display = 'none';
+    }
+  }
+
+  avatarModal.classList.add('active');
+});
+
+// Đóng modal Avatar
+btnCloseAvatarModal?.addEventListener('click', () => avatarModal?.classList.remove('active'));
+avatarModal?.addEventListener('click', (e) => {
+  if (e.target === avatarModal) avatarModal.classList.remove('active');
+});
+
 sb.channel('realtime_squad_members')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_members' }, fetchRosterData)
   .subscribe();
-
-// Tự động làm mới khi mở lại điện thoại
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') fetchRosterData();
-});
 
 setupEvents();
 fetchRosterData();

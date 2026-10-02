@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
   <link rel="stylesheet" href="css/roster.css"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body class="roster-body">
 
@@ -30,7 +31,15 @@
         </div>
       </div>
 
-      <div class="nav-metrics">
+      <div class="nav-metrics" style="align-items: center;">
+        <span class="status-indicator">
+            <span class="pulse-dot"></span>
+            <span id="current-user-display">ADMIN: ?</span>
+        </span>
+        <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
+            <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+        </button>
+
         <div class="metric-card">
           <span class="m-num" id="stat-total">0</span>
           <span class="m-lbl">TOTAL ROSTER</span>
@@ -39,6 +48,12 @@
           <span class="m-num" id="stat-active">0</span>
           <span class="m-lbl">ACTIVE</span>
         </div>
+
+        <!-- Nút sang trang Admin Portal -->
+        <a href="roster-admin.html" class="btn-back" style="width: auto; padding: 0 16px; gap: 8px; font-size: 0.9rem;" title="Master Admin Management">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>ADMIN PORTAL</span>
+        </a>
       </div>
     </header>
 
@@ -95,10 +110,8 @@
 
     <!-- Main Content Area -->
     <main class="roster-stage">
-      <!-- Grid Container -->
       <div id="roster-grid" class="cards-grid"></div>
 
-      <!-- Table Container -->
       <div id="roster-table-wrap" class="table-wrap hidden">
         <table class="neo-table">
           <thead>
@@ -117,7 +130,6 @@
         </table>
       </div>
 
-      <!-- Empty State Fallback -->
       <div id="empty-results" class="empty-state hidden">
         <div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>
         <h3>NO MEMBERS FOUND</h3>
@@ -173,6 +185,11 @@
               </button>
             </div>
           </div>
+          <!-- Cột Note hiển thị chỉ xem -->
+          <div class="meta-item full-width" id="m-note-box">
+            <span class="meta-key">ADMIN MEMO / NOTE</span>
+            <span class="meta-val" id="m-note" style="color: #b71515; font-family: var(--font-mono);">--</span>
+          </div>
         </div>
 
         <!-- Hall of Fame Section -->
@@ -184,83 +201,57 @@
           <div class="sig-works-list" id="m-works-container"></div>
         </div>
 
-        <!-- Open Edit Modal Button -->
         <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
           <button id="btn-open-edit-member" class="btn-inspect" style="padding: 10px 16px; font-size: 0.95rem; width: 100%;">
-            <i class="fa-solid fa-pen-to-square"></i> UPDATE PROFILE &amp; HALL OF FAME
+            <i class="fa-solid fa-pen-to-square"></i> EDIT AVATAR &amp; HALL OF FAME
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: EDIT PROFILE & HALL OF FAME -->
+  <!-- MODAL: EDIT AVATAR & HALL OF FAME -->
   <div id="edit-member-modal" class="modal-backdrop">
-    <div class="dossier-card" style="max-width: 620px;">
-      <div class="dossier-header" style="background: var(--neo-purple);">
-        <div class="dossier-tag">EDIT PROFILE &amp; HALL OF FAME</div>
+    <div class="dossier-card" style="max-width: 580px;">
+      <div class="dossier-header" style="background: var(--neo-yellow);">
+        <div class="dossier-tag">EDIT AVATAR &amp; HALL OF FAME</div>
         <button id="btn-close-edit-member" class="btn-close-modal">✕</button>
       </div>
 
       <form id="form-edit-member" class="dossier-body">
         <input type="hidden" id="edit-m-id"/>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-          <div class="meta-item">
-            <span class="meta-key">NICKNAME (HANDLE):</span>
-            <input type="text" id="edit-m-handle" readonly style="background:#eee; font-weight:900; padding:8px; border:2px solid #000; outline:none;"/>
+        <div style="background: #fafafa; border: 2px solid #000; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-family: var(--font-mono); font-size: 0.72rem; color: #666; font-weight: 800; display: block;">MEMBER HANDLE:</span>
+            <strong id="edit-m-handle-title" style="font-family: var(--font-cond); font-size: 1.4rem; letter-spacing: 0.04em;">--</strong>
           </div>
-          <div class="meta-item">
-            <span class="meta-key">FULL NAME:</span>
-            <input type="text" id="edit-m-fullname" style="padding:8px; border:2px solid #000; font-family:var(--font-main); outline:none;"/>
-          </div>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; background: var(--neo-black); color: #fff; padding: 3px 8px; font-weight: 800;">PROFILE LOCKED</span>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
-          <div class="meta-item">
-            <span class="meta-key">BIRTH YEAR:</span>
-            <input type="text" id="edit-m-dob" placeholder="e.g. 2003" style="padding:8px; border:2px solid #000; font-family:var(--font-mono); outline:none;"/>
-          </div>
-          <div class="meta-item">
-            <span class="meta-key">HUB / LOCATION:</span>
-            <select id="edit-m-loc" style="padding:8px; border:2px solid #000; font-family:var(--font-main); font-weight:700; outline:none;">
-              <option value="HCM">HCM</option>
-              <option value="Hanoi">Hanoi</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div class="meta-item">
-            <span class="meta-key">STATUS:</span>
-            <select id="edit-m-status" style="padding:8px; border:2px solid #000; font-family:var(--font-main); font-weight:700; outline:none;">
-              <option value="active">ACTIVE</option>
-              <option value="on leave">ON LEAVE</option>
-              <option value="inactive">INACTIVE</option>
-            </select>
-          </div>
-        </div>
-
+        <!-- Ô NHẬP LINK AVATAR -->
         <div class="meta-item">
-          <span class="meta-key">AVATAR IMAGE URL (OPTIONAL):</span>
-          <input type="text" id="edit-m-avatar" placeholder="https://..." style="padding:8px; border:2px solid #000; outline:none;"/>
+          <span class="meta-key">AVATAR IMAGE URL:</span>
+          <input type="text" id="edit-m-avatar" placeholder="https://... (Direct image link)" style="padding: 8px 10px; border: 2px solid #000; font-family: var(--font-mono); font-size: 0.85rem; width: 100%; outline: none;"/>
         </div>
 
-        <!-- Hall of Fame Entries Repeater -->
-        <div style="background:#fffbe6; border:2px solid #000; padding:14px; margin-top:8px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <strong style="font-family:var(--font-cond); font-size:1.1rem;">
-              <i class="fa-solid fa-crown" style="color:var(--neo-orange);"></i> HALL OF FAME ARTICLES
+        <!-- KHU VỰC SỬA HALL OF FAME -->
+        <div style="background:#fffbe6; border: 2px solid #000; padding: 14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <strong style="font-family:var(--font-cond); font-size:1.15rem;">
+              <i class="fa-solid fa-crown" style="color:var(--neo-orange);"></i> PINNED ARTICLES
             </strong>
-            <button type="button" id="btn-add-work-item" class="btn-inspect" style="padding:4px 8px; font-size:0.8rem;">
+            <button type="button" id="btn-add-work-item" class="btn-inspect" style="padding:5px 10px; font-size:0.82rem;">
               + ADD ARTICLE
             </button>
           </div>
           
           <div id="edit-works-list" style="display:flex; flex-direction:column; gap:8px;">
-            <!-- Rendered via JS -->
+            <!-- Render via JS -->
           </div>
         </div>
 
-        <div style="margin-top:12px;">
+        <div style="margin-top: 10px;">
           <button type="submit" id="btn-save-member" class="btn-inspect" style="width:100%; padding:12px; background:var(--neo-green); font-size:1.1rem;">
             SAVE PROFILE CHANGES
           </button>
@@ -269,9 +260,28 @@
     </div>
   </div>
 
-  <!-- Supabase & Scripts -->
+  <!-- MODAL: AVATAR VIEWER (LIGHTBOX PHÓNG TO) -->
+  <div id="avatar-viewer-modal" class="modal-backdrop" style="z-index: 1200;">
+    <div class="dossier-card" style="max-width: 440px; background: #111; border-color: #000;">
+      <div class="dossier-header" style="background: var(--neo-yellow); color: #000;">
+        <div class="dossier-tag" id="av-modal-title"><i class="fa-solid fa-image"></i> AVATAR PREVIEW</div>
+        <button id="btn-close-avatar-modal" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="dossier-body" style="padding: 24px; text-align: center; background: #18181b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;">
+        <!-- Nơi JS nhúng ảnh lớn hoặc Monogram lớn -->
+        <div id="av-modal-content" style="width: 100%; display: flex; justify-content: center; align-items: center;"></div>
+
+        <!-- Nút mở link gốc sang tab mới (khi là ảnh thật) -->
+        <a id="btn-open-avatar-raw" href="" target="_blank" rel="noopener noreferrer" class="btn-inspect" style="display: none; padding: 8px 16px; font-size: 0.9rem; text-decoration: none;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> MỞ ẢNH GỐC
+        </a>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="js/roster.js"></script>
   <script src="js/identity.js"></script>
+  <script type="module" src="js/roster.js"></script>
 </body>
 </html>

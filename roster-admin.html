@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Master Squad Management | Goal-Line Studio</title>
+  <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="css/roster.css"/>
+  <style>
+    .admin-table th { background: #000; color: #fff; font-family: var(--font-cond); padding: 10px; border: 1px solid #333; font-size: 0.95rem; }
+    .admin-table td { padding: 8px 10px; border: 1.5px solid #000; font-size: 0.88rem; vertical-align: middle; }
+    .badge-role { padding: 2px 6px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 800; border: 1.5px solid #000; }
+    .note-text { color: #d63031; font-family: var(--font-mono); font-weight: 800; font-size: 0.8rem; }
+  </style>
+</head>
+<body class="roster-body">
+
+  <div class="roster-container" style="max-width: 1500px;">
+    <!-- Top Header -->
+    <header class="roster-nav">
+      <div class="nav-left">
+        <a href="roster.html" class="btn-back" title="Back to Squad Directory">
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div class="nav-title-group">
+          <div class="title-with-badge">
+            <span class="logo-box" style="background:#ff4757; color:#fff;">MAS</span>
+            <h1>SQUAD CONTROL CENTER</h1>
+          </div>
+          <span class="sub-badge">DATABASE OVERWRITE &amp; FULL CREDENTIALS</span>
+        </div>
+      </div>
+
+      <div class="nav-metrics" style="align-items: center;">
+        <button id="btn-add-new-member" class="btn-back" style="width: auto; padding: 0 16px; background: var(--neo-green); color: #000; font-size: 0.95rem;">
+          <i class="fa-solid fa-user-plus"></i> ADD MEMBER
+        </button>
+        <button id="btn-lock-session" class="btn-back" style="background: #ff4757; color:#fff;" title="Lock Portal">
+          <i class="fa-solid fa-lock"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Filter Bar -->
+    <section class="control-dock">
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center;">
+        <div class="search-box" style="flex:1; max-width:450px;">
+          <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+          <input type="text" id="admin-search" placeholder="Search by handle, real name, email, note..." autocomplete="off"/>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button class="chip-btn active" data-admin-status="all">ALL (<span id="cnt-all">0</span>)</button>
+          <button class="chip-btn" data-admin-status="active">ACTIVE (<span id="cnt-active">0</span>)</button>
+          <button class="chip-btn" data-admin-status="on leave">ON LEAVE (<span id="cnt-leave">0</span>)</button>
+          <button class="chip-btn" data-admin-status="inactive">INACTIVE (<span id="cnt-inactive">0</span>)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Master Table -->
+    <main class="table-wrap">
+      <table class="neo-table admin-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">ID</th>
+            <th style="width: 130px;">ADMIN / HANDLE</th>
+            <th style="width: 80px;">DOB</th>
+            <th>FULL NAME</th>
+            <th>EMAIL</th>
+            <th style="width: 120px;">ROLE</th>
+            <th style="width: 120px;">TEAM</th>
+            <th style="width: 110px;">GEN</th>
+            <th style="width: 80px;">HUB</th>
+            <th style="width: 90px;">STATUS</th>
+            <th style="width: 180px;">NOTE / MEMO</th>
+            <th style="width: 100px; text-align:center;">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="admin-table-body">
+          <!-- JS Render -->
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <!-- FULL EDIT / CREATE MEMBER MODAL -->
+  <div id="admin-edit-modal" class="modal-backdrop">
+    <div class="dossier-card" style="max-width: 650px;">
+      <div class="dossier-header" style="background: var(--neo-yellow);">
+        <div class="dossier-tag" id="admin-modal-title">EDIT MEMBER INFORMATION</div>
+        <button id="btn-close-admin-edit" class="btn-close-modal">✕</button>
+      </div>
+
+      <form id="form-admin-save" class="dossier-body">
+        <input type="hidden" id="adm-id"/>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="meta-item">
+            <span class="meta-key">NICKNAME (HANDLE):</span>
+            <input type="text" id="adm-handle" required style="padding:8px; border:2px solid #000; font-weight:800;"/>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">FULL NAME:</span>
+            <input type="text" id="adm-fullname" style="padding:8px; border:2px solid #000;"/>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:12px;">
+          <div class="meta-item">
+            <span class="meta-key">BIRTH YEAR (DOB):</span>
+            <input type="text" id="adm-dob" placeholder="1999 / 2003" style="padding:8px; border:2px solid #000; font-family:var(--font-mono);"/>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">OFFICIAL EMAIL:</span>
+            <input type="email" id="adm-email" style="padding:8px; border:2px solid #000; font-family:var(--font-mono);"/>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
+          <div class="meta-item">
+            <span class="meta-key">ROLE:</span>
+            <select id="adm-role" style="padding:8px; border:2px solid #000; font-weight:700;">
+              <option value="CEO">CEO</option>
+              <option value="COO">COO</option>
+              <option value="Creative Director">Creative Director</option>
+              <option value="Executive Support">Executive Support</option>
+              <option value="Content">Content</option>
+              <option value="Design">Design</option>
+              <option value="Video Editor">Video Editor</option>
+              <option value="Publisher">Publisher</option>
+            </select>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">TEAM / DEPT:</span>
+            <select id="adm-team" style="padding:8px; border:2px solid #000; font-weight:700;">
+              <option value="Executive">Executive</option>
+              <option value="Management">Management</option>
+              <option value="Production">Production</option>
+              <option value="Support">Support</option>
+            </select>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">HUB / LOCATION:</span>
+            <input type="text" id="adm-location" placeholder="HCM / Hanoi / ..." style="padding:8px; border:2px solid #000; font-weight:700;"/>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="meta-item">
+            <span class="meta-key">GEN / JOIN DATE:</span>
+            <input type="text" id="adm-gen" placeholder="e.g. 7 - 1/12/2025" style="padding:8px; border:2px solid #000; font-family:var(--font-mono);"/>
+          </div>
+          <div class="meta-item">
+            <span class="meta-key">STATUS:</span>
+            <select id="adm-status" style="padding:8px; border:2px solid #000; font-weight:700;">
+              <option value="active">ACTIVE</option>
+              <option value="on leave">ON LEAVE</option>
+              <option value="inactive">INACTIVE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="meta-item">
+          <span class="meta-key">ADMIN MEMO / NOTE:</span>
+          <input type="text" id="adm-note" placeholder="e.g. 2 tuần 1 bài, đầu 2027, off thi..." style="padding:8px; border:2px solid #b71515; background:#fff8e7; font-weight:800;"/>
+        </div>
+
+        <div class="meta-item">
+          <span class="meta-key">AVATAR IMAGE URL:</span>
+          <input type="text" id="adm-avatar" placeholder="https://..." style="padding:8px; border:2px solid #000;"/>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <button type="submit" id="btn-adm-submit" class="btn-inspect" style="width:100%; padding:12px; background:var(--neo-green); font-size:1.1rem;">
+            SAVE TO DATABASE
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/roster-admin.js"></script>
+</body>
+</html>

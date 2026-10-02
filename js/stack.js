@@ -46,7 +46,7 @@ async function loadPostsFromDB() {
 }
 
 // ==========================================
-// RENDER BẢNG STACK VÀ CHECKBOX
+// RENDER BẢNG STACK VÀ XỬ LÝ ẢNH / LINK DRIVE
 // ==========================================
 function renderTable() {
   const tbody = document.getElementById('stack-table-body');
@@ -55,10 +55,14 @@ function renderTable() {
 
   const filtered = posts.filter(p => activeFilter === 'all' || p.status === activeFilter);
 
-  // Cập nhật số đếm
-  document.getElementById('count-all').innerText = posts.length;
-  document.getElementById('count-unapproved').innerText = posts.filter(p => p.status === 'unapproved').length;
-  document.getElementById('count-approved').innerText = posts.filter(p => p.status === 'approved').length;
+  // Cập nhật số lượng bài trên các Tab bộ lọc
+  const countAll = document.getElementById('count-all');
+  const countUnapproved = document.getElementById('count-unapproved');
+  const countApproved = document.getElementById('count-approved');
+
+  if (countAll) countAll.innerText = posts.length;
+  if (countUnapproved) countUnapproved.innerText = posts.filter(p => p.status === 'unapproved').length;
+  if (countApproved) countApproved.innerText = posts.filter(p => p.status === 'approved').length;
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; font-weight:700;">CHƯA CÓ BÀI VIẾT NÀO TRONG MỤC NÀY</td></tr>`;
@@ -74,7 +78,28 @@ function renderTable() {
       : `<span class="badge-status badge-unapproved">CHƯA DUYỆT</span>`;
 
     const isChecked = selectedPostIds.has(post.id) ? 'checked' : '';
-    const hasValidImage = post.imgUrl && post.imgUrl.startsWith('http');
+
+    // Xử lý hiển thị cột HÌNH ẢNH (Tự nhận diện Google Drive hoặc URL ảnh trực tiếp)
+    let imageCellMarkup = `<span style="font-size:0.75rem; color:#888;">(Chưa có ảnh)</span>`;
+    if (post.imgUrl && post.imgUrl.trim() !== '') {
+      const cleanUrl = post.imgUrl.trim();
+      if (cleanUrl.includes('drive.google.com')) {
+        imageCellMarkup = `
+          <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="slot-pill" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:var(--neo-yellow); color:#000; font-size:0.75rem; font-weight:900;" title="Mở thư mục Google Drive">
+            <i class="fa-brands fa-google-drive"></i> Link Drive
+          </a>
+        `;
+      } else if (cleanUrl.startsWith('http')) {
+        const safeTitle = (post.title || '').replace(/'/g, "\\'");
+        imageCellMarkup = `
+          <div class="img-thumb-box img-thumb-clickable" onclick="openImageViewer('${cleanUrl}', '${safeTitle}')" title="Click để phóng to ảnh">
+            <img src="${cleanUrl}" alt="Thumbnail" onerror="this.parentElement.innerHTML='<a href=\\'${cleanUrl}\\' target=\\'_blank\\' style=\\'font-size:0.75rem; color:#0984e3; font-weight:800;\\'>🔗 Mở link</a>'">
+          </div>
+        `;
+      }
+    }
+
+    const safeTitleForCopy = (post.title || '').replace(/'/g, "\\'");
 
     tr.innerHTML = `
       <td style="text-align: center;">
@@ -89,27 +114,23 @@ function renderTable() {
         ${statusBadge}
       </td>
       <td>
-        ${hasValidImage ? `
-          <div class="img-thumb-box img-thumb-clickable" onclick="openImageViewer('${post.imgUrl}', '${post.title}')" title="Click xem ảnh to">
-            <img src="${post.imgUrl}" alt="Thumbnail" onerror="this.parentElement.innerHTML='(Nhấn tải để xem)'">
-          </div>
-        ` : `<span style="font-size:0.75rem; color:#888;">(Chưa có ảnh)</span>`}
+        ${imageCellMarkup}
       </td>
       <td><strong>${post.designer}</strong></td>
       <td style="font-size:0.85rem; max-width:180px;">${post.note}</td>
       <td><span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700;">${post.scheduleNote}</span></td>
       <td>
         <div class="table-actions">
-          <button class="btn-action-icon" title="Đọc duyệt bài" onclick="openReader('${post.id}')">
+          <button class="btn-action-icon" title="Đọc & duyệt bài" onclick="openReader('${post.id}')">
             <i class="fa-solid fa-eye"></i>
           </button>
           <button class="btn-action-icon" title="Chỉnh sửa mọi thông tin" onclick="openEditModal('${post.id}')" style="color:#0984e3;">
             <i class="fa-solid fa-pen-to-square"></i>
           </button>
-          <button class="btn-action-icon" title="Copy tiêu đề" onclick="copyText('${post.title}')">
+          <button class="btn-action-icon" title="Copy tiêu đề" onclick="copyText('${safeTitleForCopy}')">
             <i class="fa-solid fa-copy"></i>
           </button>
-          <button class="btn-action-icon" style="color:red;" title="Xóa bài này" onclick="deleteSinglePost('${post.id}')">
+          <button class="btn-action-icon" style="color:red;" title="Xóa bài viết" onclick="deleteSinglePost('${post.id}')">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
@@ -118,7 +139,7 @@ function renderTable() {
     tbody.appendChild(tr);
   });
 
-  // Gắn sự kiện checkbox từng dòng
+  // Gắn sự kiện chọn Checkbox cho từng dòng
   document.querySelectorAll('.row-checkbox').forEach(cb => {
     cb.onchange = (e) => {
       const id = e.target.dataset.id;
@@ -132,6 +153,27 @@ function renderTable() {
   });
 
   updateBatchDeleteUI();
+}
+
+// ==========================================
+// HÀM CẬP NHẬT GIAO DIỆN CHỌN NHIỀU BÀI (SELECT)
+// ==========================================
+function updateBatchDeleteUI() {
+  const btnBatch = document.getElementById('btn-batch-delete');
+  const countEl = document.getElementById('selected-count');
+  const checkAllBox = document.getElementById('check-all');
+
+  const count = selectedPostIds.size;
+  if (countEl) countEl.innerText = count;
+
+  if (btnBatch) {
+    btnBatch.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+
+  const visibleRowBoxes = document.querySelectorAll('.row-checkbox');
+  if (checkAllBox) {
+    checkAllBox.checked = visibleRowBoxes.length > 0 && Array.from(visibleRowBoxes).every(cb => cb.checked);
+  }
 }
 
 // Cập nhật trạng thái nút xóa hàng loạt và Check All
@@ -380,49 +422,68 @@ const addModal = document.getElementById('post-modal');
 document.getElementById('btn-open-modal').onclick = () => addModal.classList.add('active');
 document.getElementById('btn-close-modal').onclick = () => addModal.classList.remove('active');
 
-document.getElementById('form-add-post').onsubmit = async (e) => {
-  e.preventDefault();
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  submitBtn.innerText = 'ĐANG ĐẨY LÊN...';
-  submitBtn.disabled = true;
+// Xử lý gửi bài từ form thêm mới
+const formAddPost = document.getElementById('form-add-post');
+if (formAddPost) {
+  formAddPost.onsubmit = async (e) => {
+    e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.innerText = 'ĐANG ĐẨY LÊN...';
+    submitBtn.disabled = true;
 
-  try {
-    let finalImageUrl = '';
-    const file = document.getElementById('input-image-file').files[0];
+    try {
+      // 1. Lấy link nhập tay (Google Drive hoặc URL ảnh)
+      const inputUrlEl = document.getElementById('input-image-url');
+      let finalImageUrl = inputUrlEl ? inputUrlEl.value.trim() : '';
 
-    if (file) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const { error: uploadError } = await window.sb.storage.from('stack-assets').upload(fileName, file);
+      // 2. Nếu có đính kèm file ảnh từ máy thì tải lên Storage
+      const fileInput = document.getElementById('input-image-file');
+      const file = fileInput ? fileInput.files[0] : null;
 
-      if (!uploadError) {
-        const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
-        finalImageUrl = data.publicUrl;
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadError } = await window.sb.storage.from('stack-assets').upload(fileName, file);
+
+        if (!uploadError) {
+          const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
+          finalImageUrl = data.publicUrl;
+        } else {
+          console.error("Lỗi upload ảnh:", uploadError.message);
+        }
       }
+
+      // 3. Đẩy vào bảng stack_posts
+      const newPostData = {
+        author: document.getElementById('input-author').value || localStorage.getItem('gl_current_user') || 'Vinci',
+        designer: document.getElementById('input-designer').value.trim() || '--',
+        title: document.getElementById('input-title').value.trim() || 'Không có tiêu đề',
+        content: document.getElementById('input-full-content').value || '',
+        img_url: finalImageUrl,
+        note: document.getElementById('input-note').value.trim() || '--',
+        schedule_note: document.getElementById('input-schedule-note').value.trim() || '--',
+        status: 'unapproved'
+      };
+
+      const { error: insertErr } = await window.sb.from('stack_posts').insert([newPostData]);
+
+      if (insertErr) {
+        alert("Lỗi khi đẩy vào Stack: " + insertErr.message);
+      } else {
+        e.target.reset();
+        document.getElementById('input-author').value = localStorage.getItem('gl_current_user') || 'Vinci';
+        document.getElementById('post-modal').classList.remove('active');
+        loadPostsFromDB();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Có lỗi xảy ra khi đẩy bài.");
+    } finally {
+      submitBtn.innerText = 'ĐẨY LÊN STACK CHO ANH EM CHECK';
+      submitBtn.disabled = false;
     }
-
-    const newPostData = {
-      author: document.getElementById('input-author').value || 'Vinci',
-      designer: document.getElementById('input-designer').value || '--',
-      title: document.getElementById('input-title').value || 'Không có tiêu đề',
-      content: document.getElementById('input-full-content').value || '',
-      img_url: finalImageUrl,
-      note: document.getElementById('input-note').value || '--',
-      schedule_note: document.getElementById('input-schedule-note').value || '--',
-      status: 'unapproved'
-    };
-
-    await window.sb.from('stack_posts').insert([newPostData]);
-    e.target.reset();
-    document.getElementById('input-author').value = localStorage.getItem('gl_current_user') || 'Vinci';
-    addModal.classList.remove('active');
-  } catch (err) {
-    console.error(err);
-  } finally {
-    submitBtn.innerText = 'ĐẨY LÊN STACK CHO ANH EM CHECK';
-    submitBtn.disabled = false;
-  }
-};
+  };
+}
 
 // Filter Tab
 document.querySelectorAll('.filter-btn').forEach(btn => {

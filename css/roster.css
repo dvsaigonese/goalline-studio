@@ -849,3 +849,27 @@ body.roster-body {
     flex: 1;
   }
 }
+
+/* Hiệu ứng trỏ chuột vào ô Avatar để bấm phóng to */
+.dossier-body .avatar-box {
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.dossier-body .avatar-box:hover {
+  transform: translate(-3px, -3px) scale(1.04);
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.dossier-body .avatar-box::after {
+  content: "🔍";
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: var(--neo-yellow);
+  border: 1.5px solid #000;
+  font-size: 0.75rem;
+  padding: 1px 3px;
+  line-height: 1;
+}
