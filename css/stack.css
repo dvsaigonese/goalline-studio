@@ -431,3 +431,61 @@
   transform: translate(1px, 1px);
   box-shadow: var(--neo-shadow-active);
 }
+
+/* --------------------------------------------------
+   ĐẶC TRỊ CHO BẢNG STACK (stack.html)
+   -------------------------------------------------- */
+
+/* 1. Thanh Header của bảng Stack: Đổi từ Vàng chói sang Xám Than trầm */
+body.dark-mode .neo-table thead {
+  background: #23252e !important;
+  border-bottom: 2px solid #383b45 !important;
+}
+
+body.dark-mode .neo-table th {
+  background: #23252e !important;
+  color: #f3f4f6 !important;
+  border-right: 2px solid #383b45 !important;
+}
+
+body.dark-mode .neo-table td {
+  background: #18191f !important;
+  color: #d1d5db !important;
+  border-color: #262830 !important;
+}
+
+body.dark-mode .neo-table tbody tr:hover {
+  background: #202229 !important;
+}
+
+/* 2. Badge ĐÃ DUYỆT & CHƯA DUYỆT: Tinh tế, không chói lóa */
+body.dark-mode .badge-unapproved {
+  background: #2b2716 !important;        /* Nền vàng khói mờ */
+  color: #fbbf24 !important;             /* Chữ vàng ấm */
+  border: 1.5px solid #634d11 !important;
+}
+
+body.dark-mode .badge-approved {
+  background: #14261d !important;        /* Nền xanh rêu trầm */
+  color: #34d399 !important;             /* Chữ xanh bạc hà dịu mắt */
+  border: 1.5px solid #165b39 !important;
+}
+
+/* 3. Cột Hành Động: Đẩy sáng nút icon để không bị chìm vào nền đen */
+body.dark-mode .table-actions .btn-action-icon {
+  background: #272932 !important;        /* Nền nổi bật rõ rệt trên dòng bảng */
+  border: 1.5px solid #404452 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+  color: #e2e4e9 !important;
+}
+
+body.dark-mode .table-actions .btn-action-icon:hover {
+  background: #323542 !important;
+  border-color: #5b6073 !important;
+  transform: translate(-1px, -1px);
+}
+
+body.dark-mode .btn-action-read i   { color: #38bdf8 !important; } /* Mắt: Xanh dương sáng */
+body.dark-mode .btn-action-edit i   { color: #60a5fa !important; } /* Bút: Xanh lơ */
+body.dark-mode .btn-action-copy i   { color: #cbd5e1 !important; } /* Copy: Trắng bạc */
+body.dark-mode .btn-action-delete i { color: #f87171 !important; } /* Thùng rác: Đỏ dịu */

@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html lang="vi">
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Board | Goal-Line Studio</title>
+    <title>Tactical Board | Goal-Line Studio</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
     
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="./css/board.css" />
-  </head>
-  <body>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/board.css" />
+</head>
+<body class="landing-body board-body">
 
     <!-- PRELOAD FONT -->
     <div class="font-preloader" aria-hidden="true">
@@ -30,31 +30,58 @@
           <button id="btn-continue" class="startup-btn btn-success-neo">
             <i class="fa-solid fa-play"></i>
             <span>CONTINUE PREVIOUS WORK</span>
-            <small>Restore your cached tactical board</small>
+            <small>Khôi phục sơ đồ chiến thuật đã lưu</small>
           </button>
-          <div class="divider-text">— OR NEW TACTIC —</div>
+          <div class="divider-text">— HOẶC TẠO SƠ ĐỒ MỚI —</div>
         </div>
 
         <h2>GOAL-LINE BOARD</h2>
-        <p class="modal-desc">Pick your workspace canvas layout:</p>
+        <p class="modal-desc">Chọn khung sân chiến thuật khởi tạo:</p>
         
         <div class="startup-options">
           <button id="btn-template-mode" class="startup-btn btn-primary-neo">
             <i class="fa-solid fa-layer-group"></i>
             <span>STANDARD PITCH</span>
-            <small>Built-in 2D football pitches</small>
+            <small>Mẫu sân bóng đá 2D chuẩn</small>
           </button>
 
           <button id="btn-custom-mode" class="startup-btn btn-accent-neo">
             <i class="fa-solid fa-upload"></i>
             <span>CUSTOM IMAGE</span>
-            <small>Upload your own formation / photo</small>
+            <small>Tải ảnh sân / sơ đồ riêng của bạn</small>
           </button>
           
           <input type="file" id="custom-img-input" accept="image/*" hidden>
         </div>
       </div>
     </div>
+
+    <!-- TOP NAVIGATION ĐỒNG BỘ -->
+    <header class="top-nav">
+      <div class="brand-badge">
+          <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
+          <div class="brand-text">
+              <span class="studio-title">TACTICAL <em>BOARD</em></span>
+              <span class="system-tag">2D FORMATION & TACTICAL ANALYSIS ENGINE</span>
+          </div>
+      </div>
+
+      <div class="header-status">
+          <button class="btn-neo-back" onclick="toggleDarkMode()" title="Chuyển chế độ Sáng / Tối">
+              <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+          </button>
+          <div class="status-indicator">
+              <span class="pulse-dot"></span>
+              <span id="current-user-display">ADMIN: ?</span>
+          </div>
+          <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
+              <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+          </button>
+          <a href="index.html" class="btn-neo-back">
+              <i class="fa-solid fa-arrow-left"></i> VỀ HOME
+          </a>
+      </div>
+    </header>
 
     <!-- MAIN APP WRAPPER -->
     <div class="app-container">
@@ -69,15 +96,8 @@
         </div>
       </main>
 
-      <!-- 2. BOTTOM TOOLBAR (Ô LOG ĐƯỢC KÉO DÀI TỐI ĐA) -->
+      <!-- 2. BOTTOM TOOLBAR -->
       <nav class="toolbar">
-        <a class="logo" href="index.html" title="Home">
-          <div class="logo-box">GL</div>
-        </a>
-
-        <div class="neo-sep"></div>
-        
-        <!-- Ô LOG CHIẾM TOÀN BỘ KHOẢNG TRỐNG CÒN LẠI -->
         <div class="neo-log-container">
           <span class="log-tag">STATUS</span>
           <span id="editor-log" class="log-text">READY • SELECT & DRAG OBJECTS</span>
@@ -85,17 +105,16 @@
 
         <div class="neo-sep"></div>
 
-        <!-- CÁC NÚT ACTION -->
         <div class="tool-group">
-          <button id="reset-btn" class="tool-action-btn btn-action-orange" title="Reset All Tactics">
+          <button id="reset-btn" class="tool-action-btn btn-action-orange" title="Làm mới toàn bộ chiến thuật">
             <i class="fa-solid fa-rotate-left"></i>
             <span>RESET</span>
           </button>
-          <button id="delete-btn" class="tool-action-btn btn-action-pink" title="Delete Selected Item">
+          <button id="delete-btn" class="tool-action-btn btn-action-pink" title="Xóa phần tử đang chọn">
             <i class="fa-regular fa-trash-can"></i>
             <span>DELETE</span>
           </button>
-          <button id="export-btn" class="tool-action-btn btn-action-green" title="Export High-Res Image">
+          <button id="export-btn" class="tool-action-btn btn-action-green" title="Xuất ảnh chiến thuật">
             <i class="fa-solid fa-download"></i>
             <span>EXPORT</span>
           </button>
@@ -148,8 +167,8 @@
             </select>
             <button id="circle-btn" class="neo-btn-square" title="Add Player/Ball"><i class="fa-solid fa-plus"></i></button>
           </div>
-          <input id="circle-text" class="form-control mt-2" placeholder="Jersey Number (e.g. 10)">
-          <input id="circle-details-text" class="form-control mt-2" placeholder="Player Name (e.g. Messi)">
+          <input id="circle-text" class="form-control mt-2" placeholder="Số áo (e.g. 10)">
+          <input id="circle-details-text" class="form-control mt-2" placeholder="Tên cầu thủ (e.g. Messi)">
           <div class="row-input mt-2">
              <label class="small-label">Font Color:</label>
              <select id="circle-text-color" class="form-control neo-select">
@@ -164,7 +183,6 @@
           <div class="card-badge">TACTICAL ARROWS (<span class="arrow-count">0</span>)</div>
           <label class="section-label">Arrow Controls</label>
           
-          <!-- TOGGLE DRAW ARROW MODE -->
           <label class="neo-toggle-mode" for="draw-arrow-input">
             <input type="checkbox" id="draw-arrow-input" class="tool-checkbox" hidden>
             <div class="toggle-track">
@@ -174,10 +192,9 @@
             </div>
           </label>
 
-          <!-- CHÚ THÍCH HƯỚNG DẪN VẼ MŨI TÊN TRÁNH BỊ 1 CỤC -->
           <div class="tip-banner mt-2">
             <i class="fa-solid fa-circle-info"></i>
-            <span><strong>How to draw:</strong> Toggle ON, <u>click & drag</u> across the pitch to draw the arrow. Do not click and release in place.</span>
+            <span><strong>Cách vẽ:</strong> Bật ON, <u>nhấn & kéo chuột</u> qua sân để vẽ mũi tên.</span>
           </div>
 
           <div class="row-input mt-2">
@@ -211,7 +228,7 @@
             </div>
           </label>
 
-          <button id="closePolygon" class="neo-btn-full btn-action-green mt-2" title="Finish current zone polygon">
+          <button id="closePolygon" class="neo-btn-full btn-action-green mt-2" title="Hoàn tất polygon">
             <i class="fa-solid fa-check"></i>
             <span>FINISH CURRENT ZONE</span>
           </button>
@@ -222,7 +239,7 @@
           <div class="card-badge">LABELS (<span class="text-count">0</span>)</div>
           <label class="section-label">Add Note / Text</label>
           <div class="row-input">
-            <input id="text-input" class="form-control" placeholder="Enter tactical note...">
+            <input id="text-input" class="form-control" placeholder="Nhập ghi chú chiến thuật...">
             <button id="text-btn" class="neo-btn-square" title="Add Text"><i class="fa-solid fa-plus"></i></button>
           </div>
           <div class="row-input mt-2">
@@ -234,12 +251,12 @@
               <option value="48">48px Banner</option>
             </select>
           </div>
-          <small class="tip"><i class="fa-solid fa-circle-info"></i> Shift + Scroll to rotate text</small>
+          <small class="tip"><i class="fa-solid fa-circle-info"></i> Shift + Scroll để xoay chữ</small>
         </div>
       </aside>
     </div>
 
-    <!-- SCRIPTS -->
     <script type="module" src="js/board/board.js"></script>
-  </body>
+    <script src="js/identity.js"></script>
+</body>
 </html>

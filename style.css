@@ -1,3 +1,9 @@
+/* ==============================================================================
+   GOAL-LINE STUDIO - GLOBAL CORE DESIGN SYSTEM (style.css)
+   Dùng chung cho toàn bộ: index.html, stack.html, schedule.html, writer.html...
+   ============================================================================== */
+
+/* 1. TYPOGRAPHY & FONT IMPORTS */
 @font-face {
   font-family: "Albula";
   src: url("assets/fonts/AlbulaProBold.otf?v=1") format("opentype");
@@ -12,8 +18,7 @@
   font-style: normal;
 }
 
-
-
+/* 2. DESIGN TOKENS (NEOBRUTALISM VARIABLES) */
 :root {
   --neo-black: #000000;
   --neo-white: #ffffff;
@@ -42,6 +47,7 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+/* 3. RESET & BASE */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -57,38 +63,14 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Font Awesome Protection */
 .fa, .fas, .far, .fa-solid, .fa-regular, .fa-brands {
   font-family: "Font Awesome 6 Free" !important;
 }
 .fa-solid { font-weight: 900 !important; }
 
-/* ---------------- TICKER BAR ---------------- */
-.neo-ticker {
-  background: var(--neo-black);
-  color: var(--neo-yellow);
-  font-family: var(--font-mono);
-  font-weight: 800;
-  font-size: 0.75rem;
-  padding: 6px 0;
-  border-bottom: var(--neo-border-w) solid var(--neo-black);
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.ticker-track {
-  display: inline-flex;
-  gap: 20px;
-  animation: ticker-slide 28s linear infinite;
-}
-
-@keyframes ticker-slide {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-/* ---------------- WRAPPER & GRID ---------------- */
+/* 4. KHUNG LƯỚI NỀN CARO & CONTAINER FLOATING (TOÀN HỆ THỐNG DÙNG CHUNG) */
 .landing-body {
+  background-color: var(--neo-bg);
   background-image: 
     linear-gradient(var(--neo-black) 1px, transparent 1px),
     linear-gradient(90deg, var(--neo-black) 1px, transparent 1px);
@@ -96,8 +78,10 @@ html, body {
   background-position: -1px -1px;
 }
 
-.landing-wrapper {
-  max-width: 1280px;
+/* Container ôm giữa tạo cảm giác float, không bị bè toàn màn hình */
+.landing-wrapper,
+.schedule-app-container {
+  max-width: 1320px;
   margin: 0 auto;
   padding: 24px 20px 48px;
   min-height: 100vh;
@@ -105,7 +89,7 @@ html, body {
   flex-direction: column;
 }
 
-/* ---------------- TOP NAV ---------------- */
+/* 5. TOP NAVIGATION CHUNG */
 .top-nav {
   display: flex;
   justify-content: space-between;
@@ -114,7 +98,9 @@ html, body {
   border: var(--neo-border-w) solid var(--neo-black);
   box-shadow: var(--neo-shadow);
   padding: 12px 20px;
-  margin-bottom: 36px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .brand-badge {
@@ -136,6 +122,7 @@ html, body {
   justify-content: center;
   border: 2.5px solid var(--neo-black);
   box-shadow: var(--neo-shadow-sm);
+  text-decoration: none;
 }
 
 .brand-text {
@@ -169,7 +156,8 @@ html, body {
 .header-status {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .status-indicator {
@@ -203,446 +191,6 @@ html, body {
   letter-spacing: 0.05em;
 }
 
-/* ---------------- HERO SECTION ---------------- */
-.hero-section {
-  margin-bottom: 32px;
-}
-
-.hero-content {
-  background: var(--neo-white);
-  border: var(--neo-border-w) solid var(--neo-black);
-  box-shadow: var(--neo-shadow-lg);
-  padding: 36px 32px;
-  position: relative;
-}
-
-.tag-label {
-  display: inline-block;
-  background: var(--neo-black);
-  color: var(--neo-white);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 900;
-  padding: 3px 10px;
-  margin-bottom: 12px;
-  letter-spacing: 0.08em;
-}
-
-.hero-headline {
-  font-family: var(--font-cond);
-  font-size: 3.8rem;
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-  margin-bottom: 12px;
-}
-
-.dot-accent {
-  color: var(--neo-pink);
-}
-
-.hero-sub {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #333;
-  max-width: 680px;
-}
-
-/* ---------------- 3 PRIMARY TOOL CARDS ---------------- */
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-  margin-bottom: 36px;
-}
-
-.tool-card {
-  background: var(--neo-card-bg);
-  border: var(--neo-border-w) solid var(--neo-black);
-  box-shadow: var(--neo-shadow);
-  padding: 24px;
-  text-decoration: none;
-  color: var(--neo-black);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tool-card:hover {
-  transform: translate(-4px, -4px);
-  box-shadow: var(--neo-shadow-hover);
-}
-
-.tool-card:active {
-  transform: translate(2px, 2px);
-  box-shadow: var(--neo-shadow-active);
-}
-
-/* Top Badge & Numbering */
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.card-num {
-  font-family: var(--font-mono);
-  font-size: 1.2rem;
-  font-weight: 900;
-  background: var(--neo-black);
-  color: var(--neo-white);
-  padding: 2px 8px;
-}
-
-.card-tag {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 900;
-  border: 1.5px solid var(--neo-black);
-  padding: 3px 8px;
-  background: var(--neo-white);
-  box-shadow: var(--neo-shadow-sm);
-  letter-spacing: 0.05em;
-}
-
-/* Icon Box */
-.card-icon-box {
-  width: 72px;
-  height: 72px;
-  border: var(--neo-border-w) solid var(--neo-black);
-  box-shadow: var(--neo-shadow-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.2rem;
-  margin-bottom: 20px;
-}
-
-/* Accent Card Colors */
-.card-yellow .card-icon-box { background: var(--neo-yellow); }
-.card-yellow { border-top: 10px solid var(--neo-yellow); }
-
-.card-green .card-icon-box { background: var(--neo-green); }
-.card-green { border-top: 10px solid var(--neo-green); }
-
-.card-pink .card-icon-box { background: var(--neo-pink); }
-.card-pink { border-top: 10px solid var(--neo-pink); }
-
-/* Card Content */
-.card-body {
-  flex-grow: 1;
-  margin-bottom: 24px;
-}
-
-.card-title {
-  font-family: var(--font-cond);
-  font-size: 1.8rem;
-  font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: 0.02em;
-  margin-bottom: 10px;
-}
-
-.card-desc {
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.5;
-  color: #333;
-}
-
-/* Launch Action Button */
-.card-footer-btn {
-  background: var(--neo-black);
-  color: var(--neo-white);
-  padding: 12px 16px;
-  border: 2px solid var(--neo-black);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--font-cond);
-  font-weight: 900;
-  font-size: 1.05rem;
-  letter-spacing: 0.06em;
-  transition: all 0.12s;
-}
-
-.tool-card:hover .card-footer-btn {
-  background: var(--neo-yellow);
-  color: var(--neo-black);
-  box-shadow: 3px 3px 0 var(--neo-black);
-}
-
-.tool-card:hover.card-green .card-footer-btn {
-  background: var(--neo-green);
-}
-
-.tool-card:hover.card-pink .card-footer-btn {
-  background: var(--neo-pink);
-  color: var(--neo-white);
-}
-
-/* ---------------- ẨN TRIỆT ĐỂ 3 MENU BETA ---------------- */
-.hidden-beta {
-  display: none !important;
-}
-
-/* ---------------- FOOTER ---------------- */
-.landing-footer {
-  margin-top: auto;
-  background: var(--neo-white);
-  border: var(--neo-border-w) solid var(--neo-black);
-  box-shadow: var(--neo-shadow);
-  padding: 14px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 800;
-}
-
-.footer-dim {
-  color: #666;
-  margin-left: 8px;
-}
-
-.keyboard-tip {
-  margin-left: 14px;
-}
-
-.keyboard-tip kbd {
-  background: var(--neo-yellow);
-  border: 1.5px solid var(--neo-black);
-  box-shadow: 1.5px 1.5px 0 var(--neo-black);
-  padding: 2px 6px;
-  font-family: var(--font-mono);
-  font-weight: 900;
-  margin-right: 4px;
-}
-
-/* ---------------- ROSTER BIG SHOWCASE BANNER ---------------- */
-.roster-showcase-section {
-  margin-bottom: 36px;
-}
-
-.roster-banner {
-  background: var(--neo-card-bg);
-  border: var(--neo-border-w) solid var(--neo-black);
-  box-shadow: var(--neo-shadow-lg);
-  padding: 28px 32px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.roster-banner.card-yellow {
-  border-top: 10px solid var(--neo-yellow);
-}
-
-.banner-badge-strip {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.banner-tag {
-  background: var(--neo-black);
-  color: var(--neo-yellow);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 900;
-  padding: 4px 10px;
-  letter-spacing: 0.08em;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.banner-status-tag {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 800;
-  border: 2px solid var(--neo-black);
-  background: var(--neo-green);
-  padding: 3px 8px;
-  box-shadow: var(--neo-shadow-sm);
-}
-
-.banner-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 30px;
-}
-
-.banner-text {
-  flex: 1;
-}
-
-.sub-lead {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #555;
-  letter-spacing: 0.1em;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.banner-title {
-  font-family: var(--font-cond);
-  font-size: 3rem;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.01em;
-  margin-bottom: 10px;
-}
-
-.banner-desc {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #333;
-  line-height: 1.5;
-  max-width: 680px;
-}
-
-.banner-action-wrap {
-  flex-shrink: 0;
-}
-
-.btn-launch-roster {
-  background: var(--neo-black);
-  color: var(--neo-white);
-  padding: 16px 26px;
-  border: var(--neo-border-w) solid var(--neo-black);
-  box-shadow: var(--neo-shadow);
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--font-cond);
-  font-weight: 900;
-  font-size: 1.25rem;
-  letter-spacing: 0.05em;
-  text-decoration: none;
-  transition: all 0.12s;
-}
-
-.btn-launch-roster:hover {
-  background: var(--neo-yellow);
-  color: var(--neo-black);
-  transform: translate(-3px, -3px);
-  box-shadow: var(--neo-shadow-hover);
-}
-
-.btn-launch-roster:active {
-  transform: translate(2px, 2px);
-  box-shadow: var(--neo-shadow-active);
-}
-
-.banner-footer-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-top: 2px dashed var(--neo-black);
-  padding-top: 16px;
-}
-
-.stat-pill {
-  background: var(--neo-bg);
-  border: 2px solid var(--neo-black);
-  box-shadow: var(--neo-shadow-sm);
-  padding: 4px 10px;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.stat-pill.highlight {
-  background: var(--neo-yellow);
-}
-
-.pill-label {
-  color: #666;
-  margin-right: 4px;
-}
-
-@media screen and (max-width: 992px) {
-  .banner-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .btn-launch-roster {
-    width: 100%;
-    justify-content: center;
-  }
-  .banner-title {
-    font-size: 2.2rem;
-  }
-}
-
-/* ---------------- RESPONSIVE (MOBILE) ---------------- */
-@media screen and (max-width: 992px) {
-  .tool-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .hero-headline {
-    font-size: 2.8rem;
-  }
-
-  .top-nav {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .header-status {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .landing-footer {
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
-  }
-
-  .keyboard-tip {
-    display: inline-block;
-    margin: 4px 6px;
-  }
-}
-
-/* ==================================================
-   1. FIX VIỀN ĐẦU CHO CARD 02 VÀ CARD 03 BỊ ĐEN
-   ================================================== */
-.card-yellow .card-icon-box { background: var(--neo-yellow); }
-.card-yellow { border-top: 10px solid var(--neo-yellow); }
-
-.card-blue .card-icon-box { background: var(--neo-blue); }
-.card-blue { border-top: 10px solid var(--neo-blue); }
-
-.card-purple .card-icon-box { background: var(--neo-purple); }
-.card-purple { border-top: 10px solid var(--neo-purple); }
-
-.card-orange .card-icon-box { background: var(--neo-orange); }
-.card-orange { border-top: 10px solid var(--neo-orange); }
-
-.card-green .card-icon-box { background: var(--neo-green); }
-.card-green { border-top: 10px solid var(--neo-green); }
-
-.card-pink .card-icon-box { background: var(--neo-pink); }
-.card-pink { border-top: 10px solid var(--neo-pink); }
-
-.card-cyan { border-top: 10px solid #00f0ff !important; }
-
-/* ==================================================
-   GLOBAL IDENTITY BUTTON & BADGE (NEOBRUTALISM)
-   ================================================== */
 .btn-neo-back {
   background: var(--neo-white, #ffffff);
   color: var(--neo-black, #000000);
@@ -674,123 +222,205 @@ html, body {
   box-shadow: 1px 1px 0 var(--neo-black, #000000);
 }
 
-/* Khi ở Dark Mode */
-body.dark-mode .btn-neo-back {
-  background: #27272a;
-  color: #ffffff;
-  border-color: #f4f4f5;
-  box-shadow: 2px 2px 0 #f4f4f5;
-}
-
-body.dark-mode .btn-neo-back:hover {
-  background: var(--neo-yellow, #ffe600);
-  color: #000000;
-}
-
-/* ==================================================
-   FIX TRÀN HEADER TRÊN MOBILE (CHO TOÀN HỆ THỐNG)
-   ================================================== */
-.top-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap; /* Cho phép rớt khối khi không đủ chỗ */
-  gap: 12px;
-}
-
-.header-status {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap; /* TỰ ĐỘNG RỚT DÒNG CÁC NÚT */
-  gap: 8px;
-}
-
-/* Tinh chỉnh riêng cho màn hình Mobile (dưới 768px) */
-@media screen and (max-width: 768px) {
-  .top-nav {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 14px;
-    gap: 12px;
-  }
-
-  .header-status {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap; /* Rớt dòng các nút như bộ lọc */
-    justify-content: flex-start;
-    gap: 8px;
-  }
-
-  /* Nút và badge co giãn vừa vặn, không bị phình to */
-  .header-status .status-indicator,
-  .header-status .btn-neo-back,
-  .header-status .pill-badge {
-    margin: 0;
-    font-size: 0.8rem;
-    padding: 6px 10px;
-    box-sizing: border-box;
-  }
-
-  /* Writer Desk Top Navigation */
-  .writer-header,
-  .writer-nav-actions {
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-  }
-}
-
-/* ==================================================
-   FIX MODAL CUỘN DỌC & TEXTAREA CHO BÀI LONG-FORM
-   ================================================== */
-
-/* 1. Lớp phủ Overlay: Giữ khoảng cách an toàn với mép màn hình */
+/* 6. MODAL SYSTEM CHUNG */
 .neo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
   padding: 16px;
   overflow-y: auto;
-  align-items: center;
 }
 
-/* 2. Khung Modal: Khóa trần 90% chiều cao màn hình & cho phép cuộn */
+.neo-modal-overlay.active {
+  display: flex;
+}
+
 .neo-modal {
+  background: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-lg);
+  width: 100%;
+  max-width: 650px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Giữ header cố định ở trên */
+  overflow: hidden;
 }
 
-/* Header modal ghim cố định ở đỉnh */
-.neo-modal .modal-header {
+.modal-header {
+  background: var(--neo-yellow);
+  border-bottom: var(--neo-border-w) solid var(--neo-black);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   flex-shrink: 0;
 }
 
-/* Body / Form của modal: TỰ ĐỘNG CUỘN KHI DÀI */
-.neo-modal .modal-body,
-.neo-modal form.modal-body {
-  overflow-y: auto;
-  flex: 1;
-  padding: 20px;
+.modal-header h3 {
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 1.4rem;
+  margin: 0;
 }
 
-/* 3. ĐẶC TRỊ CHO TEXTAREA VIẾT BÀI LONG-FORM (> 500 TỪ) */
-.neo-modal textarea,
-#input-full-content,
-#edit-input-full-content {
-  min-height: 240px !important;  /* Mặc định mở ra đã siêu to, nhìn thoáng */
-  max-height: 480px;            /* Không cho kéo dãn vô tận làm vỡ khung */
-  resize: vertical;             /* Chỉ cho kéo dọc, cấm kéo ngang phá vỡ layout */
-  font-family: var(--font-main, sans-serif);
-  font-size: 0.95rem;
-  line-height: 1.6;
-  padding: 12px;
-  border: 2px solid #000;
+.btn-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.form-group input, 
+.form-group textarea, 
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--neo-black);
+  font-family: var(--font-main);
+  font-size: 0.88rem;
+  outline: none;
   box-sizing: border-box;
 }
 
-/* Nút Submit luôn có khoảng đệm phía dưới để không bị dính sát đáy khi cuộn */
-.neo-modal form .btn-neo-submit,
-.neo-modal form button[type="submit"] {
-  margin-top: 14px;
-  margin-bottom: 6px;
+.form-group input:focus, 
+.form-group textarea:focus {
+  background: #fffcee;
+}
+
+.neo-modal textarea {
+  min-height: 220px !important;
+  max-height: 480px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.btn-neo-submit {
   width: 100%;
+  background: var(--neo-black);
+  color: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  padding: 14px;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 1.15rem;
+  cursor: pointer;
+  box-shadow: var(--neo-shadow);
+  margin-top: 10px;
+  transition: all 0.1s;
+}
+
+.btn-neo-submit:hover {
+  background: var(--neo-green);
+  color: var(--neo-black);
+  box-shadow: var(--neo-shadow-hover);
+}
+
+/* ==============================================================================
+   7. MIDNIGHT STEALTH DARK MODE (ĐỒNG BỘ CHUẨN XÁM ĐEN CHILL CHO TOÀN BỘ APP)
+   ============================================================================== */
+body.dark-mode {
+  --neo-bg: #101114;
+  --neo-card-bg: #18191f;
+  --neo-white: #18191f;
+  --neo-black: #e2e4e9;
+  background-color: #101114 !important;
+  color: #d1d5db !important;
+}
+
+/* Lưới caro đêm dịu */
+body.dark-mode.landing-body {
+  background-color: #101114 !important;
+  background-image: 
+    linear-gradient(#1e2027 1px, transparent 1px),
+    linear-gradient(90deg, #1e2027 1px, transparent 1px) !important;
+}
+
+/* Container, Card, Header: Nền xám than, đổ bóng đen tuyền */
+body.dark-mode .top-nav,
+body.dark-mode .hero-content,
+body.dark-mode .tool-card,
+body.dark-mode .roster-banner,
+body.dark-mode .landing-footer,
+body.dark-mode .schedule-card,
+body.dark-mode .schedule-week-bar,
+body.dark-mode .stack-table-container,
+body.dark-mode .neo-modal {
+  background: #18191f !important;
+  color: #e2e4e9 !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+/* Text tiêu đề ngà trắng, phụ đề xám nhạt */
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
+body.dark-mode .studio-title, body.dark-mode .card-title,
+body.dark-mode .banner-title, body.dark-mode .post-clickable-title {
+  color: #f3f4f6 !important;
+}
+body.dark-mode p, body.dark-mode .hero-sub, body.dark-mode .card-desc,
+body.dark-mode .banner-desc, body.dark-mode .system-tag {
+  color: #9ca3af !important;
+}
+
+/* Buttons trên Header & Filter tabs */
+body.dark-mode .btn-neo-back,
+body.dark-mode .status-indicator,
+body.dark-mode .pill-badge,
+body.dark-mode .btn-team-tab,
+body.dark-mode .btn-week-toggle,
+body.dark-mode .filter-btn,
+body.dark-mode .task-filter-btn {
+  background: #20222a !important;
+  color: #d1d5db !important;
+  border-color: #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .btn-team-tab.active,
+body.dark-mode .btn-week-toggle.active,
+body.dark-mode .filter-btn.active,
+body.dark-mode .task-filter-btn.active {
+  background: var(--neo-yellow) !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+/* ==================================================
+   KHÓA CHẾT Ô LOGO GL TRÊN HEADER: NỀN ĐEN CHỮ VÀNG
+   ================================================== */
+body.dark-mode .logo-box {
+  background: #000000 !important;
+  color: var(--neo-yellow, #ffe600) !important;
+  border: 2px solid #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
 }

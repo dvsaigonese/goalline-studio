@@ -429,3 +429,342 @@
 }
 .btn-neo-submit:hover { background: var(--neo-green); color: var(--neo-black); box-shadow: var(--neo-shadow-hover); }
 @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+/* ==============================================================================
+   GOAL-LINE STUDIO - WRITER DESK SPECIFIC STYLES (css/writer.css)
+   ============================================================================== */
+
+.writer-body {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.writer-nav {
+  margin-bottom: 0 !important;
+  border-bottom: var(--neo-border-w) solid var(--neo-black);
+}
+
+.workspace-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100vw;
+  background: transparent;
+  position: relative;
+}
+
+/* 1. SIDEBAR DANH SÁCH BÀI VIẾT */
+.docs-sidebar {
+  width: 320px;
+  background: var(--neo-white);
+  border-right: var(--neo-border-w) solid var(--neo-black);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.sidebar-top {
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--neo-black);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-neo-new-doc {
+  flex: 1;
+  background: var(--neo-yellow);
+  color: var(--neo-black);
+  border: 2px solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  padding: 10px 14px;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 1.05rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.1s;
+}
+
+.btn-neo-new-doc:hover {
+  background: var(--neo-green);
+  transform: translate(-1px, -1px);
+}
+
+.btn-close-sidebar-mobile {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.docs-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.draft-item {
+  background: var(--neo-bg);
+  border: 2px solid var(--neo-black);
+  box-shadow: 2px 2px 0 var(--neo-black);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.draft-item:hover {
+  background: #fffcee;
+  transform: translate(-1px, -1px);
+}
+
+.draft-item.active {
+  background: var(--neo-yellow);
+  box-shadow: 3px 3px 0 var(--neo-black);
+}
+
+.draft-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.draft-meta {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sidebar-footer {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-top: 2px dashed var(--neo-black);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #475569;
+}
+
+/* 2. KHU VỰC SOẠN THẢO CHÍNH */
+.editor-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.editor-stats-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  padding: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.stat-pill-group {
+  display: flex;
+  gap: 10px;
+}
+
+.stat-badge {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.stat-badge.highlight {
+  background: var(--neo-blue);
+  border: 1.5px solid var(--neo-black);
+  padding: 2px 8px;
+}
+
+.save-indicator {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #16a34a;
+}
+
+/* TỜ GIẤY SOẠN THẢO (PAPER) */
+.editor-paper {
+  flex: 1;
+  background: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-lg);
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 500px;
+}
+
+.editor-title-input {
+  font-family: var(--font-main);
+  font-size: 2rem;
+  font-weight: 900;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--neo-black);
+  border-bottom: 2px dashed #ccc;
+  padding-bottom: 10px;
+}
+
+.editor-content-area {
+  flex: 1;
+  font-family: var(--font-main);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--neo-black);
+  resize: none;
+  min-height: 380px;
+}
+
+/* ==============================================================================
+   DARK MODE RIÊNG BIỆT CHO WRITER DESK (css/writer.css)
+   Khử sạch chói lóa, thẻ nháp than chì hổ phách, bộ đếm số rõ nét 100%
+   ============================================================================== */
+
+/* 1. KHUNG SIDEBAR VÀ KHUNG SOẠN THẢO CHÍNH */
+body.dark-mode .docs-sidebar {
+  background: #18191f !important;
+  border-color: #333640 !important;
+}
+
+body.dark-mode .sidebar-top {
+  border-bottom-color: #333640 !important;
+}
+
+body.dark-mode .sidebar-footer {
+  background: #14151a !important;
+  border-top: 2px dashed #333640 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .editor-paper {
+  background: #14151a !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+body.dark-mode .editor-title-input {
+  color: #f3f4f6 !important;
+  border-bottom-color: #333640 !important;
+}
+
+body.dark-mode .editor-content-area {
+  color: #e2e4e9 !important;
+}
+
+/* 2. NÚT "+ BÀI MỚI": NỀN TỐI VIỀN XÁM, KHÔNG CÒN VÀNG RỰC */
+body.dark-mode .btn-neo-new-doc {
+  background: #20222a !important;
+  color: #f3f4f6 !important;
+  border: 2px solid #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .btn-neo-new-doc:hover {
+  background: #282a36 !important;
+  border-color: #52576b !important;
+  color: var(--neo-yellow) !important;
+}
+
+/* 3. ĐẶC TRỊ THẺ BÀI NHÁP ACTIVE (TRIỆT TIÊU KHỐI VÀNG NEON CHÓI LÓA) */
+body.dark-mode #docs-list > div.active,
+body.dark-mode .draft-item.active,
+body.dark-mode .doc-item.active {
+  background: #252319 !important;         /* Nền than chì ánh ấm dịu mắt */
+  border: 2px solid #ca8a04 !important;   /* Viền vàng hổ phách tinh tế */
+  box-shadow: 2px 2px 0px #000000 !important;
+  color: #fef08a !important;
+}
+
+body.dark-mode #docs-list > div.active *,
+body.dark-mode .draft-item.active *,
+body.dark-mode .doc-item.active * {
+  color: #fef08a !important;              /* Toàn bộ chữ bên trong chuyển sang vàng nhạt ấm */
+}
+
+/* Icon thùng rác ở thẻ active: Đỏ cam dịu, không bị chìm */
+body.dark-mode #docs-list > div.active [class*="trash"],
+body.dark-mode #docs-list > div.active .btn-del-draft,
+body.dark-mode .draft-item.active [class*="trash"] {
+  color: #f87171 !important;
+}
+
+/* Các thẻ bài nháp chưa chọn (In-active) */
+body.dark-mode #docs-list > div:not(.active),
+body.dark-mode .draft-item:not(.active) {
+  background: #14151a !important;
+  border: 1.5px solid #333640 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode #docs-list > div:not(.active):hover {
+  background: #1e2027 !important;
+  border-color: #4b5162 !important;
+}
+
+body.dark-mode #docs-list > div:not(.active) .draft-title,
+body.dark-mode #docs-list > div:not(.active) strong {
+  color: #f1f5f9 !important;
+}
+
+/* 4. ĐẶC TRỊ THANH BỘ ĐẾM SỐ TỪ & KÝ TỰ (HIỂN THỊ RÕ RÀNG 100%) */
+body.dark-mode .editor-stats-bar {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+/* Ô đếm Từ và Ký tự: Nền than chì, viền mảnh, số hiển thị màu trắng rõ nét */
+body.dark-mode .stat-badge {
+  background: #20222a !important;
+  border: 1.5px solid #383b45 !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+  color: #94a3b8 !important;
+  padding: 4px 10px !important;
+}
+
+body.dark-mode .stat-badge strong,
+body.dark-mode .stat-badge i {
+  color: #f3f4f6 !important;              /* Con số và icon sáng rõ, tương phản tuyệt đối */
+}
+
+/* Ô thời gian đọc (~4 phút đọc): Nền navy tối, chữ xanh ngọc dịu mắt */
+body.dark-mode .stat-badge.highlight {
+  background: #0f2338 !important;
+  border: 1.5px solid #0284c7 !important;
+  color: #38bdf8 !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+body.dark-mode .save-indicator {
+  color: #34d399 !important;
+}

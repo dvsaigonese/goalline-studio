@@ -130,3 +130,40 @@ document.addEventListener('DOMContentLoaded', () => {
     changeBtn.onclick = () => window.openIdentitySelector(false);
   }
 });
+
+// ==========================================
+// ĐỒNG BỘ DARK MODE TOÀN HỆ THỐNG
+// ==========================================
+function applyCurrentTheme() {
+  const isDark = localStorage.getItem('gl_theme') === 'dark';
+  const icon = document.getElementById('theme-toggle-icon');
+
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+    if (icon) {
+      icon.classList.remove('fa-moon');
+      icon.classList.add('fa-sun');
+      icon.style.color = '#ffe600';
+    }
+  } else {
+    document.body.classList.remove('dark-mode');
+    if (icon) {
+      icon.classList.remove('fa-sun');
+      icon.classList.add('fa-moon');
+      icon.style.color = '';
+    }
+  }
+}
+
+window.toggleDarkMode = function () {
+  const isCurrentlyDark = document.body.classList.contains('dark-mode');
+  if (isCurrentlyDark) {
+    localStorage.setItem('gl_theme', 'light');
+  } else {
+    localStorage.setItem('gl_theme', 'dark');
+  }
+  applyCurrentTheme();
+};
+
+// Khởi chạy ngay khi tải bất kỳ trang nào
+applyCurrentTheme();

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -9,26 +9,43 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-  <link rel="stylesheet" href="css/reader.css?v=5" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/reader.css?v=6" />
 </head>
-<body>
+<body class="landing-body reader-body">
 <div class="app">
 
-  <!-- HEADER -->
-  <header>
-    <a class="logo" href="index.html">
-      <div class="logo-box">GL</div>
-      <span class="logo-text">GOAL-LINE <em>READER</em></span>
-    </a>
+  <!-- TOP NAVIGATION ĐỒNG BỘ -->
+  <header class="top-nav reader-top-nav">
+    <div class="brand-badge">
+      <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
+      <div class="brand-text">
+        <span class="studio-title">GOAL-LINE <em>READER</em></span>
+        <span class="system-tag">THE ATHLETIC FEED & AI TRANSLATION</span>
+      </div>
+    </div>
 
-    <div class="header-badge">DESKTOP FEED</div>
-
-    <div class="hdr-right">
-      <div class="status-pill">
-        <div id="statusDot" class="status-dot on"></div>
+    <div class="header-status">
+      <div class="status-indicator">
+        <div id="statusDot" class="pulse-dot"></div>
         <span id="statusLabel">EXTENSION READY</span>
       </div>
-      <button class="btn btn-icon btn-neo" id="btnSettings" title="Settings">⚙️</button>
+      <button class="btn-neo-back" onclick="toggleDarkMode()" title="Chuyển chế độ Sáng / Tối">
+        <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+      </button>
+      <div class="status-indicator">
+        <span class="pulse-dot"></span>
+        <span id="current-user-display">ADMIN: ?</span>
+      </div>
+      <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
+        <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+      </button>
+      <button class="btn-neo-back" id="btnSettings" title="Cài đặt Gemini API Key">
+        <i class="fa-solid fa-gear"></i> SETTINGS
+      </button>
+      <a href="index.html" class="btn-neo-back">
+        <i class="fa-solid fa-arrow-left"></i> VỀ HOME
+      </a>
     </div>
   </header>
 
@@ -37,7 +54,7 @@
     <div class="url-wrap" id="urlWrap">
       <span class="url-icon">URL:</span>
       <input type="url" id="articleUrl" spellcheck="false" autocomplete="off"
-        placeholder="Waiting for dispatched article from Extension..." readonly />
+        placeholder="Đang chờ bài viết gửi sang từ Chrome Extension..." readonly />
     </div>
 
     <button class="btn btn-neo btn-vi" id="btnTranslate" disabled>
@@ -45,12 +62,12 @@
     </button>
     <button class="btn btn-neo btn-ghost hidden" id="btnOriginal">← ORIGINAL</button>
     <div class="sep" id="sepTab"></div>
-    <button class="btn btn-neo btn-ghost" id="btnNewTab" title="Open Archive Snapshot">
+    <button class="btn btn-neo btn-ghost" id="btnNewTab" title="Mở trang gốc trong Tab mới">
       <i class="fa-solid fa-arrow-up-right-from-square"></i> ↗ NEW TAB
     </button>
   </div>
 
-  <!-- WORKSPACE (FULL-WIDTH READING AREA) -->
+  <!-- WORKSPACE -->
   <div class="workspace">
     <main class="content-area">
       <!-- Loading Overlay -->
@@ -109,6 +126,7 @@
   </div>
 </div>
 
-<script type="module" src="js/reader.js?v=5"></script>
+<script type="module" src="js/reader.js?v=6"></script>
+<script src="js/identity.js"></script>
 </body>
 </html>

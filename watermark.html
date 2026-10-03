@@ -1,38 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Watermark | Goal-Line Studio</title>
+    <title>Watermark & Title Engine | Goal-Line Studio</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="./style.css" />
-    <link rel="stylesheet" href="./css/watermark.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/watermark.css" />
 </head>
-<body>
-    <div class="app-container">
-        <!-- TOOLBAR -->
-        <nav class="toolbar">
-            <div class="tool-group">
-                <a href="index.html" id="home-btn" class="tool-btn" title="Home">
-                    <i class="fa-solid fa-house"></i>
-                </a>
-                <a href="watermark.html" class="tool-btn active" title="Watermark Tool">
-                    <i class="fa-solid fa-layer-group"></i>
-                </a>
-            </div>
-            <div class="spacer"></div>
-            <div class="tool-group bottom">
-                <button id="export-wm-btn" class="tool-btn primary" title="Export Image">
-                    <i class="fa-solid fa-download"></i>
-                    <span>EXPORT</span>
-                </button>
-            </div>
-        </nav>
+<body class="landing-body watermark-body">
 
+    <!-- TOP NAVIGATION ĐỒNG BỘ TOÀN STUDIO -->
+    <header class="top-nav">
+        <div class="brand-badge">
+            <a href="index.html" class="logo-box" id="home-btn" style="text-decoration:none;">GL</a>
+            <div class="brand-text">
+                <span class="studio-title">WATERMARK <em>ENGINE</em></span>
+                <span class="system-tag">POST-PRODUCTION & TITLE ENGINE</span>
+            </div>
+        </div>
+
+        <div class="header-status">
+            <button class="btn-neo-back" onclick="toggleDarkMode()" title="Chuyển chế độ Sáng / Tối">
+                <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+            </button>
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span id="current-user-display">ADMIN: ?</span>
+            </div>
+            <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
+                <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
+            </button>
+            
+            <!-- Nút Export chính được đưa lên Header nổi bật -->
+            <button id="export-wm-btn" class="btn-neo-back" style="background:var(--neo-green); color:#000; font-weight:900;" title="Xuất ảnh thành phẩm">
+                <i class="fa-solid fa-download"></i> EXPORT
+            </button>
+            <a href="index.html" class="btn-neo-back">
+                <i class="fa-solid fa-arrow-left"></i> VỀ HOME
+            </a>
+        </div>
+    </header>
+
+    <div class="app-container">
         <!-- CANVAS WORKSPACE -->
         <main class="canvas-area">
             <div id="wm-wrapper">
@@ -41,7 +55,7 @@
                         <i class="fa-solid fa-images"></i>
                     </div>
                     <p class="empty-title">WORKSPACE EMPTY</p>
-                    <p class="empty-sub">Setup your layout & feed images on the right panel.</p>
+                    <p class="empty-sub">Cài đặt bố cục và chọn ảnh từ panel bên phải.</p>
                 </div>
                 
                 <canvas id="wm-canvas"></canvas>
@@ -52,7 +66,7 @@
         <aside class="settings-panel">
             <div class="panel-header">
                 <h3>SETTINGS</h3>
-                <span class="badge-tag">v2.0</span>
+                <span class="badge-tag">ENGINE v2.0</span>
             </div>
 
             <!-- TÁCH SELECT: ACTIVE & RETRO TEMPLATES -->
@@ -90,7 +104,7 @@
                 <div class="card-badge">CLUB / LEAGUE</div>
                 <label class="section-label">Search League</label>
                 <div class="search-container">
-                    <input type="text" id="league-search-input" class="form-control" placeholder="Type name (e.g. PREMIER)..." autocomplete="off">
+                    <input type="text" id="league-search-input" class="form-control" placeholder="Gõ tên (ví dụ: PREMIER)..." autocomplete="off">
                     <ul id="league-search-results"></ul>
                 </div>
             </div>
@@ -128,18 +142,18 @@
             <!-- COLLAGE INSTRUCTIONS -->
             <div class="setting-group collage-controls" id="collage-instructions">
                 <label class="instruction-title"><i class="fa-solid fa-arrow-pointer"></i> EDIT MODE</label>
-                <p>1. <strong>Click</strong> image to pick slot.</p>
-                <p>2. <strong>Drag</strong> to move framing.</p>
-                <p>3. <strong>Wheel</strong> to zoom in / out.</p>
-                <p>4. <strong>Drag Divider</strong> to adjust slot ratio.</p>
+                <p>1. <strong>Click</strong> ảnh để chọn ô (slot).</p>
+                <p>2. <strong>Kéo chuột</strong> để căn chỉnh vị trí ảnh.</p>
+                <p>3. <strong>Cuộn chuột</strong> để zoom phóng to/thu nhỏ.</p>
+                <p>4. <strong>Kéo Divider</strong> để chia tỉ lệ khung ảnh.</p>
             </div>
 
             <!-- POST METADATA & FX -->
             <div class="wm-workflow-card card-accent-orange">
                 <div class="card-badge">POST FX</div>
                 <label class="section-label">Post Title</label>
-                <textarea id="wm-title" class="form-control" rows="3" placeholder="Enter headline text..."></textarea>
-                <small class="tip-text">Format: Use {word} to highlight yellow.</small>
+                <textarea id="wm-title" class="form-control" rows="3" placeholder="Nhập tiêu đề bài viết..."></textarea>
+                <small class="tip-text">Format: Dùng {từ khóa} để bôi vàng nổi bật.</small>
 
                 <div class="slider-box">
                     <label class="input-label">Pattern Intensity</label>
@@ -159,9 +173,10 @@
         </aside>
     </div>
 
-    <!-- HUD Cảnh báo sọc đen khung ảnh (Tự động kích hoạt bởi CoverageGuard) -->
+    <!-- HUD Cảnh báo sọc đen khung ảnh -->
     <div id="coverage-warning-hud" class="coverage-hud hidden"></div>
 
     <script type="module" src="./js/watermark/watermark.js"></script>
+    <script src="js/identity.js"></script>
 </body>
 </html>

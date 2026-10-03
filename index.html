@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/index.css" />
 </head>
 <body class="landing-body">
 
@@ -48,6 +49,9 @@
                     <i class="fa-solid fa-circle-info" style="color: var(--neo-yellow, #ffe600);"></i>
                     <span style="font-family: var(--font-cond); font-size: 0.95rem;">INFO</span>
                 </a>
+                <button class="btn-neo-back" onclick="toggleDarkMode()" title="Chuyển chế độ Sáng / Tối">
+                    <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+                </button>
                 <div class="status-indicator">
                     <span class="pulse-dot"></span>
                     <span id="current-user-display">ADMIN: ?</span>

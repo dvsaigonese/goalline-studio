@@ -53,20 +53,24 @@ const DESIGNER_COLORS = {
 
 /**
  * Hàm lấy style màu cho thẻ slot-pill
+ * Giữ nguyên màu thương hiệu của Designer, các bảng Content để CSS tự thích ứng theme
  */
 function getMemberPillStyle(member, columnKey, fallbackBg = '') {
   // Nếu là bảng ca trực của Design và thành viên có tên trong danh bạ màu
   if (columnKey === 'design_shifts_data' && DESIGNER_COLORS[member]) {
     const config = DESIGNER_COLORS[member];
-    return `background: ${config.bg}; color: ${config.color}; border-color: #000;`;
+    // Giữ nguyên nền màu riêng, chữ chuẩn theo config và viền đen mảnh
+    return `background: ${config.bg}; color: ${config.color}; border: 2px solid #000;`;
   }
-  // Các bảng Content, Trực page dùng màu fallback mặc định
-  if (fallbackBg) {
-    return `background: ${fallbackBg}; color: #000;`;
+  
+  // Ca Design chưa đăng ký màu riêng
+  if (columnKey === 'design_shifts_data') {
+    return `background: #ff944d; color: #000; border: 2px solid #000;`;
   }
+  
+  // Các bảng Content & Trực Page trả về rỗng để CSS tự đổi màu theo theme Sáng / Tối!
   return '';
 }
-
 // ==============================================================================
 // PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE
 // ==============================================================================

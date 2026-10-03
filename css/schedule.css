@@ -586,3 +586,107 @@
   transform: scale(1.05);
   box-shadow: 2px 2px 0 var(--neo-black);
 }
+
+/* ==================================================
+   DARK MODE RIÊNG CHO EDITORIAL SCHEDULE
+   ================================================== */
+body.dark-mode .schedule-card {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+body.dark-mode .schedule-card-header,
+body.dark-mode .schedule-card-header.bg-red {
+  background: #18191f !important;
+  border-bottom: 2px solid #333640 !important;
+}
+
+body.dark-mode .schedule-card-header h3 {
+  color: #f3f4f6 !important;
+}
+
+body.dark-mode .grid-table th {
+  background: #23252e !important;
+  color: #f3f4f6 !important;
+  border-color: #333640 !important;
+}
+
+body.dark-mode .shift-title,
+body.dark-mode .shift-time,
+body.dark-mode .grid-table td {
+  background: #18191f !important;
+  color: #d1d5db !important;
+  border-color: #2b2d36 !important;
+}
+
+/* 1. GIỮ NGUYÊN MÀU DESIGNER: Không để Darkmode ép đè nền/chữ */
+body.dark-mode #body-design-shifts .slot-pill {
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode #body-design-shifts .slot-pill strong {
+  color: inherit !important;
+}
+
+/* 2. CÁC CA BÀI NGẮN & BÀI DÀI CỦA CONTENT: Nền than chì chữ sáng dịu */
+body.dark-mode #body-writing-short .slot-pill,
+body.dark-mode #body-writing-long .slot-pill,
+body.dark-mode #body-posting .slot-pill {
+  background: #242630 !important;
+  color: #f3f4f6 !important;
+  border: 1.5px solid #3d4150 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .btn-slot-join {
+  background: #16171c !important;
+  border: 1.5px dashed #3a3d4a !important;
+  color: #9499a8 !important;
+}
+body.dark-mode .btn-slot-join:hover {
+  background: #23252e !important;
+  color: var(--neo-yellow) !important;
+  border-color: var(--neo-yellow) !important;
+}
+
+/* 3. DỌN SẠCH DẢI TRẮNG Ở ĐÁY BẢNG NGHỈ PHÉP */
+.leave-footer {
+  padding: 14px 16px;
+  background: #ffffff;
+  border-top: 2px dashed #000000;
+}
+
+body.dark-mode .leave-footer {
+  background: #18191f !important;
+  border-top-color: #333640 !important;
+}
+
+body.dark-mode .leave-notice {
+  background: #1c1d18 !important;
+  color: #d1d5db !important;
+  border-bottom: 2px dashed #423d24 !important;
+}
+
+body.dark-mode .task-action-bar {
+  background: #18191f !important;
+  border-bottom: 2px solid #333640 !important;
+}
+
+body.dark-mode .btn-neo-add {
+  background: #20222a !important;
+  color: #f3f4f6 !important;
+  border: 2px solid #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .leave-btn-bar {
+  background: #20222a !important;
+  color: #f3f4f6 !important;
+  border: 2px solid #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .btn-neo-add:hover {
+  background: #282a36 !important;
+  color: var(--neo-yellow) !important;
+}

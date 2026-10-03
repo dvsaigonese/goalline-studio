@@ -1,93 +1,39 @@
-@font-face {
-  font-family: "Albula";
-  src: url("../assets/fonts/AlbulaProBold.otf?v=1") format("opentype"),
-       url("./assets/fonts/AlbulaProBold.otf?v=1") format("opentype");
-  font-weight: bold;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Seriguela";
-  src: url("../assets/fonts/Seriguela-Black.otf") format("opentype"),
-       url("./assets/fonts/Seriguela-Black.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-}
-
-:root {
-  --neo-black: #000000;
-  --neo-white: #ffffff;
-  --neo-bg: #fffbf0;
-  --neo-card-bg: #ffffff;
-  --neo-border-w: 3px;
-
-  /* Palette */
-  --neo-yellow: #ffe600;
-  --neo-pink: #ff608b;
-  --neo-blue: #4deeea;
-  --neo-green: #00f076;
-  --neo-orange: #ff944d;
-  --neo-purple: #c084fc;
-
-  /* Hard Shadows */
-  --neo-shadow-sm: 2px 2px 0px var(--neo-black);
-  --neo-shadow: 4px 4px 0px var(--neo-black);
-  --neo-shadow-lg: 8px 8px 0px var(--neo-black);
-  --neo-shadow-active: 1px 1px 0px var(--neo-black);
-
-  /* Fonts */
-  --font-main: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-  --font-cond: 'Barlow Condensed', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-/* ---------------- RESET & BASE ---------------- */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  -webkit-font-smoothing: antialiased;
-}
-
-html, body {
+/* ==================================================
+   TACTICAL BOARD STYLES (css/board.css)
+   ================================================== */
+.board-body {
   height: 100vh;
-  width: 100vw;
-  background-color: var(--neo-bg);
-  color: var(--neo-black);
-  font-family: var(--font-main);
   overflow: hidden;
-  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-body .top-nav {
+  margin-bottom: 0 !important;
+  border-bottom: var(--neo-border-w) solid var(--neo-black);
 }
 
 .font-preloader {
   position: absolute;
-  left: -9999px;
-  top: -9999px;
-  opacity: 0;
-  pointer-events: none;
+  left: -9999px; top: -9999px;
+  opacity: 0; pointer-events: none;
 }
 
-.fa, .fas, .far, .fa-solid, .fa-regular, .fa-brands {
-  font-family: "Font Awesome 6 Free" !important;
-}
-.fa-regular { font-weight: 400 !important; }
-.fa-solid { font-weight: 900 !important; }
-
-/* ---------------- GRID LAYOUT CHỮ L ---------------- */
+/* GRID LAYOUT CHỮ L NẰM DƯỚI TOP-NAV */
 .app-container {
   display: grid;
   grid-template-columns: 1fr 370px;
-  grid-template-rows: 1fr 68px;
+  grid-template-rows: 1fr 64px;
   grid-template-areas:
     "canvas   settings"
     "toolbar  settings";
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   width: 100vw;
-  border: var(--neo-border-w) solid var(--neo-black);
   overflow: hidden;
 }
 
-/* ---------------- 1. CANVAS AREA (TOP-LEFT) ---------------- */
+/* 1. CANVAS AREA */
 .canvas-area {
   grid-area: canvas;
   background-color: #ded8cb;
@@ -117,19 +63,14 @@ html, body {
 
 #canvas {
   max-width: 95%;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 180px);
   object-fit: contain;
   display: block;
-  border: none !important;
-  outline: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 
 .zoom-controls {
   position: absolute;
-  bottom: 10px;
-  left: 50%;
+  bottom: 10px; left: 50%;
   transform: translateX(-50%);
   z-index: 10;
 }
@@ -146,57 +87,26 @@ html, body {
   box-shadow: var(--neo-shadow-sm);
 }
 
-/* ---------------- 2. BOTTOM TOOLBAR (HORIZONTAL DOCK) ---------------- */
+/* 2. BOTTOM TOOLBAR */
 .toolbar {
   grid-area: toolbar;
   background-color: var(--neo-white);
   border-top: var(--neo-border-w) solid var(--neo-black);
   display: flex;
-  flex-direction: row;
   align-items: center;
   padding: 0 16px;
   gap: 12px;
-  z-index: 100;
-}
-
-.logo {
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-}
-
-.logo-box {
-  width: 44px;
-  height: 44px;
-  background: var(--neo-black);
-  color: var(--neo-yellow);
-  font-family: var(--font-cond);
-  font-weight: 900;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--neo-border-w) solid var(--neo-black);
-  box-shadow: var(--neo-shadow-sm);
-  transition: transform 0.1s;
-}
-
-.logo-box:hover {
-  background: var(--neo-yellow);
-  color: var(--neo-black);
-  transform: translate(-2px, -2px);
-  box-shadow: var(--neo-shadow);
+  z-index: 90;
 }
 
 .neo-sep {
-  width: 3px;
-  height: 38px;
+  width: 2px;
+  height: 34px;
   background: var(--neo-black);
   margin: 0 4px;
   flex-shrink: 0;
 }
 
-/* NEOBRUTALISM LOG DISPLAY BAR: KÉO DÀI CHIẾM HẾT KHOẢNG TRỐNG */
 .neo-log-container {
   display: flex;
   align-items: center;
@@ -204,10 +114,8 @@ html, body {
   background: var(--neo-bg);
   border: 2px solid var(--neo-black);
   box-shadow: var(--neo-shadow-sm);
-  padding: 8px 16px;
-  flex: 1 1 auto;              /* Tự co giãn nở tối đa */
-  width: 100%;
-  min-width: 0;                 /* Cho phép text co lại nếu màn hình hẹp */
+  padding: 8px 14px;
+  flex: 1;
   overflow: hidden;
 }
 
@@ -218,8 +126,6 @@ html, body {
   font-size: 11px;
   font-weight: 900;
   padding: 3px 8px;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
   flex-shrink: 0;
 }
 
@@ -231,37 +137,30 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
 }
 
 .tool-group {
   display: flex;
-  flex-direction: row;
   gap: 10px;
   align-items: center;
   flex-shrink: 0;
 }
 
-/* Action Buttons with Text */
 .tool-action-btn {
-  height: 44px;
+  height: 42px;
   padding: 0 16px;
   background: var(--neo-white);
   color: var(--neo-black);
   border: var(--neo-border-w) solid var(--neo-black);
   box-shadow: var(--neo-shadow);
   display: inline-flex;
-  justify-content: center;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   font-family: var(--font-cond);
   font-weight: 900;
   font-size: 15px;
-  letter-spacing: 0.05em;
-  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-  text-decoration: none;
-  white-space: nowrap;
+  transition: all 0.1s;
 }
 
 .tool-action-btn:hover {
@@ -269,19 +168,11 @@ html, body {
   box-shadow: 6px 6px 0px var(--neo-black);
 }
 
-.tool-action-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: var(--neo-shadow-active);
-}
-
 .btn-action-green  { background: var(--neo-green); }
-.btn-action-green:hover  { background: #00dd6c; }
 .btn-action-orange { background: var(--neo-orange); }
-.btn-action-orange:hover { background: #ff7e29; }
 .btn-action-pink   { background: var(--neo-pink); }
-.btn-action-pink:hover   { background: #ff386d; }
 
-/* ---------------- 3. SETTINGS PANEL (RIGHT COLUMN) ---------------- */
+/* 3. SETTINGS PANEL */
 .settings-panel {
   grid-area: settings;
   background-color: var(--neo-bg);
@@ -293,8 +184,6 @@ html, body {
   gap: 14px;
   height: 100%;
 }
-
-.settings-panel::-webkit-scrollbar { display: none; }
 
 .panel-header {
   display: flex;
@@ -308,21 +197,8 @@ html, body {
   font-family: var(--font-cond);
   font-size: 1.6rem;
   font-weight: 900;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
-.badge-tag {
-  background: var(--neo-black);
-  color: var(--neo-yellow);
-  padding: 3px 8px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-}
-
-/* Cards */
 .neo-card {
   background: var(--neo-card-bg);
   border: var(--neo-border-w) solid var(--neo-black);
@@ -332,18 +208,11 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: transform 0.1s;
-}
-
-.neo-card:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 6px 6px 0px var(--neo-black);
 }
 
 .card-badge {
   position: absolute;
-  top: -12px;
-  right: 14px;
+  top: -12px; right: 14px;
   background: var(--neo-black);
   color: var(--neo-white);
   font-family: var(--font-mono);
@@ -360,21 +229,9 @@ html, body {
 .card-purple { border-top: 8px solid var(--neo-purple); }
 .card-orange { border-top: 8px solid var(--neo-orange); }
 
-.section-label {
-  display: block;
-  font-weight: 900;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-}
+.section-label { font-weight: 900; font-size: 0.85rem; text-transform: uppercase; }
+.small-label { font-size: 0.75rem; font-weight: 800; }
 
-.small-label {
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* HỘP CHÚ THÍCH HƯỚNG DẪN MŨI TÊN */
 .tip-banner {
   background: var(--neo-yellow);
   border: 2px solid var(--neo-black);
@@ -385,368 +242,281 @@ html, body {
   gap: 8px;
   font-size: 0.72rem;
   line-height: 1.4;
-  color: var(--neo-black);
 }
 
-.tip-banner i {
-  font-size: 1rem;
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.tip-banner span {
-  font-weight: 600;
-}
-
-.tip-banner u {
-  text-decoration: underline;
-  font-weight: 800;
-}
-
-/* Inputs & Form Controls */
 .form-control {
   width: 100%;
-  background-color: var(--neo-white) !important;
-  border: var(--neo-border-w) solid var(--neo-black) !important;
-  color: var(--neo-black) !important;
-  padding: 9px 12px;
-  border-radius: 0 !important;
+  border: 2px solid var(--neo-black);
+  padding: 8px 10px;
   font-size: 0.85rem;
   font-weight: 700;
-  box-shadow: var(--neo-shadow-sm) !important;
-  outline: none !important;
-  transition: all 0.1s;
-}
-
-.form-control:focus {
-  background-color: #fff !important;
-  transform: translate(-1px, -1px);
-  box-shadow: var(--neo-shadow) !important;
+  box-shadow: var(--neo-shadow-sm);
+  outline: none;
 }
 
 .neo-select {
   cursor: pointer;
+  appearance: none;
   background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2014%2014%22%3E%3Cpath%20fill%3D%22black%22%20d%3D%22M2%204l5%206%205-6z%22%2F%3E%3C%2Fsvg%3E');
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 10px;
-  appearance: none;
-  -webkit-appearance: none;
 }
 
-.row-input {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+.row-input { display: flex; gap: 8px; align-items: center; }
 
 .neo-btn-square {
   background-color: var(--neo-yellow);
   border: var(--neo-border-w) solid var(--neo-black);
   box-shadow: var(--neo-shadow-sm);
   color: var(--neo-black);
-  width: 42px;
-  height: 40px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 1.1rem;
-  transition: all 0.1s;
-  flex-shrink: 0;
-}
-
-.neo-btn-square:hover {
-  background-color: var(--neo-green);
-  transform: translate(-2px, -2px);
-  box-shadow: var(--neo-shadow);
+  width: 42px; height: 38px;
+  display: flex; justify-content: center; align-items: center;
+  cursor: pointer; font-weight: 900;
 }
 
 .neo-btn-full {
-  width: 100%;
-  padding: 10px;
+  width: 100%; padding: 10px;
   border: var(--neo-border-w) solid var(--neo-black);
   box-shadow: var(--neo-shadow-sm);
-  color: var(--neo-black);
   font-family: var(--font-cond);
-  font-weight: 900;
-  font-size: 14px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.1s;
-}
-
-.neo-btn-full:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--neo-shadow);
-}
-
-/* TOGGLES */
-.neo-toggle-mode {
-  display: block;
+  font-weight: 900; font-size: 14px;
   cursor: pointer;
 }
 
+.neo-toggle-mode { cursor: pointer; }
 .toggle-track {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   background: var(--neo-white);
   border: var(--neo-border-w) solid var(--neo-black);
   box-shadow: var(--neo-shadow-sm);
   padding: 8px 12px;
-  transition: all 0.12s;
 }
+.toggle-title { font-family: var(--font-cond); font-weight: 900; font-size: 14px; margin-left: 10px; }
+.toggle-status { font-family: var(--font-mono); font-weight: 900; font-size: 11px; background: #eee; border: 1.5px solid var(--neo-black); padding: 2px 8px; }
+.tool-checkbox:checked + .toggle-track { background: var(--neo-yellow); }
+.tool-checkbox:checked + .toggle-track .toggle-status { background: var(--neo-green); }
 
-.toggle-icon { font-size: 1.1rem; }
-.toggle-title {
-  font-family: var(--font-cond);
-  font-weight: 900;
-  font-size: 14px;
-  letter-spacing: 0.05em;
-  flex: 1;
-  margin-left: 10px;
-}
+.range-slider { flex: 2; height: 12px; border: 2px solid var(--neo-black); cursor: pointer; appearance: none; }
+.range-slider::-webkit-slider-thumb { appearance: none; width: 18px; height: 22px; background: var(--neo-yellow); border: 2px solid var(--neo-black); }
+.num-input { flex: 1; text-align: center; font-family: var(--font-mono); font-weight: 900; }
+.checkbox-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; }
+.checkbox-row input[type="checkbox"] { width: 18px; height: 18px; border: 2px solid var(--neo-black); cursor: pointer; }
 
-.toggle-status {
-  font-family: var(--font-mono);
-  font-weight: 900;
-  font-size: 11px;
-  background: #eee;
-  border: 1.5px solid var(--neo-black);
-  padding: 2px 8px;
-}
-
-.tool-checkbox:checked + .toggle-track {
-  background: var(--neo-yellow);
-  transform: translate(1px, 1px);
-  box-shadow: var(--neo-shadow-active);
-}
-
-.tool-checkbox:checked + .toggle-track .toggle-status {
-  background: var(--neo-green);
-}
-
-.range-slider {
-  flex: 2;
-  height: 12px;
-  background: var(--neo-white);
-  border: 2px solid var(--neo-black) !important;
-  cursor: pointer;
-  padding: 0 !important;
-  box-shadow: none !important;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.range-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 20px;
-  height: 24px;
-  background: var(--neo-yellow);
-  border: 2px solid var(--neo-black);
-  box-shadow: 2px 2px 0 var(--neo-black);
-  cursor: pointer;
-}
-
-.num-input {
-  flex: 1;
-  text-align: center;
-  padding: 6px;
-  font-family: var(--font-mono);
-  font-weight: 900;
-}
-
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.checkbox-row input[type="checkbox"] {
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--neo-black);
-  background: var(--neo-white);
-  box-shadow: var(--neo-shadow-sm);
-  cursor: pointer;
-  position: relative;
-}
-
-.checkbox-row input[type="checkbox"]:checked {
-  background: var(--neo-green);
-}
-
-.checkbox-row input[type="checkbox"]:checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--neo-black);
-}
-
+.tip { font-size: 0.7rem; font-weight: 700; background: var(--neo-yellow); border: 1.5px solid var(--neo-black); padding: 4px 8px; display: inline-block; }
 .mt-2 { margin-top: 6px; }
 
-.tip {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--neo-black);
-  background: var(--neo-yellow);
-  border: 1.5px solid var(--neo-black);
-  padding: 4px 8px;
-  display: inline-block;
-  margin-top: 6px;
-}
-
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
-}
-input[type=number] { -moz-appearance: textfield; }
-
-/* ---------------- STARTUP MODAL ---------------- */
+/* STARTUP MODAL */
 .startup-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  z-index: 9999;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(2px);
+  position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9999; display: flex; justify-content: center; align-items: center;
 }
-
 .startup-box {
-  background-color: var(--neo-white);
-  padding: 40px 32px 32px;
-  border: 4px solid var(--neo-black);
-  box-shadow: var(--neo-shadow-lg);
-  text-align: center;
-  max-width: 520px;
-  width: 92%;
-  position: relative;
+  background-color: var(--neo-white); padding: 36px 30px;
+  border: 4px solid var(--neo-black); box-shadow: var(--neo-shadow-lg);
+  text-align: center; max-width: 520px; width: 92%; position: relative;
 }
-
 .modal-badge {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--neo-yellow);
-  color: var(--neo-black);
-  border: 3px solid var(--neo-black);
-  box-shadow: var(--neo-shadow-sm);
-  font-family: var(--font-cond);
-  font-weight: 900;
-  font-size: 14px;
-  padding: 4px 16px;
-  letter-spacing: 0.08em;
+  position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+  background: var(--neo-yellow); color: var(--neo-black);
+  border: 3px solid var(--neo-black); box-shadow: var(--neo-shadow-sm);
+  font-family: var(--font-cond); font-weight: 900; padding: 4px 16px;
 }
-
-.startup-box h2 {
-  font-family: var(--font-cond);
-  font-size: 2.2rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
-}
-
-.modal-desc {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #444;
-  margin-bottom: 24px;
-}
-
-.divider-text {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 900;
-  margin: 14px 0;
-}
-
-.startup-options {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-}
-
+.startup-box h2 { font-family: var(--font-cond); font-size: 2.2rem; font-weight: 900; margin-bottom: 4px; }
+.modal-desc { font-weight: 600; font-size: 0.95rem; color: #444; margin-bottom: 24px; }
+.startup-options { display: flex; gap: 16px; }
 .startup-btn {
-  flex: 1;
-  padding: 20px 14px;
-  border: 3px solid var(--neo-black);
-  box-shadow: var(--neo-shadow);
-  color: var(--neo-black);
-  cursor: pointer;
-  transition: all 0.12s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
+  flex: 1; padding: 18px 12px; border: 3px solid var(--neo-black);
+  box-shadow: var(--neo-shadow); color: var(--neo-black); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
-
-.startup-btn:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: 7px 7px 0px var(--neo-black);
-}
-
-.startup-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: var(--neo-shadow-active);
-}
-
-.startup-btn i { font-size: 2rem; margin-bottom: 2px; }
-.startup-btn span { font-family: var(--font-cond); font-weight: 900; font-size: 1.2rem; }
-.startup-btn small { font-size: 0.75rem; font-weight: 600; }
-
+.startup-btn i { font-size: 1.8rem; }
+.startup-btn span { font-family: var(--font-cond); font-weight: 900; font-size: 1.15rem; }
 .btn-primary-neo { background-color: var(--neo-yellow); }
 .btn-accent-neo  { background-color: var(--neo-blue); }
 .btn-success-neo { background-color: var(--neo-green); width: 100%; margin-bottom: 8px; }
 
-/* ---------------- RESPONSIVE MOBILE ---------------- */
+/* ==================================================
+   DARK MODE RIÊNG CHO TACTICAL BOARD (DỊU MẮT)
+   ================================================== */
+body.dark-mode .canvas-area {
+  background: #14151a !important;
+  background-image: 
+    linear-gradient(#20222a 1px, transparent 1px),
+    linear-gradient(90deg, #20222a 1px, transparent 1px) !important;
+}
+
+body.dark-mode .toolbar {
+  background: #18191f !important;
+  border-color: #383b45 !important;
+}
+
+body.dark-mode .neo-log-container {
+  background: #101114 !important;
+  border-color: #383b45 !important;
+}
+body.dark-mode .log-text { color: #f3f4f6 !important; }
+
+body.dark-mode .settings-panel {
+  background: #101114 !important;
+  border-color: #383b45 !important;
+}
+
+body.dark-mode .neo-card {
+  background: #18191f !important;
+  border-color: #383b45 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+body.dark-mode .toggle-track {
+  background: #22242c !important;
+  border-color: #383b45 !important;
+}
+
+body.dark-mode .startup-box {
+  background: #18191f !important;
+  border-color: #383b45 !important;
+  box-shadow: 8px 8px 0px #000000 !important;
+}
+body.dark-mode .startup-box h2 { color: #fff !important; }
+body.dark-mode .modal-desc { color: #a1a1aa !important; }
+
 @media screen and (max-width: 860px) {
-  .app-container {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    overflow-y: auto;
-  }
+  .board-body { height: auto; overflow: auto; }
+  .app-container { display: flex; flex-direction: column; }
+  .canvas-area { min-height: 52vh; }
+  .settings-panel { width: 100%; border-left: none; border-top: var(--neo-border-w) solid var(--neo-black); }
+}
 
-  .canvas-area {
-    min-height: 52vh;
-    padding: 12px;
-  }
+/* ==============================================================================
+   DARK MODE RIÊNG CHO TACTICAL BOARD (css/board.css)
+   Lưới caro kỹ thuật số + Khử sạch lỗi trắng chìm và hạ nhiệt Startup Modal
+   ============================================================================== */
 
-  .toolbar {
-    width: 100%;
-    height: auto;
-    padding: 10px;
-    flex-wrap: wrap;
-  }
+/* 1. KHÔI PHỤC LƯỚI CARO KHUNG SÂN CHIẾN THUẬT */
+body.dark-mode .canvas-area {
+  background-color: #121318 !important;
+  background-image: 
+    linear-gradient(#262936 1px, transparent 1px),
+    linear-gradient(90deg, #262936 1px, transparent 1px) !important;
+  background-size: 32px 32px !important;
+}
 
-  .neo-log-container {
-    order: 3;
-    width: 100%;
-  }
+body.dark-mode .toolbar {
+  background: #18191f !important;
+  border-color: #333640 !important;
+}
 
-  .settings-panel {
-    width: 100%;
-    height: auto;
-    border-left: none;
-    border-top: var(--neo-border-w) solid var(--neo-black);
-    padding-bottom: 40px;
-  }
+body.dark-mode .settings-panel {
+  background: #101114 !important;
+  border-color: #333640 !important;
+}
+
+body.dark-mode .neo-card {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+body.dark-mode .card-badge {
+  background: #20222a !important;
+  border: 1.5px solid #383b45 !important;
+  color: #d1d5db !important;
+}
+
+/* 2. ĐẶC TRỊ LỖI CHỮ TRẮNG TRÊN VÀNG Ở .tip (ẢNH b967de.jpg) */
+body.dark-mode .tip {
+  background: #222015 !important;
+  border: 1.5px solid #ca8a04 !important;
+  color: #fef08a !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+/* 3. LOG BAR & TAG 'RESTORED PREVIOUS SESSION' ĐÁY MÀN HÌNH */
+body.dark-mode .neo-log-container {
+  background: #101114 !important;
+  border-color: #333640 !important;
+}
+
+body.dark-mode .log-tag {
+  background: #222015 !important;
+  color: #fef08a !important;
+  border: 1.5px solid #ca8a04 !important;
+}
+
+body.dark-mode .log-text { 
+  color: #f3f4f6 !important; 
+}
+
+/* 4. ĐẶC TRỊ STARTUP MODAL (ẢNH b96ac4.png) */
+body.dark-mode .startup-box {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+}
+
+body.dark-mode .startup-box h2 { color: #f3f4f6 !important; }
+body.dark-mode .modal-desc,
+body.dark-mode .divider-text { color: #9ca3af !important; }
+
+/* Badge TACTICAL DESK */
+body.dark-mode .modal-badge {
+  background: #222015 !important;
+  color: #fef08a !important;
+  border: 2px solid #ca8a04 !important;
+}
+
+/* Chuyển 3 nút bấm khởi tạo sang phong cách Stealth viền màu */
+body.dark-mode .startup-btn {
+  background: #20222a !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+body.dark-mode .btn-primary-neo {
+  border: 2px solid #ca8a04 !important;
+  color: #fef08a !important;
+}
+body.dark-mode .btn-primary-neo i,
+body.dark-mode .btn-primary-neo span { color: #fef08a !important; }
+body.dark-mode .btn-primary-neo small { color: #a1a1aa !important; }
+
+body.dark-mode .btn-accent-neo {
+  border: 2px solid #0284c7 !important;
+  color: #38bdf8 !important;
+}
+body.dark-mode .btn-accent-neo i,
+body.dark-mode .btn-accent-neo span { color: #38bdf8 !important; }
+body.dark-mode .btn-accent-neo small { color: #a1a1aa !important; }
+
+body.dark-mode .btn-success-neo {
+  border: 2px solid #059669 !important;
+  color: #34d399 !important;
+}
+body.dark-mode .btn-success-neo i,
+body.dark-mode .btn-success-neo span { color: #34d399 !important; }
+body.dark-mode .btn-success-neo small { color: #a1a1aa !important; }
+
+/* 5. NÚT TOOLBAR VÀ TIP BANNER */
+body.dark-mode .tool-action-btn {
+  background: #20222a !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode .btn-action-orange { border: 2px solid #ea580c !important; color: #fb923c !important; }
+body.dark-mode .btn-action-pink   { border: 2px solid #e11d48 !important; color: #fb7185 !important; }
+body.dark-mode .btn-action-green  { border: 2px solid #059669 !important; color: #34d399 !important; }
+
+body.dark-mode .tip-banner {
+  background: #1e1c14 !important;
+  border: 1.5px solid #6b4d1b !important;
+  color: #fef08a !important;
+}
+body.dark-mode #closePolygon {
+  background: #122e20 !important;
+  border: 2px solid #059669 !important;
+  color: #34d399 !important;
+}
+body.dark-mode .copyright {
+  background: #18191f !important;
+  color: #9ca3af !important;
+  border: 1.5px solid #383b45 !important;
 }
