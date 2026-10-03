@@ -489,3 +489,124 @@ body.dark-mode .btn-action-read i   { color: #38bdf8 !important; } /* Mắt: Xan
 body.dark-mode .btn-action-edit i   { color: #60a5fa !important; } /* Bút: Xanh lơ */
 body.dark-mode .btn-action-copy i   { color: #cbd5e1 !important; } /* Copy: Trắng bạc */
 body.dark-mode .btn-action-delete i { color: #f87171 !important; } /* Thùng rác: Đỏ dịu */
+
+/* ==============================================================================
+   DARK MODE ĐẶC TRỊ CHO TOÀN BỘ MODAL TRANG STACK (css/stack.css)
+   Triệt tiêu 100% nền trắng ở Modal Sửa bài, Đọc duyệt và Thêm bài
+   ============================================================================== */
+
+/* 1. KHUNG CHÍNH CỦA TẤT CẢ CÁC MODAL */
+body.dark-mode .neo-modal {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+  color: #d1d5db !important;
+}
+
+/* 2. HEADER MODAL (HẠ MÀU CYAN NEON CHÓI LÓA XUỐNG TÔNG THAN CHÌ STEALTH) */
+body.dark-mode .modal-header,
+body.dark-mode #edit-modal .modal-header,
+body.dark-mode #reader-modal .modal-header,
+body.dark-mode #post-modal .modal-header {
+  background: #20222a !important;        /* Nền than chì cao cấp */
+  border-bottom: 2px solid #333640 !important;
+}
+
+body.dark-mode .modal-header h3,
+body.dark-mode #reader-modal-title {
+  color: #f3f4f6 !important;             /* Tiêu đề trắng sáng rõ nét */
+}
+
+body.dark-mode .btn-modal-close {
+  color: #94a3b8 !important;             /* Nút X xám dịu */
+}
+body.dark-mode .btn-modal-close:hover {
+  color: #f87171 !important;
+}
+
+/* 3. MODAL SỬA BÀI & THÊM BÀI: XÓA SẠCH NỀN TRẮNG Ở TEXTAREA VÀ INPUT */
+body.dark-mode .modal-body {
+  background: #18191f !important;
+}
+
+body.dark-mode .form-group label {
+  color: #94a3b8 !important;             /* Label xám bạc dễ đọc */
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group textarea,
+body.dark-mode .form-group select,
+body.dark-mode #edit-content,
+body.dark-mode #input-full-content {
+  background: #121316 !important;        /* Nền tối than sâu */
+  color: #f3f4f6 !important;             /* Chữ viết trắng sáng êm mắt */
+  border: 1.5px solid #333640 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group textarea:focus,
+body.dark-mode .form-group select:focus {
+  background: #1c1d24 !important;
+  border-color: #52576b !important;
+}
+
+/* Nút chọn file ảnh từ máy */
+body.dark-mode input[type="file"] {
+  background: #121316 !important;
+  border: 1.5px dashed #333640 !important;
+  color: #94a3b8 !important;
+}
+
+/* Nút Submit (LƯU CẬP NHẬT / ĐẨY LÊN STACK) */
+body.dark-mode .btn-neo-submit,
+body.dark-mode #btn-submit-edit {
+  background: #20222a !important;
+  color: #f3f4f6 !important;
+  border: 2px solid #383b45 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+body.dark-mode .btn-neo-submit:hover,
+body.dark-mode #btn-submit-edit:hover {
+  background: #282a36 !important;
+  border-color: #52576b !important;
+  color: var(--neo-yellow) !important;
+}
+
+/* 4. ĐẶC TRỊ MODAL ĐỌC BÀI (#reader-modal - ẢNH 47) */
+body.dark-mode .reader-meta-bar {
+  background: #14151a !important;
+  border: 1.5px solid #333640 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .reader-meta-bar strong {
+  color: #f3f4f6 !important;
+}
+
+/* KHUNG RUỘT BÀI VIẾT (XÓA SỔ NỀN TRẮNG CHÓI MẮT) */
+body.dark-mode .reader-content-box,
+body.dark-mode #reader-modal-text {
+  background: #121316 !important;        /* Nền đen than chì chuẩn OLED */
+  color: #e2e4e9 !important;             /* Chữ xám sáng dịu */
+  border: 1.5px solid #333640 !important;
+  box-shadow: inset 1px 1px 0px #000000 !important;
+}
+
+/* Nút tác vụ dưới đáy Reader Modal */
+body.dark-mode #btn-copy-full-post {
+  background: #16241d !important;
+  border: 2px solid #059669 !important;
+  color: #34d399 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode #btn-copy-full-post:hover {
+  background: #1f352a !important;
+}
+
+body.dark-mode #btn-toggle-approval {
+  background: #20222a !important;
+  border: 2px solid #383b45 !important;
+  color: #f3f4f6 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
