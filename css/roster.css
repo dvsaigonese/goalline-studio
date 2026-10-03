@@ -924,3 +924,373 @@ body.roster-body {
     font-size: 0.8rem;
   }
 }
+
+/* ==============================================================================
+   DARK MODE RIÊNG BIỆT CHO SQUAD ROSTER (css/roster.css)
+   Khử sạch chói lóa, avatar than chì vàng ấm, chip lọc & dossier êm mắt
+   ============================================================================== */
+
+/* 1. NỀN & LƯỚI CARO CHUẨN STEALTH */
+body.dark-mode.roster-body {
+  background-color: #101114 !important;
+  background-image: 
+    linear-gradient(#20222a 1px, transparent 1px),
+    linear-gradient(90deg, #20222a 1px, transparent 1px) !important;
+  background-size: 32px 32px !important;
+  color: #d1d5db !important;
+}
+
+/* 2. TOP HEADER & METRIC CHIPS */
+body.dark-mode .roster-nav {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+body.dark-mode .nav-title-group h1 {
+  color: #f3f4f6 !important;
+}
+
+body.dark-mode .sub-badge {
+  color: #9ca3af !important;
+}
+
+/* Nút quay lại & Nút ADMIN PORTAL */
+body.dark-mode .btn-back {
+  background: #20222a !important;
+  color: #f3f4f6 !important;
+  border-color: #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .btn-back:hover {
+  background: #282a36 !important;
+  border-color: #52576b !important;
+  color: var(--neo-yellow) !important;
+}
+
+/* Metric TOTAL ROSTER */
+body.dark-mode .metric-card {
+  background: #14151a !important;
+  border-color: #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode .metric-card .m-num { color: #f3f4f6 !important; }
+body.dark-mode .metric-card .m-lbl { color: #94a3b8 !important; }
+
+/* Metric ACTIVE: Hạ tông xanh rêu trầm, chữ xanh ngọc dịu */
+body.dark-mode .metric-card.bg-green {
+  background: #064e3b !important;
+  border-color: #059669 !important;
+}
+body.dark-mode .metric-card.bg-green .m-num { color: #34d399 !important; }
+body.dark-mode .metric-card.bg-green .m-lbl { color: #6ee7b7 !important; }
+
+/* 3. CONTROL DOCK (TÌM KIẾM & BỘ LỌC CHIP) */
+body.dark-mode .control-dock {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+body.dark-mode .search-box {
+  background: #101114 !important;
+  border-color: #333640 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode .search-icon { color: #94a3b8 !important; }
+body.dark-mode .search-box input { color: #f3f4f6 !important; }
+body.dark-mode .btn-clear { color: #94a3b8 !important; }
+body.dark-mode .filter-lbl { color: #94a3b8 !important; }
+
+/* Chip lọc thường (chưa chọn) */
+body.dark-mode .chip-btn {
+  background: #20222a !important;
+  color: #94a3b8 !important;
+  border: 1.5px solid #383b45 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode .chip-btn:hover {
+  background: #282a36 !important;
+  color: #f3f4f6 !important;
+  border-color: #52576b !important;
+}
+
+/* Chip lọc ĐANG CHỌN (ACTIVE): Hổ phách than chì viền vàng ấm */
+body.dark-mode .chip-btn.active {
+  background: #252319 !important;
+  border-color: #ca8a04 !important;
+  color: #fef08a !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+/* Nút đổi Grid / Table */
+body.dark-mode .btn-view {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: #94a3b8 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode .btn-view.active {
+  background: #252319 !important;
+  border-color: #ca8a04 !important;
+  color: #fef08a !important;
+}
+
+/* 4. MEMBER CARDS (GRID VIEW) */
+body.dark-mode .member-card {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+body.dark-mode .member-card:hover {
+  border-color: #52576b !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+}
+
+body.dark-mode .gen-tag {
+  background: #14151a !important;
+  border-color: #383b45 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .status-indicator-dot {
+  color: #94a3b8 !important;
+}
+
+/* KHỬ SẠCH KHỐI VUÔNG VÀNG NEON Ở AVATAR: Nền than chì, chữ cái vàng ấm */
+body.dark-mode .avatar-badge {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: var(--neo-yellow, #ffe600) !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode .handle-text { color: #f3f4f6 !important; }
+body.dark-mode .realname-text { color: #9ca3af !important; }
+
+body.dark-mode .role-pill {
+  background: #14151a !important;
+  border: 1.5px solid #383b45 !important;
+  color: #cbd5e1 !important;
+}
+body.dark-mode .loc-pill {
+  background: #20222a !important;
+  border: 1.5px solid #383b45 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .card-footer-action {
+  background: #14151a !important;
+  border-top-color: #333640 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .member-card:hover .card-footer-action {
+  background: #20222a !important;
+  color: #fef08a !important;
+}
+
+/* 5. TABLE VIEW */
+body.dark-mode .table-wrap {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+body.dark-mode .neo-table th {
+  background: #23252e !important;
+  color: #f3f4f6 !important;
+  border-right-color: #383b45 !important;
+}
+body.dark-mode .neo-table td {
+  background: #18191f !important;
+  color: #d1d5db !important;
+  border-bottom-color: #2b2d36 !important;
+  border-right-color: #2b2d36 !important;
+}
+body.dark-mode .neo-table tr:hover td {
+  background: #20222a !important;
+}
+body.dark-mode .btn-inspect {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: #fef08a !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode .btn-inspect:hover {
+  background: #282a36 !important;
+  border-color: #52576b !important;
+}
+
+/* 6. DOSSIER MODAL (HỒ SƠ SCOUTING REPORT) */
+body.dark-mode .dossier-card {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+  color: #d1d5db !important;
+}
+body.dark-mode .dossier-header {
+  background: #20222a !important;
+  border-bottom-color: #333640 !important;
+  color: #f3f4f6 !important;
+}
+body.dark-mode .dossier-tag { color: #f3f4f6 !important; }
+body.dark-mode .btn-close-modal {
+  background: #14151a !important;
+  border-color: #383b45 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .btn-close-modal:hover { color: #f87171 !important; }
+
+body.dark-mode .dossier-body .avatar-box {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: var(--neo-yellow) !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+body.dark-mode .hero-handle-wrap h2 { color: #f3f4f6 !important; }
+body.dark-mode .real-name { color: #9ca3af !important; }
+
+body.dark-mode .meta-grid {
+  background: #14151a !important;
+  border-color: #333640 !important;
+}
+body.dark-mode .meta-item.full-width {
+  border-top-color: #333640 !important;
+}
+body.dark-mode .meta-key { color: #94a3b8 !important; }
+body.dark-mode .meta-val { color: #f3f4f6 !important; }
+body.dark-mode #m-note { color: #fb923c !important; } /* Cam ấm dịu mắt */
+
+body.dark-mode .btn-copy {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Hall of Fame Signature Works */
+body.dark-mode .signature-section {
+  background: #222015 !important;
+  border-color: #ca8a04 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  color: #fef08a !important;
+}
+body.dark-mode .sig-header { color: #fef08a !important; }
+body.dark-mode .sig-item-card {
+  background: #18191f !important;
+  border-color: #383b45 !important;
+  color: #f3f4f6 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+body.dark-mode .sig-item-card:hover {
+  background: #252833 !important;
+  border-color: #52576b !important;
+  color: #fef08a !important;
+}
+body.dark-mode .sig-empty-notice { color: #94a3b8 !important; }
+
+body.dark-mode #btn-open-edit-member {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Modal Edit Profile Member */
+body.dark-mode #form-edit-member > div:first-of-type {
+  background: #14151a !important;
+  border-color: #333640 !important;
+}
+body.dark-mode #edit-m-handle-title { color: #f3f4f6 !important; }
+body.dark-mode #edit-m-avatar {
+  background: #121316 !important;
+  border-color: #333640 !important;
+  color: #f3f4f6 !important;
+}
+body.dark-mode #form-edit-member > div:nth-of-type(3) {
+  background: #1e1d16 !important;
+  border-color: #ca8a04 !important;
+}
+body.dark-mode #btn-save-member {
+  background: #16241d !important;
+  border-color: #059669 !important;
+  color: #34d399 !important;
+}
+
+/* 7. EMPTY STATE KHI KHÔNG TÌM THẤY AI */
+body.dark-mode .empty-state {
+  background: #18191f !important;
+  border-color: #333640 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+body.dark-mode .empty-state h3 { color: #f3f4f6 !important; }
+body.dark-mode .empty-state p { color: #94a3b8 !important; }
+body.dark-mode .btn-reset {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: #fef08a !important;
+}
+
+/* ==============================================================================
+   FIX ĐỘ TƯƠNG PHẢN BADGE TEAM & BADGE STATUS TRÊN ROSTER (css/roster.css)
+   ============================================================================== */
+
+/* 1. ĐẶC TRỊ CỘT TEAM TRONG BẢNG (ẢNH 51): NỀN THAN CHÌ DỊU, CHỮ VÀ VIỀN SÁNG NÉT */
+body.dark-mode .team-Executive,
+body.dark-mode [class*="team-Executive"],
+body.dark-mode td .team-Executive {
+  background: #2d1520 !important;         /* Nền than hồng */
+  color: #fda4af !important;              /* Chữ hồng pastel sáng, đọc cực rõ */
+  border: 1.5px solid #e11d48 !important; /* Viền hồng */
+}
+
+body.dark-mode .team-Management,
+body.dark-mode [class*="team-Management"],
+body.dark-mode td .team-Management {
+  background: #262214 !important;         /* Nền than vàng ấm */
+  color: #fef08a !important;              /* Chữ vàng hổ phách sáng */
+  border: 1.5px solid #ca8a04 !important; /* Viền vàng */
+}
+
+body.dark-mode .team-Production,
+body.dark-mode [class*="team-Production"],
+body.dark-mode td .team-Production {
+  background: #12241b !important;         /* Nền than xanh rêu */
+  color: #6ee7b7 !important;              /* Chữ xanh bạc hà sáng */
+  border: 1.5px solid #059669 !important; /* Viền xanh ngọc */
+}
+
+body.dark-mode .team-Support,
+body.dark-mode [class*="team-Support"],
+body.dark-mode td .team-Support {
+  background: #21162d !important;         /* Nền than tím */
+  color: #d8b4fe !important;              /* Chữ tím lavender sáng */
+  border: 1.5px solid #9333ea !important; /* Viền tím */
+}
+
+/* Định hình chung cho các pill team trong bảng */
+body.dark-mode .neo-table td [class*="team-"],
+body.dark-mode .pill-team {
+  box-shadow: 1px 1px 0px #000000 !important;
+  font-weight: 800 !important;
+  padding: 3px 8px !important;
+  display: inline-block;
+}
+
+/* 2. ĐẶC TRỊ BADGE ACTIVE (ẢNH 52 - DOSSIER MODAL & CARD) */
+body.dark-mode .status-badge,
+body.dark-mode #m-status {
+  background: #064e3b !important;        /* Nền xanh rêu tối chuẩn Dark Mode */
+  color: #34d399 !important;             /* Chữ xanh ngọc sắc nét, không còn trắng lóa */
+  border: 1.5px solid #059669 !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+body.dark-mode .status-badge.on-leave {
+  background: #2d1808 !important;
+  color: #fb923c !important;
+  border-color: #ea580c !important;
+}
+
+body.dark-mode .status-badge.inactive {
+  background: #1c1d22 !important;
+  color: #94a3b8 !important;
+  border-color: #383b45 !important;
+}
