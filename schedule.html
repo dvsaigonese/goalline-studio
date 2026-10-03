@@ -304,8 +304,20 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- THANH TIẾN TRÌNH TẢI ẢNH KHI THÊM TASK -->
+                <div id="task-upload-progress-box" style="display: none; margin: 8px 0;">
+                    <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 800; margin-bottom: 5px;">
+                        <span id="task-upload-progress-text"><i class="fa-solid fa-cloud-arrow-up"></i> Đang tải lên: 0.0 MB / 0.0 MB</span>
+                        <span id="task-upload-progress-percent" style="color: #b71515;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 16px; border: 2px solid #000; background: #fff; box-shadow: 2px 2px 0 #000; overflow: hidden;">
+                        <div id="task-upload-progress-bar" style="width: 0%; height: 100%; background: var(--neo-green); transition: width 0.15s ease;"></div>
+                    </div>
+                </div>
+
                 <div class="modal-footer">
-                    <button type="submit" class="btn-neo-submit">LƯU TASK DESIGN</button>
+                    <button type="submit" class="btn-neo-submit" id="btn-submit-add-task">LƯU TASK DESIGN</button>
                 </div>
             </form>
         </div>
@@ -369,6 +381,17 @@
                             <option value="PENDING">PENDING</option>
                             <option value="DONE">DONE</option>
                         </select>
+                    </div>
+                </div>
+
+                <!-- THANH TIẾN TRÌNH TẢI ẢNH KHI SỬA TASK -->
+                <div id="edit-task-upload-progress-box" style="display: none; margin: 8px 0;">
+                    <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 800; margin-bottom: 5px;">
+                        <span id="edit-task-upload-progress-text"><i class="fa-solid fa-cloud-arrow-up"></i> Đang tải lên: 0.0 MB / 0.0 MB</span>
+                        <span id="edit-task-upload-progress-percent" style="color: #b71515;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 16px; border: 2px solid #000; background: #fff; box-shadow: 2px 2px 0 #000; overflow: hidden;">
+                        <div id="edit-task-upload-progress-bar" style="width: 0%; height: 100%; background: var(--neo-green); transition: width 0.15s ease;"></div>
                     </div>
                 </div>
 

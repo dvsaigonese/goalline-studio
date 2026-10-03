@@ -459,6 +459,54 @@ document.querySelectorAll('.task-filter-btn').forEach(btn => {
   };
 });
 
+// ==========================================
+// HÀM UPLOAD ẢNH ĐO TIẾN TRÌNH THEO BYTE (CHUẨN DRIVE)
+// ==========================================
+function uploadTaskImageWithProgress(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const fileName = `task_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    let mimeType = file.type;
+    if (!mimeType) {
+      if (fileExt === 'webp') mimeType = 'image/webp';
+      else if (fileExt === 'png') mimeType = 'image/png';
+      else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg';
+      else mimeType = 'application/octet-stream';
+    }
+
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/stack-assets/${fileName}`;
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', uploadUrl, true);
+
+    xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+    xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_ANON_KEY}`);
+    xhr.setRequestHeader('Content-Type', mimeType);
+    xhr.setRequestHeader('x-upsert', 'true');
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        const loadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
+        const totalMB = (e.total / (1024 * 1024)).toFixed(1);
+        const percent = Math.round((e.loaded / e.total) * 100);
+        onProgress(loadedMB, totalMB, percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/stack-assets/${fileName}`;
+        resolve(publicUrl);
+      } else {
+        reject(new Error(`Lỗi upload ảnh: HTTP ${xhr.status} - ${xhr.responseText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Lỗi kết nối khi tải ảnh lên Cloud!'));
+    xhr.send(file);
+  });
+}
+
 // Modal Thêm Task Design mới
 const taskModal = document.getElementById('task-modal');
 const btnOpenTaskModal = document.getElementById('btn-open-task-modal');
@@ -470,29 +518,32 @@ const formAddTask = document.getElementById('form-add-task');
 if (formAddTask) {
   formAddTask.onsubmit = async (e) => {
     e.preventDefault();
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    submitBtn.innerText = 'ĐANG LƯU...';
-    submitBtn.disabled = true;
+    const submitBtn = document.getElementById('btn-submit-add-task') || e.target.querySelector('button[type="submit"]');
+    const progressBox = document.getElementById('task-upload-progress-box');
+    const progressText = document.getElementById('task-upload-progress-text');
+    const progressPercent = document.getElementById('task-upload-progress-percent');
+    const progressBar = document.getElementById('task-upload-progress-bar');
+
+    let finalImgUrl = document.getElementById('task-image-url')?.value.trim() || '';
+    const fileInput = document.getElementById('task-image-file');
+    const file = fileInput ? fileInput.files[0] : null;
 
     try {
-      let finalImgUrl = document.getElementById('task-image-url')?.value.trim() || '';
-      const fileInput = document.getElementById('task-image-file');
-      const file = fileInput ? fileInput.files[0] : null;
-
       if (file) {
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const fileName = `task_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        let mimeType = file.type || (fileExt === 'webp' ? 'image/webp' : (fileExt === 'png' ? 'image/png' : 'image/jpeg'));
-
-        const { error: upErr } = await window.sb.storage
-          .from('stack-assets')
-          .upload(fileName, file, { contentType: mimeType, upsert: true });
-
-        if (!upErr) {
-          const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
-          finalImgUrl = data.publicUrl;
+        if (progressBox) progressBox.style.display = 'block';
+        if (submitBtn) {
+          submitBtn.innerText = 'ĐANG TẢI ẢNH LÊN...';
+          submitBtn.disabled = true;
         }
+
+        finalImgUrl = await uploadTaskImageWithProgress(file, (loadedMB, totalMB, percent) => {
+          if (progressText) progressText.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Đang tải: <strong>${loadedMB} MB</strong> / <strong>${totalMB} MB</strong>`;
+          if (progressPercent) progressPercent.innerText = `${percent}%`;
+          if (progressBar) progressBar.style.width = `${percent}%`;
+        });
       }
+
+      if (submitBtn) submitBtn.innerText = 'ĐANG LƯU DỮ LIỆU...';
 
       await window.sb.from('design_tasks').insert([{
         task_type: document.getElementById('task-type-select').value,
@@ -504,14 +555,20 @@ if (formAddTask) {
       }]);
 
       e.target.reset();
+      if (progressBox) progressBox.style.display = 'none';
+      if (progressBar) progressBar.style.width = '0%';
       if (taskModal) taskModal.classList.remove('active');
       fetchDesignTasks();
+
     } catch (err) {
       console.error(err);
-      alert('Có lỗi xảy ra khi thêm task!');
+      alert('Có lỗi xảy ra khi thêm task: ' + err.message);
     } finally {
-      submitBtn.innerText = 'LƯU TASK DESIGN';
-      submitBtn.disabled = false;
+      if (submitBtn) {
+        submitBtn.innerText = 'LƯU TASK DESIGN';
+        submitBtn.disabled = false;
+      }
+      if (progressBox) progressBox.style.display = 'none';
     }
   };
 }
@@ -550,28 +607,31 @@ if (formEditTask) {
     e.preventDefault();
     const id = document.getElementById('edit-task-id').value;
     const submitBtn = document.getElementById('btn-submit-edit-task');
-    submitBtn.innerText = 'ĐANG LƯU...';
-    submitBtn.disabled = true;
+    const progressBox = document.getElementById('edit-task-upload-progress-box');
+    const progressText = document.getElementById('edit-task-upload-progress-text');
+    const progressPercent = document.getElementById('edit-task-upload-progress-percent');
+    const progressBar = document.getElementById('edit-task-upload-progress-bar');
+
+    let finalImgUrl = document.getElementById('edit-task-imgurl')?.value.trim() || '';
+    const fileInput = document.getElementById('edit-task-file');
+    const file = fileInput ? fileInput.files[0] : null;
 
     try {
-      let finalImgUrl = document.getElementById('edit-task-imgurl').value.trim();
-      const fileInput = document.getElementById('edit-task-file');
-      const file = fileInput ? fileInput.files[0] : null;
-
       if (file) {
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const fileName = `task_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        let mimeType = file.type || (fileExt === 'webp' ? 'image/webp' : (fileExt === 'png' ? 'image/png' : 'image/jpeg'));
-
-        const { error: upErr } = await window.sb.storage
-          .from('stack-assets')
-          .upload(fileName, file, { contentType: mimeType, upsert: true });
-
-        if (!upErr) {
-          const { data } = window.sb.storage.from('stack-assets').getPublicUrl(fileName);
-          finalImgUrl = data.publicUrl;
+        if (progressBox) progressBox.style.display = 'block';
+        if (submitBtn) {
+          submitBtn.innerText = 'ĐANG TẢI ẢNH MỚI...';
+          submitBtn.disabled = true;
         }
+
+        finalImgUrl = await uploadTaskImageWithProgress(file, (loadedMB, totalMB, percent) => {
+          if (progressText) progressText.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Đang tải: <strong>${loadedMB} MB</strong> / <strong>${totalMB} MB</strong>`;
+          if (progressPercent) progressPercent.innerText = `${percent}%`;
+          if (progressBar) progressBar.style.width = `${percent}%`;
+        });
       }
+
+      if (submitBtn) submitBtn.innerText = 'ĐANG LƯU DỮ LIỆU...';
 
       await window.sb.from('design_tasks').update({
         task_type: document.getElementById('edit-task-type').value,
@@ -584,13 +644,19 @@ if (formEditTask) {
 
       const modal = document.getElementById('edit-task-modal');
       if (modal) modal.classList.remove('active');
+      if (progressBox) progressBox.style.display = 'none';
+      if (progressBar) progressBar.style.width = '0%';
       fetchDesignTasks();
+
     } catch (err) {
       console.error(err);
-      alert('Có lỗi khi cập nhật task!');
+      alert('Có lỗi khi cập nhật task: ' + err.message);
     } finally {
-      submitBtn.innerText = 'LƯU THAY ĐỔI';
-      submitBtn.disabled = false;
+      if (submitBtn) {
+        submitBtn.innerText = 'LƯU THAY ĐỔI';
+        submitBtn.disabled = false;
+      }
+      if (progressBox) progressBox.style.display = 'none';
     }
   };
 }

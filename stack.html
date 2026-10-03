@@ -133,6 +133,16 @@
                     </div>
                 </div>
 
+                <div id="upload-progress-box" style="display: none; margin: 10px 0;">
+                    <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 800; margin-bottom: 5px;">
+                        <span id="upload-progress-text"><i class="fa-solid fa-cloud-arrow-up"></i> Đang tải lên: 0.0 MB / 0.0 MB</span>
+                        <span id="upload-progress-percent" style="color: #b71515;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 16px; border: 2px solid #000; background: #fff; box-shadow: 2px 2px 0 #000; overflow: hidden;">
+                        <div id="upload-progress-bar" style="width: 0%; height: 100%; background: var(--neo-green); transition: width 0.15s ease;"></div>
+                    </div>
+                </div>
+
                 <div class="modal-footer">
                     <button type="submit" class="btn-neo-submit">ĐẨY LÊN STACK CHO ANH EM CHECK</button>
                 </div>
@@ -201,7 +211,17 @@
                         <option value="approved">Đã duyệt</option>
                     </select>
                 </div>
-            
+
+                <div id="edit-upload-progress-box" style="display: none; margin: 8px 0;">
+                    <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 800; margin-bottom: 5px;">
+                        <span id="edit-upload-progress-text"><i class="fa-solid fa-cloud-arrow-up"></i> Đang tải lên: 0.0 MB / 0.0 MB</span>
+                        <span id="edit-upload-progress-percent" style="color: #b71515;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 16px; border: 2px solid #000; background: #fff; box-shadow: 2px 2px 0 #000; overflow: hidden;">
+                        <div id="edit-upload-progress-bar" style="width: 0%; height: 100%; background: var(--neo-green); transition: width 0.15s ease;"></div>
+                    </div>
+                </div>
+
                 <div class="modal-footer">
                     <button type="submit" class="btn-neo-submit" id="btn-submit-edit">LƯU CẬP NHẬT</button>
                 </div>
