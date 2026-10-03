@@ -403,7 +403,39 @@ if (checkAllTasksBox) {
   };
 }
 
-// Xóa hàng loạt Task Design (PIN: 2026)
+// Đổi trạng thái DESIGN <-> DONE
+window.toggleTaskStatus = async (id, currentStatus) => {
+  const nextStatus = currentStatus === 'DESIGN' ? 'DONE' : 'DESIGN';
+  await window.sb.from('design_tasks').update({ status: nextStatus }).eq('id', id);
+  fetchDesignTasks();
+};
+
+// Xóa 1 task đơn lẻ
+// 1. Xóa 1 task đơn lẻ: Tự động xóa file ảnh khỏi Storage
+window.deleteDesignTask = async (id) => {
+  const task = designTasks.find(t => String(t.id) === String(id));
+  if (!task) return;
+
+  if (!confirm(`Bạn có chắc chắn muốn xóa task: "${task.brief}"?`)) return;
+
+  // Xóa ảnh trong Storage nếu có
+  const storageFileName = extractStorageFileName(task.img_url);
+  if (storageFileName) {
+    await deleteFilesFromStorage([storageFileName]);
+  }
+
+  // Xóa khỏi Database
+  const { error } = await window.sb.from('design_tasks').delete().eq('id', id);
+  if (error) {
+    alert("Lỗi khi xóa task: " + error.message);
+  } else {
+    selectedTaskIds.delete(String(id));
+    selectedTaskIds.delete(Number(id));
+    fetchDesignTasks();
+  }
+};
+
+// 2. Xóa hàng loạt Task Design: Nhập PIN 2026 và gom sạch ảnh để xóa
 const btnBatchDelTasks = document.getElementById('btn-batch-del-tasks');
 if (btnBatchDelTasks) {
   btnBatchDelTasks.onclick = async () => {
@@ -415,6 +447,20 @@ if (btnBatchDelTasks) {
       return;
     }
 
+    const selectedStrings = new Set(Array.from(selectedTaskIds).map(String));
+
+    // Gom danh sách ảnh của các task được tick chọn
+    const filesToDelete = designTasks
+      .filter(t => selectedStrings.has(String(t.id)))
+      .map(t => extractStorageFileName(t.img_url))
+      .filter(Boolean);
+
+    // Xóa toàn bộ ảnh khỏi Storage
+    if (filesToDelete.length > 0) {
+      await deleteFilesFromStorage(filesToDelete);
+    }
+
+    // Xóa các dòng task khỏi Database
     const idsToDelete = Array.from(selectedTaskIds);
     const { error } = await window.sb
       .from('design_tasks')
@@ -425,26 +471,11 @@ if (btnBatchDelTasks) {
       alert("Lỗi khi xóa: " + error.message);
     } else {
       selectedTaskIds.clear();
-      alert(`Đã xóa thành công ${idsToDelete.length} task design!`);
+      alert(`Đã xóa thành công ${idsToDelete.length} task và dọn sạch các file ảnh liên quan!`);
       fetchDesignTasks();
     }
   };
 }
-
-// Đổi trạng thái DESIGN <-> DONE
-window.toggleTaskStatus = async (id, currentStatus) => {
-  const nextStatus = currentStatus === 'DESIGN' ? 'DONE' : 'DESIGN';
-  await window.sb.from('design_tasks').update({ status: nextStatus }).eq('id', id);
-  fetchDesignTasks();
-};
-
-// Xóa 1 task đơn lẻ
-window.deleteDesignTask = async (id) => {
-  if (confirm('Bạn có chắc chắn muốn xóa task design này?')) {
-    await window.sb.from('design_tasks').delete().eq('id', id);
-    fetchDesignTasks();
-  }
-};
 
 // Copy brief nhanh
 window.copyBrief = (text) => {
@@ -462,6 +493,41 @@ document.querySelectorAll('.task-filter-btn').forEach(btn => {
     renderDesignTasks();
   };
 });
+
+// ==========================================
+// TIỆN ÍCH STORAGE CHO TASK DESIGN (CHỐNG TRÀN 500MB)
+// ==========================================
+function extractStorageFileName(url) {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/\/stack-assets\/([^?#]+)/);
+  if (match && match[1]) {
+    try {
+      return decodeURIComponent(match[1]);
+    } catch (e) {
+      return match[1];
+    }
+  }
+  return null;
+}
+
+async function deleteFilesFromStorage(fileNames) {
+  const validFiles = fileNames.filter(Boolean);
+  if (validFiles.length === 0) return;
+
+  try {
+    const { data, error } = await window.sb.storage
+      .from('stack-assets')
+      .remove(validFiles);
+
+    if (error) {
+      console.error('Lỗi khi xóa file Task khỏi Storage:', error.message);
+    } else {
+      console.log(`ĐÃ XÓA ${validFiles.length} FILE TASK KHỎI STORAGE:`, validFiles, data);
+    }
+  } catch (err) {
+    console.error('Lỗi kết nối khi dọn file Task:', err);
+  }
+}
 
 // ==========================================
 // HÀM UPLOAD ẢNH ĐO TIẾN TRÌNH THEO BYTE (CHUẨN DRIVE)

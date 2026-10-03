@@ -85,97 +85,47 @@ window.addEventListener('focus', () => {
 });
 
 // ==============================================================================
-// PHẦN 3: TIỆN ÍCH STORAGE (DỌN RÁC CHỐNG TRÀN 500MB & UPLOAD ĐO TIẾN TRÌNH)
+// PHẦN 3: TIỆN ÍCH STORAGE (DỌN RÁC CHỐNG TRÀN 500MB & UPLOAD TIẾN TRÌNH)
 // ==============================================================================
 
 /**
  * Trích xuất tên file thực tế nằm trong Storage bucket stack-assets
+ * Bắt được cả link public, link có token hoặc link chứa ký tự mã hóa URL
  */
 function extractStorageFileName(url) {
   if (!url || typeof url !== 'string') return null;
-  if (!url.includes('/storage/v1/object/public/stack-assets/')) return null;
-
-  try {
-    const parts = url.split('/storage/v1/object/public/stack-assets/');
-    if (parts.length > 1) {
-      return parts[1].split('?')[0]; // Bỏ các tham số truy vấn nếu có
+  // Bắt chính xác tên file sau cụm /stack-assets/
+  const match = url.match(/\/stack-assets\/([^?#]+)/);
+  if (match && match[1]) {
+    try {
+      return decodeURIComponent(match[1]);
+    } catch (e) {
+      return match[1];
     }
-  } catch (e) {
-    console.error('Lỗi bóc tách tên file ảnh:', e);
   }
   return null;
 }
 
 /**
- * Xóa vĩnh viễn file ảnh khỏi Storage bucket stack-assets
+ * Xóa vĩnh viễn danh sách file ảnh khỏi Storage bucket stack-assets
  */
 async function deleteFilesFromStorage(fileNames) {
   const validFiles = fileNames.filter(Boolean);
   if (validFiles.length === 0) return;
 
   try {
-    const { error } = await window.sb.storage
+    const { data, error } = await window.sb.storage
       .from('stack-assets')
       .remove(validFiles);
 
     if (error) {
-      console.warn('Lỗi khi xóa file khỏi Storage:', error.message);
+      console.error('Lỗi khi xóa file khỏi Storage:', error.message);
     } else {
-      console.log(`Đã dọn sạch ${validFiles.length} file khỏi Storage:`, validFiles);
+      console.log(`ĐÃ XÓA THÀNH CÔNG ${validFiles.length} FILE KHỎI STORAGE:`, validFiles, data);
     }
   } catch (err) {
     console.error('Lỗi kết nối khi dọn file Storage:', err);
   }
-}
-
-/**
- * Upload ảnh qua XMLHttpRequest để đo chính xác tiến trình tải (MB / MB và %)
- */
-function uploadImageWithProgress(file, onProgress) {
-  return new Promise((resolve, reject) => {
-    const fileExt = file.name.split('.').pop().toLowerCase();
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-    let mimeType = file.type;
-    if (!mimeType) {
-      if (fileExt === 'webp') mimeType = 'image/webp';
-      else if (fileExt === 'png') mimeType = 'image/png';
-      else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg';
-      else mimeType = 'application/octet-stream';
-    }
-
-    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/stack-assets/${fileName}`;
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', uploadUrl, true);
-
-    // Cấu hình Header xác thực Supabase
-    xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
-    xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_ANON_KEY}`);
-    xhr.setRequestHeader('Content-Type', mimeType);
-    xhr.setRequestHeader('x-upsert', 'true');
-
-    // Bắt sự kiện tải lên từng byte để cập nhật UI
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        const loadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
-        const totalMB = (e.total / (1024 * 1024)).toFixed(1);
-        const percent = Math.round((e.loaded / e.total) * 100);
-        onProgress(loadedMB, totalMB, percent);
-      }
-    };
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/stack-assets/${fileName}`;
-        resolve(publicUrl);
-      } else {
-        reject(new Error(`Lỗi upload ảnh: HTTP ${xhr.status} - ${xhr.responseText}`));
-      }
-    };
-
-    xhr.onerror = () => reject(new Error('Lỗi mạng khi tải ảnh lên Cloud!'));
-    xhr.send(file);
-  });
 }
 
 // ==============================================================================
@@ -653,30 +603,31 @@ if (formEditPost) {
 // PHẦN 8: XÓA ĐƠN LẺ & XÓA HÀNG LOẠT (TỰ DỌN STORAGE & MÃ PIN 2026)
 // ==============================================================================
 
-// 1. Xóa đơn lẻ: Tự động xóa file ảnh trong Storage nếu có
+// 1. Xóa đơn lẻ: Tự động xóa file ảnh trong Storage trước rồi mới xóa bài viết
 window.deleteSinglePost = async function (id) {
   const post = posts.find(p => String(p.id) === String(id));
   if (!post) return;
 
   if (!confirm(`Xóa vĩnh viễn bài: "${post.title}"?`)) return;
 
-  // Xóa ảnh trong Storage trước để giải phóng dung lượng
+  // 1. Dọn sạch file ảnh trong Storage
   const storageFileName = extractStorageFileName(post.imgUrl);
   if (storageFileName) {
     await deleteFilesFromStorage([storageFileName]);
   }
 
-  // Xóa dòng trong Database
+  // 2. Xóa hàng trong Database
   const { error } = await window.sb.from('stack_posts').delete().eq('id', id);
   if (error) {
     alert("Lỗi khi xóa bài: " + error.message);
   } else {
-    selectedPostIds.delete(id);
+    selectedPostIds.delete(String(id));
+    selectedPostIds.delete(Number(id));
     loadPostsFromDB();
   }
 };
 
-// 2. Xóa hàng loạt: Yêu cầu mã PIN 2026 & gom toàn bộ file ảnh để dọn sạch
+// 2. Xóa hàng loạt: Đã fix lỗi ép kiểu String(p.id) để gom sạch ảnh cần xóa
 const btnBatchDelete = document.getElementById('btn-batch-delete');
 if (btnBatchDelete) {
   btnBatchDelete.onclick = async () => {
@@ -688,25 +639,29 @@ if (btnBatchDelete) {
       return;
     }
 
-    const idsArray = Array.from(selectedPostIds);
+    // Ép toàn bộ Set về dạng chuỗi để so sánh chuẩn xác 100%
+    const selectedStrings = new Set(Array.from(selectedPostIds).map(String));
 
-    // Gom danh sách file ảnh cần xóa trong Storage
+    // Gom toàn bộ tên file ảnh của các bài được chọn
     const filesToDelete = posts
-      .filter(p => selectedPostIds.has(p.id))
+      .filter(p => selectedStrings.has(String(p.id)))
       .map(p => extractStorageFileName(p.imgUrl))
       .filter(Boolean);
 
+    // 1. Xóa toàn bộ file trong Storage
     if (filesToDelete.length > 0) {
       await deleteFilesFromStorage(filesToDelete);
     }
 
-    // Xóa trong Database
+    // 2. Xóa trong Database
+    const idsArray = Array.from(selectedPostIds);
     const { error } = await window.sb.from('stack_posts').delete().in('id', idsArray);
+    
     if (error) {
       alert("Lỗi khi xóa hàng loạt: " + error.message);
     } else {
       selectedPostIds.clear();
-      alert(`Đã xóa thành công ${idsArray.length} bài viết và dọn sạch các file ảnh liên quan!`);
+      alert(`Đã xóa sạch ${idsArray.length} bài viết và dọn toàn bộ ảnh liên quan trong Storage!`);
       loadPostsFromDB();
     }
   };
