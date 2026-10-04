@@ -690,3 +690,31 @@ body.dark-mode .btn-neo-add:hover {
   background: #282a36 !important;
   color: var(--neo-yellow) !important;
 }
+
+/* ==============================================================================
+   FIX ĐỘ TƯƠNG PHẢN BẢNG TASK DESIGN TRONG DARK MODE (css/schedule.css)
+   ============================================================================== */
+
+/* 1. BADGE PRIORITY (ẢNH): Nền than chì hổ phách, chữ vàng ấm tương phản sắc nét */
+body.dark-mode .tag-priority-badge {
+  background: #252319 !important;        /* Nền than trầm ánh vàng */
+  border: 1.5px solid #ca8a04 !important; /* Viền vàng hổ phách */
+  color: #fef08a !important;              /* Chữ vàng sáng rõ 100% */
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+/* 2. CỘT BRIEF / TIÊU ĐỀ TASK: Trắng ngà dễ đọc */
+body.dark-mode .design-task-table td strong {
+  color: #f3f4f6 !important;
+}
+
+/* 3. CỘT NOTE: Khử màu #555 inline bị chìm trên nền đen */
+body.dark-mode .design-task-table td[style*="color:#555"],
+body.dark-mode .design-task-table td {
+  color: #d1d5db !important;
+}
+
+/* 4. CHỮ "(Chưa đính kèm)" CỘT ẢNH */
+body.dark-mode .design-task-table td span[style*="color:#aaa"] {
+  color: #64748b !important;
+}

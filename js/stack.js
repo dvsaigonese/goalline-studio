@@ -85,16 +85,15 @@ window.addEventListener('focus', () => {
 });
 
 // ==============================================================================
-// PHẦN 3: TIỆN ÍCH STORAGE (DỌN RÁC CHỐNG TRÀN 500MB & UPLOAD TIẾN TRÌNH)
+// PHẦN 3: TIỆN ÍCH STORAGE (DỌN RÁC & UPLOAD XHR ĐO TIẾN TRÌNH MB / %)
 // ==============================================================================
 
 /**
  * Trích xuất tên file thực tế nằm trong Storage bucket stack-assets
- * Bắt được cả link public, link có token hoặc link chứa ký tự mã hóa URL
+ * Bắt chuẩn cả link public, link có token hoặc link mã hóa URL
  */
 function extractStorageFileName(url) {
   if (!url || typeof url !== 'string') return null;
-  // Bắt chính xác tên file sau cụm /stack-assets/
   const match = url.match(/\/stack-assets\/([^?#]+)/);
   if (match && match[1]) {
     try {
@@ -126,6 +125,56 @@ async function deleteFilesFromStorage(fileNames) {
   } catch (err) {
     console.error('Lỗi kết nối khi dọn file Storage:', err);
   }
+}
+
+/**
+ * Upload ảnh qua XMLHttpRequest để đo chính xác tiến trình tải (MB / MB và %)
+ */
+function uploadImageWithProgress(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    let mimeType = file.type;
+    if (!mimeType) {
+      if (fileExt === 'webp') mimeType = 'image/webp';
+      else if (fileExt === 'png') mimeType = 'image/png';
+      else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg';
+      else mimeType = 'application/octet-stream';
+    }
+
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/stack-assets/${fileName}`;
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', uploadUrl, true);
+
+    // Cấu hình Header xác thực Supabase
+    xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+    xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_ANON_KEY}`);
+    xhr.setRequestHeader('Content-Type', mimeType);
+    xhr.setRequestHeader('x-upsert', 'true');
+
+    // Bắt sự kiện tải lên từng byte để cập nhật UI thời gian thực
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        const loadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
+        const totalMB = (e.total / (1024 * 1024)).toFixed(1);
+        const percent = Math.round((e.loaded / e.total) * 100);
+        onProgress(loadedMB, totalMB, percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/stack-assets/${fileName}`;
+        resolve(publicUrl);
+      } else {
+        reject(new Error(`Lỗi upload ảnh: HTTP ${xhr.status} - ${xhr.responseText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Lỗi mạng khi tải ảnh lên Cloud!'));
+    xhr.send(file);
+  });
 }
 
 // ==============================================================================
@@ -160,9 +209,9 @@ function renderTable() {
       ? `<span class="badge-status badge-approved">ĐÃ DUYỆT</span>`
       : `<span class="badge-status badge-unapproved">CHƯA DUYỆT</span>`;
 
-    const isChecked = selectedPostIds.has(post.id) ? 'checked' : '';
+    const isChecked = selectedPostIds.has(String(post.id)) ? 'checked' : '';
 
-    // Khởi tạo HTML cho cột ảnh (Nhận diện Google Drive hoặc Thumbnail ảnh)
+    // Khởi tạo HTML cho cột ảnh
     let imageCellMarkup = `<span style="font-size:0.75rem; color:#888;">(Chưa có ảnh)</span>`;
     const cleanUrl = (post.imgUrl || '').trim();
 
@@ -216,7 +265,7 @@ function renderTable() {
       </td>
     `;
 
-    // GẮN SỰ KIỆN QUA JS TRÁNH HOÀN TOÀN LỖI INVALID TOKEN KHI TIÊU ĐỀ XUỐNG DÒNG
+    // Gán sự kiện qua closure an toàn
     const thumbBox = tr.querySelector('.img-thumb-clickable');
     if (thumbBox) {
       thumbBox.onclick = () => openImageViewer(cleanUrl, post.title);
@@ -250,10 +299,10 @@ function renderTable() {
     tbody.appendChild(tr);
   });
 
-  // Gắn sự kiện Checkbox từng dòng
+  // Checkbox từng dòng
   document.querySelectorAll('.row-checkbox').forEach(cb => {
     cb.onchange = (e) => {
-      const id = e.target.dataset.id;
+      const id = String(e.target.dataset.id);
       if (e.target.checked) {
         selectedPostIds.add(id);
       } else {
@@ -266,7 +315,7 @@ function renderTable() {
   updateBatchDeleteUI();
 }
 
-// Cập nhật trạng thái hiển thị của nút XÓA ĐÃ CHỌN và CHECK ALL
+// Cập nhật hiển thị nút XÓA ĐÃ CHỌN
 function updateBatchDeleteUI() {
   const btnBatch = document.getElementById('btn-batch-delete');
   const countEl = document.getElementById('selected-count');
@@ -293,10 +342,11 @@ if (checkAllBox) {
     const filtered = posts.filter(p => activeFilter === 'all' || p.status === activeFilter);
 
     filtered.forEach(p => {
+      const strId = String(p.id);
       if (isChecked) {
-        selectedPostIds.add(p.id);
+        selectedPostIds.add(strId);
       } else {
-        selectedPostIds.delete(p.id);
+        selectedPostIds.delete(strId);
       }
     });
 
@@ -309,7 +359,7 @@ if (checkAllBox) {
 }
 
 // ==============================================================================
-// PHẦN 5: READER DESK - ĐỌC DUYỆT BÀI & COPY TOÀN BỘ BÀI VIẾT
+// PHẦN 5: READER DESK - ĐỌC DUYỆT BÀI & COPY TOÀN VĂN
 // ==============================================================================
 window.openReader = (id) => {
   const post = posts.find(p => String(p.id) === String(id));
@@ -358,7 +408,7 @@ if (btnCloseReader) {
   };
 }
 
-// Bật/tắt trạng thái Duyệt bài từ Reader Modal
+// Bật/tắt trạng thái duyệt bài
 const btnToggleApproval = document.getElementById('btn-toggle-approval');
 if (btnToggleApproval) {
   btnToggleApproval.onclick = async () => {
@@ -380,7 +430,7 @@ if (btnToggleApproval) {
   };
 }
 
-// Copy toàn bộ Tiêu đề + Nội dung bài viết
+// Copy toàn văn bài viết
 window.copyCurrentPostContent = async function () {
   if (!currentReadingPost || !currentReadingPost.content) {
     alert("Bài viết này không có nội dung văn bản để copy!");
@@ -410,7 +460,7 @@ window.copyCurrentPostContent = async function () {
 };
 
 // ==============================================================================
-// PHẦN 6: MODAL ĐẨY BÀI MỚI VÀO STACK (TIẾN TRÌNH UPLOAD THỜI GIAN THỰC)
+// PHẦN 6: MODAL ĐẨY BÀI MỚI VÀO STACK (ĐO TIẾN TRÌNH THEO THỜI GIAN THỰC)
 // ==============================================================================
 const addModal = document.getElementById('post-modal');
 const btnOpenAddModal = document.getElementById('btn-open-modal');
@@ -445,7 +495,7 @@ if (formAddPost) {
     let finalImageUrl = document.getElementById('input-image-url')?.value.trim() || '';
 
     try {
-      // 1. Nếu có đính kèm file ảnh thì tải lên kèm thanh tiến trình
+      // 1. Tải ảnh lên Storage có đo tiến trình
       if (file) {
         if (progressBox) progressBox.style.display = 'block';
         if (submitBtn) {
@@ -462,7 +512,7 @@ if (formAddPost) {
 
       if (submitBtn) submitBtn.innerText = 'ĐANG LƯU DỮ LIỆU...';
 
-      // 2. Lưu bài viết vào Database Supabase
+      // 2. Lưu vào Supabase Database
       const newPostData = {
         author: document.getElementById('input-author')?.value.trim() || localStorage.getItem('gl_current_user') || 'Vinci',
         designer: document.getElementById('input-designer')?.value.trim() || '--',
@@ -477,7 +527,7 @@ if (formAddPost) {
       const { error: insertErr } = await window.sb.from('stack_posts').insert([newPostData]);
       if (insertErr) throw insertErr;
 
-      // 3. Reset form và đóng modal
+      // 3. Reset form
       e.target.reset();
       if (progressBox) progressBox.style.display = 'none';
       if (progressBar) progressBar.style.width = '0%';
@@ -543,7 +593,6 @@ if (formEditPost) {
     const file = fileInput ? fileInput.files[0] : null;
 
     try {
-      // Nếu có tải file ảnh mới từ máy
       if (file) {
         if (progressBox) progressBox.style.display = 'block';
         if (submitBtn) {
@@ -551,7 +600,6 @@ if (formEditPost) {
           submitBtn.disabled = true;
         }
 
-        // Bắt sự kiện cập nhật số MB và % thời gian thực
         finalImageUrl = await uploadImageWithProgress(file, (loadedMB, totalMB, percent) => {
           if (progressText) progressText.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Đang tải: <strong>${loadedMB} MB</strong> / <strong>${totalMB} MB</strong>`;
           if (progressPercent) progressPercent.innerText = `${percent}%`;
@@ -610,13 +658,13 @@ window.deleteSinglePost = async function (id) {
 
   if (!confirm(`Xóa vĩnh viễn bài: "${post.title}"?`)) return;
 
-  // 1. Dọn sạch file ảnh trong Storage
+  // Dọn sạch file ảnh trong Storage
   const storageFileName = extractStorageFileName(post.imgUrl);
   if (storageFileName) {
     await deleteFilesFromStorage([storageFileName]);
   }
 
-  // 2. Xóa hàng trong Database
+  // Xóa hàng trong Database
   const { error } = await window.sb.from('stack_posts').delete().eq('id', id);
   if (error) {
     alert("Lỗi khi xóa bài: " + error.message);
@@ -627,7 +675,7 @@ window.deleteSinglePost = async function (id) {
   }
 };
 
-// 2. Xóa hàng loạt: Đã fix lỗi ép kiểu String(p.id) để gom sạch ảnh cần xóa
+// 2. Xóa hàng loạt: Ép kiểu String(p.id) để gom sạch ảnh cần xóa
 const btnBatchDelete = document.getElementById('btn-batch-delete');
 if (btnBatchDelete) {
   btnBatchDelete.onclick = async () => {
@@ -639,7 +687,6 @@ if (btnBatchDelete) {
       return;
     }
 
-    // Ép toàn bộ Set về dạng chuỗi để so sánh chuẩn xác 100%
     const selectedStrings = new Set(Array.from(selectedPostIds).map(String));
 
     // Gom toàn bộ tên file ảnh của các bài được chọn
@@ -648,12 +695,12 @@ if (btnBatchDelete) {
       .map(p => extractStorageFileName(p.imgUrl))
       .filter(Boolean);
 
-    // 1. Xóa toàn bộ file trong Storage
+    // Xóa toàn bộ file trong Storage
     if (filesToDelete.length > 0) {
       await deleteFilesFromStorage(filesToDelete);
     }
 
-    // 2. Xóa trong Database
+    // Xóa trong Database
     const idsArray = Array.from(selectedPostIds);
     const { error } = await window.sb.from('stack_posts').delete().in('id', idsArray);
     
@@ -705,12 +752,10 @@ window.downloadActiveImage = async function () {
   if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ĐANG XỬ LÝ...`;
 
   try {
-    // Kéo dữ liệu ảnh dạng Blob để vượt rào cản Cross-Origin
     const response = await fetch(currentModalImageUrl, { mode: 'cors' });
     if (!response.ok) throw new Error('Không thể fetch ảnh qua CORS');
     const blob = await response.blob();
 
-    // Nhận diện đuôi file và MIME type
     let ext = 'jpg';
     let mimeType = blob.type || 'image/jpeg';
     
@@ -731,7 +776,6 @@ window.downloadActiveImage = async function () {
       .trim() || 'Goal-Line-Asset';
     const fileName = `${cleanTitle}.${ext}`;
 
-    // ĐẶC TRỊ CHO IPHONE/ANDROID: DÙNG NATIVE SHARE SHEET LƯU VÀO PHOTOS
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile && navigator.canShare) {
       const file = new File([blob], fileName, { type: mimeType });
@@ -740,11 +784,10 @@ window.downloadActiveImage = async function () {
           files: [file],
           title: cleanTitle
         });
-        return; // Đã lưu vào Photos thành công
+        return;
       }
     }
 
-    // TẢI VỀ TRÊN PC / LAPTOP
     const blobUrl = window.URL.createObjectURL(blob);
     const tempLink = document.createElement('a');
     tempLink.style.display = 'none';
@@ -759,7 +802,7 @@ window.downloadActiveImage = async function () {
     }, 1500);
 
   } catch (err) {
-    if (err.name === 'AbortError') return; // Người dùng ấn Hủy trên iOS Share Sheet
+    if (err.name === 'AbortError') return;
     console.warn('Lỗi tải/share ảnh:', err);
     window.open(currentModalImageUrl, '_blank');
   } finally {
@@ -770,15 +813,12 @@ window.downloadActiveImage = async function () {
 // ==============================================================================
 // PHẦN 10: TIỆN ÍCH CLIPBOARD & BỘ LỌC TRẠNG THÁI
 // ==============================================================================
-
-// Hàm copy đa nền tảng (Hoạt động tốt cả trên Safari iOS & HTTP LAN)
 window.copyToClipboard = async function (text) {
   if (!text) {
     alert("Không có nội dung để copy!");
     return false;
   }
 
-  // Cách 1: Dùng Clipboard API hiện đại
   if (navigator.clipboard && window.isSecureContext) {
     try {
       await navigator.clipboard.writeText(text);
@@ -788,7 +828,6 @@ window.copyToClipboard = async function (text) {
     }
   }
 
-  // Cách 2: Fallback bằng Textarea ẩn (hoạt động 100% trên mọi trình duyệt)
   try {
     const textArea = document.createElement("textarea");
     textArea.value = text;
@@ -807,7 +846,7 @@ window.copyToClipboard = async function (text) {
   }
 };
 
-// Xử lý chuyển đổi các Tab bộ lọc bài viết
+// Bộ lọc danh mục
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -817,7 +856,5 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
   };
 });
 
-// ==============================================================================
-// KHỞI CHẠY LẦN ĐẦU KHI TẢI TRANG
-// ==============================================================================
+// Khởi chạy khi tải trang
 loadPostsFromDB();
