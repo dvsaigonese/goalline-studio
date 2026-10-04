@@ -577,6 +577,7 @@ if (btnCloseEditModal && editModal) {
   btnCloseEditModal.onclick = () => editModal.classList.remove('active');
 }
 
+// Submit form sửa bài viết (Tự động dọn ảnh mẫu cũ trong Storage)
 const formEditPost = document.getElementById('form-edit-post');
 if (formEditPost) {
   formEditPost.onsubmit = async (e) => {
@@ -588,11 +589,17 @@ if (formEditPost) {
     const progressPercent = document.getElementById('edit-upload-progress-percent');
     const progressBar = document.getElementById('edit-upload-progress-bar');
 
+    // 1. Tìm bài viết hiện tại trước khi sửa để lấy tên file ảnh cũ
+    const currentPost = posts.find(p => String(p.id) === String(id));
+    const oldImgUrl = currentPost ? (currentPost.imgUrl || '') : '';
+    const oldStorageFileName = extractStorageFileName(oldImgUrl);
+
     let finalImageUrl = document.getElementById('edit-image-url')?.value.trim() || '';
     const fileInput = document.getElementById('edit-image-file');
     const file = fileInput ? fileInput.files[0] : null;
 
     try {
+      // Trường hợp 1: Designer tải file ảnh mới từ máy lên đè ảnh cũ
       if (file) {
         if (progressBox) progressBox.style.display = 'block';
         if (submitBtn) {
@@ -605,6 +612,17 @@ if (formEditPost) {
           if (progressPercent) progressPercent.innerText = `${percent}%`;
           if (progressBar) progressBar.style.width = `${percent}%`;
         });
+
+        // Xóa ảnh mẫu cũ trong Storage nếu có và khác file vừa tải lên
+        if (oldStorageFileName && oldStorageFileName !== extractStorageFileName(finalImageUrl)) {
+          console.log("Xóa ảnh mẫu cũ khỏi Storage:", oldStorageFileName);
+          await deleteFilesFromStorage([oldStorageFileName]);
+        }
+      } 
+      // Trường hợp 2: Không up file nhưng đổi URL khác (nhập link Drive hoặc xóa link)
+      else if (oldStorageFileName && finalImageUrl !== oldImgUrl) {
+        console.log("URL ảnh thay đổi, dọn ảnh cũ khỏi Storage:", oldStorageFileName);
+        await deleteFilesFromStorage([oldStorageFileName]);
       }
 
       if (submitBtn) submitBtn.innerText = 'ĐANG LƯU DỮ LIỆU...';

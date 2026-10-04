@@ -671,6 +671,7 @@ if (btnCloseEditModal) {
   };
 }
 
+// Submit form sửa Task Design (Tự động dọn ảnh mẫu task cũ trong Storage)
 const formEditTask = document.getElementById('form-edit-task');
 if (formEditTask) {
   formEditTask.onsubmit = async (e) => {
@@ -682,11 +683,17 @@ if (formEditTask) {
     const progressPercent = document.getElementById('edit-task-upload-progress-percent');
     const progressBar = document.getElementById('edit-task-upload-progress-bar');
 
+    // 1. Lấy task hiện tại trước khi sửa để trích xuất file ảnh cũ
+    const currentTask = designTasks.find(t => String(t.id) === String(id));
+    const oldImgUrl = currentTask ? (currentTask.img_url || '') : '';
+    const oldStorageFileName = extractStorageFileName(oldImgUrl);
+
     let finalImgUrl = document.getElementById('edit-task-imgurl')?.value.trim() || '';
     const fileInput = document.getElementById('edit-task-file');
     const file = fileInput ? fileInput.files[0] : null;
 
     try {
+      // Trường hợp 1: Tải file mới lên đè ảnh cũ
       if (file) {
         if (progressBox) progressBox.style.display = 'block';
         if (submitBtn) {
@@ -699,6 +706,17 @@ if (formEditTask) {
           if (progressPercent) progressPercent.innerText = `${percent}%`;
           if (progressBar) progressBar.style.width = `${percent}%`;
         });
+
+        // Xóa ảnh mẫu cũ trong Storage nếu có
+        if (oldStorageFileName && oldStorageFileName !== extractStorageFileName(finalImgUrl)) {
+          console.log("Xóa ảnh mẫu task cũ trong Storage:", oldStorageFileName);
+          await deleteFilesFromStorage([oldStorageFileName]);
+        }
+      }
+      // Trường hợp 2: Không up file nhưng đổi URL nhập tay hoặc xóa link
+      else if (oldStorageFileName && finalImgUrl !== oldImgUrl) {
+        console.log("URL ảnh task thay đổi, dọn ảnh cũ trong Storage:", oldStorageFileName);
+        await deleteFilesFromStorage([oldStorageFileName]);
       }
 
       if (submitBtn) submitBtn.innerText = 'ĐANG LƯU DỮ LIỆU...';
@@ -716,6 +734,7 @@ if (formEditTask) {
       if (modal) modal.classList.remove('active');
       if (progressBox) progressBox.style.display = 'none';
       if (progressBar) progressBar.style.width = '0%';
+      alert("Đã cập nhật task thành công!");
       fetchDesignTasks();
 
     } catch (err) {
