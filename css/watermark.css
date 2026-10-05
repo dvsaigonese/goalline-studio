@@ -364,3 +364,46 @@ body.dark-mode .empty-state {
 }
 body.dark-mode .empty-title { color: #f3f4f6 !important; }
 body.dark-mode .empty-sub { color: #9ca3af !important; }
+
+/* ==================================================
+   FIX TOÀN DIỆN RESPONSIVE MOBILE CHO WATERMARK
+   ================================================== */
+@media screen and (max-width: 900px) {
+  body.watermark-body {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Chuyển từ hàng ngang sang xếp chồng dọc (Canvas trên, Settings dưới) */
+  .app-container {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Khung Canvas nằm trên, tự co vừa vặn màn hình điện thoại */
+  .canvas-area {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 480px !important;
+    padding: 16px 12px !important;
+  }
+
+  #wm-canvas {
+    max-width: 94vw !important;
+    max-height: 60vh !important;
+  }
+
+  /* Thanh Settings nằm dưới, mở rộng 100% bề ngang để không bị bẹp dropdown */
+  .settings-panel {
+    width: 100% !important;
+    height: auto !important;
+    border-left: none !important;
+    border-top: var(--neo-border-w) solid var(--neo-black) !important;
+    overflow-y: visible !important;
+    padding: 20px 16px 40px !important;
+  }
+}
