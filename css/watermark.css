@@ -366,6 +366,30 @@ body.dark-mode .empty-title { color: #f3f4f6 !important; }
 body.dark-mode .empty-sub { color: #9ca3af !important; }
 
 /* ==================================================
+     BADGE KIỂM TRA ĐỘ PHÂN GIẢI & ĐỘ NÉT ẢNH
+   ================================================== */
+.resolution-inspector-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1.5px solid #000;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.res-sharp { background: #dcfce7; color: #15803d; border-color: #15803d; } /* Nét căng */
+.res-warn  { background: #fef9c3; color: #a16207; border-color: #a16207; } /* Cảnh báo zoom */
+.res-blur  { background: #fee2e2; color: #b91c1c; border-color: #b91c1c; } /* Rất mờ */
+
+body.dark-mode .res-sharp { background: #064e3b; color: #6ee7b7; border-color: #059669; }
+body.dark-mode .res-warn  { background: #2e2613; color: #fef08a; border-color: #ca8a04; }
+body.dark-mode .res-blur  { background: #3b1418; color: #fca5a5; border-color: #e11d48; }
+
+/* ==================================================
    FIX TOÀN DIỆN RESPONSIVE MOBILE CHO WATERMARK
    ================================================== */
 @media screen and (max-width: 900px) {

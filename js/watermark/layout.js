@@ -69,13 +69,56 @@ export function initLayoutManager(onRenderCallback) {
         onRenderCallback();
     }
 
+    // ==========================================
+    // HÀM HIỂN THỊ BADGE ĐỘ NÉT THEO PIXEL THỰC TẾ
+    // ==========================================
+    function updateQualityBadge(slotIndex, img, slot) {
+        const badgeEl = document.getElementById(`quality-badge-slot-${slotIndex}`);
+        if (!badgeEl) return;
+
+        if (!img) {
+            badgeEl.innerHTML = '';
+            badgeEl.style.display = 'none';
+            return;
+        }
+
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const scale = slot.scale || 1;
+
+        let statusClass = 'res-sharp';
+        let statusText = '✅ NÉT CĂNG';
+
+        // Nếu hệ số scale > 1.35x: ảnh bị kéo giãn trên 135% -> Vỡ hạt, mờ
+        if (scale > 1.35) {
+            statusClass = 'res-blur';
+            statusText = `❌ RẤT MỜ (ZOOM ${(scale * 100).toFixed(0)}%)`;
+        } else if (scale > 1.05) {
+            statusClass = 'res-warn';
+            statusText = `⚠️ TẠM ĐƯỢC, HƠI MỜ (ZOOM ${(scale * 100).toFixed(0)}%)`;
+        } else {
+            statusClass = 'res-sharp';
+            statusText = `✅ NÉT CĂNG (CHUẨN 100%)`;
+        }
+
+        badgeEl.className = `resolution-inspector-badge ${statusClass}`;
+        badgeEl.style.display = 'flex';
+        badgeEl.innerHTML = `
+            <span><i class="fa-solid fa-expand"></i> ${w}×${h} px</span>
+            <span>${statusText}</span>
+        `;
+    }
+
     function generateFileInputs() {
         fileInputsContainer.innerHTML = ''; 
         const numSlots = collageState.slots.length;
         for (let i = 0; i < numSlots; i++) {
+            const slotItem = document.createElement('div');
+            slotItem.className = 'slot-upload-item';
+            slotItem.style.marginBottom = '10px';
+
             const group = document.createElement('div');
             group.className = 'row-input';
-            group.style.marginBottom = '8px';
             group.style.alignItems = 'center';
 
             const label = document.createElement('small');
@@ -92,7 +135,21 @@ export function initLayoutManager(onRenderCallback) {
 
             group.appendChild(label);
             group.appendChild(input);
-            fileInputsContainer.appendChild(group);
+            slotItem.appendChild(group);
+
+            // Container chứa badge đo độ phân giải
+            const badgeBox = document.createElement('div');
+            badgeBox.id = `quality-badge-slot-${i}`;
+            badgeBox.style.display = 'none';
+            slotItem.appendChild(badgeBox);
+
+            fileInputsContainer.appendChild(slotItem);
+
+            // Tự động phân tích lại nếu slot đã có sẵn ảnh (khi chuyển đổi kiểu ghép ô)
+            const currentSlot = collageState.slots[i];
+            if (currentSlot && currentSlot.img) {
+                updateQualityBadge(i, currentSlot.img, currentSlot);
+            }
         }
     }
 
@@ -113,6 +170,10 @@ export function initLayoutManager(onRenderCallback) {
                     }
                     slot.offsetX = 0;
                     slot.offsetY = 0;
+
+                    // Gọi kiểm tra độ nét ngay khi vừa load ảnh xong
+                    updateQualityBadge(slotIndex, img, slot);
+
                     onRenderCallback(); 
                 };
                 img.src = event.target.result;
@@ -133,5 +194,5 @@ export function initLayoutManager(onRenderCallback) {
         applyLayout(true);
     });
 
-    return { applyLayout }; // Mở API ra ngoài cho Core xài
+    return { applyLayout }; 
 }
