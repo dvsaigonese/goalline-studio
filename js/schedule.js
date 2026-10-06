@@ -928,9 +928,9 @@ async function promoteContentWeek() {
 
   // 3. Xóa trắng tuần sau của Content
   const blankShort = [
-    { shift: "Sáng", time: "Trước 9h", slots: [[], [], [], [], [], [], []] },
-    { shift: "Trưa", time: "Trước 11h00", slots: [[], [], [], [], [], [], []] },
-    { shift: "Chiều", time: "14-18h", slots: [[], [], [], [], [], [], []] }
+    { shift: "Sáng", time: "8h", slots: [[], [], [], [], [], [], []] },
+    { shift: "Trưa", time: "11h", slots: [[], [], [], [], [], [], []] },
+    { shift: "Chiều", time: "16h", slots: [[], [], [], [], [], [], []] }
   ];
   const blankLong = [
     { shift: "Sáng", time: "19h", slots: [[], [], [], [], [], [], []] },
