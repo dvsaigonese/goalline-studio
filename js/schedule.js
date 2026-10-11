@@ -6,8 +6,8 @@
  * 1. Cấu hình Supabase & State ứng dụng
  * 2. Bảng mã màu độc quyền Ban Design
  * 3. Tải & đồng bộ dữ liệu từ Database (Schedules, Design Tasks, Leaves)
- * 4. Phân ca trực tuần (Content, Trực Page, Des Ca)
- * 5. Bảng quản lý Task Design Backlog (Lọc, Checkbox, Xóa hàng loạt PIN 2026)
+ * 4. Phân ca trực tuần (Content, Trực Page 5 ca, Des Ca)
+ * 5. Bảng quản lý Task Design Backlog (Lọc, Checkbox, Xóa kèm dọn sạch Storage)
  * 6. Lightbox & Tải ảnh gốc (Hỗ trợ Save to Photos trên iOS qua Web Share API)
  * 7. Bảng theo dõi Nghỉ phép (Leaves)
  * 8. Đôn tuần mới (Promote Week - PIN 2026)
@@ -42,7 +42,6 @@ let currentTaskModalImageTitle = '';
 // ==============================================================================
 // PHẦN 2: BẢNG MÃ MÀU ĐỘC QUYỀN BAN DESIGN (DICTIONARY)
 // ==============================================================================
-// Sau này có thêm Designer mới, chỉ cần thêm tên và mã màu vào object này:
 const DESIGNER_COLORS = {
   'Quýt':    { bg: '#FF9900', color: '#000000' }, // Cam sáng (chữ đen)
   'Kaiz':    { bg: '#FF0000', color: '#ffffff' }, // Đỏ tươi (chữ trắng)
@@ -53,31 +52,45 @@ const DESIGNER_COLORS = {
 
 /**
  * Hàm lấy style màu cho thẻ slot-pill
- * Giữ nguyên màu thương hiệu của Designer, các bảng Content để CSS tự thích ứng theme
  */
 function getMemberPillStyle(member, columnKey, fallbackBg = '') {
-  // Nếu là bảng ca trực của Design và thành viên có tên trong danh bạ màu
   if (columnKey === 'design_shifts_data' && DESIGNER_COLORS[member]) {
     const config = DESIGNER_COLORS[member];
-    // Giữ nguyên nền màu riêng, chữ chuẩn theo config và viền đen mảnh
     return `background: ${config.bg}; color: ${config.color}; border: 2px solid #000;`;
   }
   
-  // Ca Design chưa đăng ký màu riêng
   if (columnKey === 'design_shifts_data') {
     return `background: #ff944d; color: #000; border: 2px solid #000;`;
   }
   
-  // Các bảng Content & Trực Page trả về rỗng để CSS tự đổi màu theo theme Sáng / Tối!
   return '';
 }
+
 // ==============================================================================
-// PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE
+// PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE & AUTO-MIGRATION 5 CA TRỰC PAGE
 // ==============================================================================
+
+// Cấu trúc chuẩn 5 ca trực Fanpage mỗi ngày
+const DEFAULT_5_POSTING_SHIFTS = [
+  { shift: "Sáng",  time: "6h - 10h",  slots: [[], [], [], [], [], [], []] },
+  { shift: "Trưa",  time: "10h - 14h", slots: [[], [], [], [], [], [], []] },
+  { shift: "Chiều", time: "14h - 18h", slots: [[], [], [], [], [], [], []] },
+  { shift: "Tối",   time: "19h - 23h", slots: [[], [], [], [], [], [], []] },
+  { shift: "Đêm",   time: "23h - 6h",  slots: [[], [], [], [], [], [], []] }
+];
+
 async function fetchScheduleData() {
   const { data, error } = await window.sb.from('schedules').select('*');
   if (error) return console.error('Lỗi lấy lịch ca trực:', error.message);
-  data.forEach(item => { scheduleCache[item.id] = item; });
+
+  for (const item of data) {
+    // Tự động nâng cấp bảng trực Page từ bản 2 ca cũ lên chuẩn 5 ca mới
+    if (item.posting_data && item.posting_data.length < 5 && (item.id === 'current' || item.id === 'next')) {
+      item.posting_data = JSON.parse(JSON.stringify(DEFAULT_5_POSTING_SHIFTS));
+      window.sb.from('schedules').update({ posting_data: item.posting_data }).eq('id', item.id).then();
+    }
+    scheduleCache[item.id] = item;
+  }
   renderActiveSchedule();
 }
 
@@ -115,7 +128,6 @@ function renderActiveSchedule() {
 
   const myName = localStorage.getItem('gl_current_user') || 'Vinci';
 
-  // Hàm render ma trận ca trực linh hoạt theo số slot cho phép
   const renderMultiSlotRows = (dataMatrix, columnKey, maxCapacity, customBg = '') => {
     if (!dataMatrix) return '';
     return dataMatrix.map((row, rIdx) => `
@@ -164,7 +176,7 @@ function renderActiveSchedule() {
     bodyWritingLong.innerHTML = renderMultiSlotRows(weekObj.writing_long_data, 'writing_long_data', 3);
   }
 
-  // 3. Bảng Trực Page (Tối đa 2 slots)
+  // 3. Bảng Trực Page (5 ca/ngày, tối đa 2 slots/ca)
   const bodyPosting = document.getElementById('body-posting');
   if (bodyPosting) {
     bodyPosting.innerHTML = renderMultiSlotRows(weekObj.posting_data, 'posting_data', 2, 'var(--neo-blue)');
@@ -201,7 +213,7 @@ window.handleAddSlot = async (columnKey, rIdx, cIdx, maxCapacity) => {
   }).eq('id', currentTab);
 };
 
-// Xử lý hủy ca trực (Hủy ca người khác cần PIN 2026)
+// Xử lý hủy ca trực
 window.handleRemoveSlot = async (columnKey, rIdx, cIdx, sIdx, memberName) => {
   const myName = localStorage.getItem('gl_current_user') || 'Vinci';
   const targetWeek = scheduleCache[currentTab];
@@ -231,7 +243,6 @@ function renderDesignTasks() {
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  // Lọc task theo tab đang chọn
   const filtered = designTasks.filter(t => {
     if (activeTaskFilter === 'all') return true;
     if (activeTaskFilter === 'DESIGN') return t.status === 'DESIGN' || t.status === 'PENDING';
@@ -239,7 +250,6 @@ function renderDesignTasks() {
     return true;
   });
 
-  // Cập nhật số đếm trên các Tab
   const countAll = document.getElementById('count-tasks-all');
   const countDesign = document.getElementById('count-tasks-design');
   const countDone = document.getElementById('count-tasks-done');
@@ -260,9 +270,8 @@ function renderDesignTasks() {
     if (t.task_type && t.task_type.includes('SPECIAL')) typeClass = 'type-special';
     if (t.task_type && t.task_type.includes('THREADS')) typeClass = 'type-threads';
 
-    const isChecked = selectedTaskIds.has(t.id) ? 'checked' : '';
+    const isChecked = selectedTaskIds.has(String(t.id)) ? 'checked' : '';
 
-    // Xử lý hiển thị Link Google Drive hoặc Thumbnail ảnh
     let imageCellMarkup = `<span style="color:#aaa; font-size:0.75rem;">(Chưa đính kèm)</span>`;
     const cleanUrl = (t.img_url || '').trim();
 
@@ -311,44 +320,29 @@ function renderDesignTasks() {
       </td>
     `;
 
-    // Gắn sự kiện qua Closure JS an toàn tuyệt đối
     const thumbBox = tr.querySelector('.img-thumb-clickable');
-    if (thumbBox) {
-      thumbBox.onclick = () => openTaskImage(cleanUrl, t.brief);
-    }
+    if (thumbBox) thumbBox.onclick = () => openTaskImage(cleanUrl, t.brief);
 
     const statusPill = tr.querySelector('.tag-status-pill');
-    if (statusPill) {
-      statusPill.onclick = () => toggleTaskStatus(t.id, t.status);
-    }
+    if (statusPill) statusPill.onclick = () => toggleTaskStatus(t.id, t.status);
 
     const btnEdit = tr.querySelector('.btn-task-edit');
-    if (btnEdit) {
-      btnEdit.onclick = () => openEditTaskModal(t.id);
-    }
+    if (btnEdit) btnEdit.onclick = () => openEditTaskModal(t.id);
 
     const btnCopy = tr.querySelector('.btn-task-copy');
-    if (btnCopy) {
-      btnCopy.onclick = () => copyBrief(t.brief);
-    }
+    if (btnCopy) btnCopy.onclick = () => copyBrief(t.brief);
 
     const btnDel = tr.querySelector('.btn-task-del');
-    if (btnDel) {
-      btnDel.onclick = () => deleteDesignTask(t.id);
-    }
+    if (btnDel) btnDel.onclick = () => deleteDesignTask(t.id);
 
     tbody.appendChild(tr);
   });
 
-  // Gắn sự kiện Checkbox từng dòng
   document.querySelectorAll('.task-row-checkbox').forEach(cb => {
     cb.onchange = (e) => {
-      const id = e.target.dataset.id;
-      if (e.target.checked) {
-        selectedTaskIds.add(id);
-      } else {
-        selectedTaskIds.delete(id);
-      }
+      const id = String(e.target.dataset.id);
+      if (e.target.checked) selectedTaskIds.add(id);
+      else selectedTaskIds.delete(id);
       updateTaskBatchUI();
     };
   });
@@ -356,7 +350,6 @@ function renderDesignTasks() {
   updateTaskBatchUI();
 }
 
-// Cập nhật hiển thị nút XÓA ĐÃ CHỌN
 function updateTaskBatchUI() {
   const btnBatch = document.getElementById('btn-batch-del-tasks');
   const countEl = document.getElementById('selected-task-count');
@@ -365,9 +358,7 @@ function updateTaskBatchUI() {
   const count = selectedTaskIds.size;
   if (countEl) countEl.innerText = count;
 
-  if (btnBatch) {
-    btnBatch.style.display = count > 0 ? 'inline-flex' : 'none';
-  }
+  if (btnBatch) btnBatch.style.display = count > 0 ? 'inline-flex' : 'none';
 
   const rowBoxes = document.querySelectorAll('.task-row-checkbox');
   if (checkAllBox) {
@@ -375,7 +366,6 @@ function updateTaskBatchUI() {
   }
 }
 
-// Checkbox chọn tất cả
 const checkAllTasksBox = document.getElementById('check-all-tasks');
 if (checkAllTasksBox) {
   checkAllTasksBox.onchange = (e) => {
@@ -388,115 +378,17 @@ if (checkAllTasksBox) {
     });
 
     filtered.forEach(t => {
-      if (isChecked) {
-        selectedTaskIds.add(t.id);
-      } else {
-        selectedTaskIds.delete(t.id);
-      }
+      const strId = String(t.id);
+      if (isChecked) selectedTaskIds.add(strId);
+      else selectedTaskIds.delete(strId);
     });
 
-    document.querySelectorAll('.task-row-checkbox').forEach(cb => {
-      cb.checked = isChecked;
-    });
-
+    document.querySelectorAll('.task-row-checkbox').forEach(cb => { cb.checked = isChecked; });
     updateTaskBatchUI();
   };
 }
 
-// Đổi trạng thái DESIGN <-> DONE
-window.toggleTaskStatus = async (id, currentStatus) => {
-  const nextStatus = currentStatus === 'DESIGN' ? 'DONE' : 'DESIGN';
-  await window.sb.from('design_tasks').update({ status: nextStatus }).eq('id', id);
-  fetchDesignTasks();
-};
-
-// Xóa 1 task đơn lẻ
-// 1. Xóa 1 task đơn lẻ: Tự động xóa file ảnh khỏi Storage
-window.deleteDesignTask = async (id) => {
-  const task = designTasks.find(t => String(t.id) === String(id));
-  if (!task) return;
-
-  if (!confirm(`Bạn có chắc chắn muốn xóa task: "${task.brief}"?`)) return;
-
-  // Xóa ảnh trong Storage nếu có
-  const storageFileName = extractStorageFileName(task.img_url);
-  if (storageFileName) {
-    await deleteFilesFromStorage([storageFileName]);
-  }
-
-  // Xóa khỏi Database
-  const { error } = await window.sb.from('design_tasks').delete().eq('id', id);
-  if (error) {
-    alert("Lỗi khi xóa task: " + error.message);
-  } else {
-    selectedTaskIds.delete(String(id));
-    selectedTaskIds.delete(Number(id));
-    fetchDesignTasks();
-  }
-};
-
-// 2. Xóa hàng loạt Task Design: Nhập PIN 2026 và gom sạch ảnh để xóa
-const btnBatchDelTasks = document.getElementById('btn-batch-del-tasks');
-if (btnBatchDelTasks) {
-  btnBatchDelTasks.onclick = async () => {
-    if (selectedTaskIds.size === 0) return;
-
-    const pin = prompt(`Bạn đang chọn xóa ${selectedTaskIds.size} task design.\nNhập mã PIN Admin để xác nhận:`);
-    if (pin !== '2026') {
-      if (pin !== null) alert("Sai mã PIN Admin!");
-      return;
-    }
-
-    const selectedStrings = new Set(Array.from(selectedTaskIds).map(String));
-
-    // Gom danh sách ảnh của các task được tick chọn
-    const filesToDelete = designTasks
-      .filter(t => selectedStrings.has(String(t.id)))
-      .map(t => extractStorageFileName(t.img_url))
-      .filter(Boolean);
-
-    // Xóa toàn bộ ảnh khỏi Storage
-    if (filesToDelete.length > 0) {
-      await deleteFilesFromStorage(filesToDelete);
-    }
-
-    // Xóa các dòng task khỏi Database
-    const idsToDelete = Array.from(selectedTaskIds);
-    const { error } = await window.sb
-      .from('design_tasks')
-      .delete()
-      .in('id', idsToDelete);
-
-    if (error) {
-      alert("Lỗi khi xóa: " + error.message);
-    } else {
-      selectedTaskIds.clear();
-      alert(`Đã xóa thành công ${idsToDelete.length} task và dọn sạch các file ảnh liên quan!`);
-      fetchDesignTasks();
-    }
-  };
-}
-
-// Copy brief nhanh
-window.copyBrief = (text) => {
-  navigator.clipboard.writeText(text).then(() => {
-    alert(`Đã copy brief: "${text}"`);
-  });
-};
-
-// Bộ lọc tab Task Design
-document.querySelectorAll('.task-filter-btn').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.task-filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeTaskFilter = btn.dataset.taskFilter;
-    renderDesignTasks();
-  };
-});
-
-// ==========================================
-// TIỆN ÍCH STORAGE CHO TASK DESIGN (CHỐNG TRÀN 500MB)
-// ==========================================
+// Tiện ích Storage cho Task Design
 function extractStorageFileName(url) {
   if (!url || typeof url !== 'string') return null;
   const match = url.match(/\/stack-assets\/([^?#]+)/);
@@ -515,23 +407,87 @@ async function deleteFilesFromStorage(fileNames) {
   if (validFiles.length === 0) return;
 
   try {
-    const { data, error } = await window.sb.storage
-      .from('stack-assets')
-      .remove(validFiles);
-
-    if (error) {
-      console.error('Lỗi khi xóa file Task khỏi Storage:', error.message);
-    } else {
-      console.log(`ĐÃ XÓA ${validFiles.length} FILE TASK KHỎI STORAGE:`, validFiles, data);
-    }
+    const { data, error } = await window.sb.storage.from('stack-assets').remove(validFiles);
+    if (error) console.error('Lỗi khi xóa file Task khỏi Storage:', error.message);
+    else console.log(`Đã xóa sạch ${validFiles.length} file Task khỏi Storage:`, validFiles, data);
   } catch (err) {
     console.error('Lỗi kết nối khi dọn file Task:', err);
   }
 }
 
-// ==========================================
-// HÀM UPLOAD ẢNH ĐO TIẾN TRÌNH THEO BYTE (CHUẨN DRIVE)
-// ==========================================
+// Xóa 1 task đơn lẻ
+window.deleteDesignTask = async (id) => {
+  const task = designTasks.find(t => String(t.id) === String(id));
+  if (!task) return;
+
+  if (!confirm(`Bạn có chắc chắn muốn xóa task: "${task.brief}"?`)) return;
+
+  const storageFileName = extractStorageFileName(task.img_url);
+  if (storageFileName) await deleteFilesFromStorage([storageFileName]);
+
+  const { error } = await window.sb.from('design_tasks').delete().eq('id', id);
+  if (error) {
+    alert("Lỗi khi xóa task: " + error.message);
+  } else {
+    selectedTaskIds.delete(String(id));
+    selectedTaskIds.delete(Number(id));
+    fetchDesignTasks();
+  }
+};
+
+// Xóa hàng loạt Task Design
+const btnBatchDelTasks = document.getElementById('btn-batch-del-tasks');
+if (btnBatchDelTasks) {
+  btnBatchDelTasks.onclick = async () => {
+    if (selectedTaskIds.size === 0) return;
+
+    const pin = prompt(`Bạn đang chọn xóa ${selectedTaskIds.size} task design.\nNhập mã PIN Admin để xác nhận:`);
+    if (pin !== '2026') {
+      if (pin !== null) alert("Sai mã PIN Admin!");
+      return;
+    }
+
+    const selectedStrings = new Set(Array.from(selectedTaskIds).map(String));
+    const filesToDelete = designTasks
+      .filter(t => selectedStrings.has(String(t.id)))
+      .map(t => extractStorageFileName(t.img_url))
+      .filter(Boolean);
+
+    if (filesToDelete.length > 0) await deleteFilesFromStorage(filesToDelete);
+
+    const idsToDelete = Array.from(selectedTaskIds);
+    const { error } = await window.sb.from('design_tasks').delete().in('id', idsToDelete);
+
+    if (error) {
+      alert("Lỗi khi xóa: " + error.message);
+    } else {
+      selectedTaskIds.clear();
+      alert(`Đã xóa thành công ${idsToDelete.length} task và dọn sạch các file ảnh liên quan!`);
+      fetchDesignTasks();
+    }
+  };
+}
+
+window.toggleTaskStatus = async (id, currentStatus) => {
+  const nextStatus = currentStatus === 'DESIGN' ? 'DONE' : 'DESIGN';
+  await window.sb.from('design_tasks').update({ status: nextStatus }).eq('id', id);
+  fetchDesignTasks();
+};
+
+window.copyBrief = (text) => {
+  navigator.clipboard.writeText(text).then(() => alert(`Đã copy brief: "${text}"`));
+};
+
+document.querySelectorAll('.task-filter-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.task-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTaskFilter = btn.dataset.taskFilter;
+    renderDesignTasks();
+  };
+});
+
+// Upload XHR đo tiến trình cho Task
 function uploadTaskImageWithProgress(file, onProgress) {
   return new Promise((resolve, reject) => {
     const fileExt = file.name.split('.').pop().toLowerCase();
@@ -565,8 +521,7 @@ function uploadTaskImageWithProgress(file, onProgress) {
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/stack-assets/${fileName}`;
-        resolve(publicUrl);
+        resolve(`${SUPABASE_URL}/storage/v1/object/public/stack-assets/${fileName}`);
       } else {
         reject(new Error(`Lỗi upload ảnh: HTTP ${xhr.status} - ${xhr.responseText}`));
       }
@@ -577,7 +532,7 @@ function uploadTaskImageWithProgress(file, onProgress) {
   });
 }
 
-// Modal Thêm Task Design mới
+// Modal Thêm Task
 const taskModal = document.getElementById('task-modal');
 const btnOpenTaskModal = document.getElementById('btn-open-task-modal');
 const btnCloseTaskModal = document.getElementById('btn-close-task-modal');
@@ -643,9 +598,9 @@ if (formAddTask) {
   };
 }
 
-// Modal Chỉnh sửa Task Design
+// Modal Sửa Task
 window.openEditTaskModal = (id) => {
-  const task = designTasks.find(t => t.id === id);
+  const task = designTasks.find(t => String(t.id) === String(id));
   if (!task) return;
 
   document.getElementById('edit-task-id').value = task.id;
@@ -671,7 +626,6 @@ if (btnCloseEditModal) {
   };
 }
 
-// Submit form sửa Task Design (Tự động dọn ảnh mẫu task cũ trong Storage)
 const formEditTask = document.getElementById('form-edit-task');
 if (formEditTask) {
   formEditTask.onsubmit = async (e) => {
@@ -683,7 +637,6 @@ if (formEditTask) {
     const progressPercent = document.getElementById('edit-task-upload-progress-percent');
     const progressBar = document.getElementById('edit-task-upload-progress-bar');
 
-    // 1. Lấy task hiện tại trước khi sửa để trích xuất file ảnh cũ
     const currentTask = designTasks.find(t => String(t.id) === String(id));
     const oldImgUrl = currentTask ? (currentTask.img_url || '') : '';
     const oldStorageFileName = extractStorageFileName(oldImgUrl);
@@ -693,7 +646,6 @@ if (formEditTask) {
     const file = fileInput ? fileInput.files[0] : null;
 
     try {
-      // Trường hợp 1: Tải file mới lên đè ảnh cũ
       if (file) {
         if (progressBox) progressBox.style.display = 'block';
         if (submitBtn) {
@@ -707,15 +659,13 @@ if (formEditTask) {
           if (progressBar) progressBar.style.width = `${percent}%`;
         });
 
-        // Xóa ảnh mẫu cũ trong Storage nếu có
+        // Xóa ảnh mẫu task cũ trong Storage khi Des tải ảnh mới lên
         if (oldStorageFileName && oldStorageFileName !== extractStorageFileName(finalImgUrl)) {
-          console.log("Xóa ảnh mẫu task cũ trong Storage:", oldStorageFileName);
+          console.log("Xóa ảnh mẫu task cũ khỏi Storage:", oldStorageFileName);
           await deleteFilesFromStorage([oldStorageFileName]);
         }
-      }
-      // Trường hợp 2: Không up file nhưng đổi URL nhập tay hoặc xóa link
-      else if (oldStorageFileName && finalImgUrl !== oldImgUrl) {
-        console.log("URL ảnh task thay đổi, dọn ảnh cũ trong Storage:", oldStorageFileName);
+      } else if (oldStorageFileName && finalImgUrl !== oldImgUrl) {
+        console.log("URL ảnh task thay đổi, dọn ảnh cũ khỏi Storage:", oldStorageFileName);
         await deleteFilesFromStorage([oldStorageFileName]);
       }
 
@@ -751,7 +701,7 @@ if (formEditTask) {
 }
 
 // ==============================================================================
-// PHẦN 6: LIGHTBOX & TẢI ẢNH GỐC CHO TASK (ĐẶC TRỊ SAVE TO PHOTOS TRÊN IOS)
+// PHẦN 6: LIGHTBOX & TẢI ẢNH GỐC CHO TASK (SAVE TO PHOTOS TRÊN IOS)
 // ==============================================================================
 window.openTaskImage = (url, title) => {
   if (!url) return;
@@ -800,7 +750,6 @@ window.downloadActiveTaskImage = async function () {
       .trim() || 'Goal-Line-Task';
     const fileName = `${cleanTitle}.${ext}`;
 
-    // NATIVE SHARE SHEET TRÊN IPHONE: LƯU THẲNG VÀO ALBUM ẢNH (PHOTOS)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile && navigator.canShare) {
       const file = new File([blob], fileName, { type: mimeType });
@@ -810,7 +759,6 @@ window.downloadActiveTaskImage = async function () {
       }
     }
 
-    // TẢI TRỰC TIẾP TRÊN PC / LAPTOP
     const blobUrl = window.URL.createObjectURL(blob);
     const tempLink = document.createElement('a');
     tempLink.style.display = 'none';
@@ -886,16 +834,14 @@ window.deleteLeave = async (id) => {
 // ==============================================================================
 // PHẦN 8: ĐÔN TUẦN & ROLLBACK ĐỘC LẬP (ROW backup_content & backup_design)
 // ==============================================================================
-let currentActiveTeam = 'content'; // 'content' hoặc 'design'
+let currentActiveTeam = 'content';
 
 const btnPromoteWeek = document.getElementById('btn-promote-week');
 const promoteBtnText = document.getElementById('promote-btn-text');
 const btnRollbackWeek = document.getElementById('btn-rollback-week');
 const rollbackBtnText = document.getElementById('rollback-btn-text');
 
-// --------------------------------------------------
-// A. BAN CONTENT: ĐÔN TUẦN & ROLLBACK (ROW: backup_content)
-// --------------------------------------------------
+// BAN CONTENT: ĐÔN TUẦN & ROLLBACK
 async function promoteContentWeek() {
   const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN CONTENT:');
   if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
@@ -904,7 +850,6 @@ async function promoteContentWeek() {
   const nextWeek = scheduleCache['next'];
   if (!currentWeek || !nextWeek) return alert('Chưa tải được dữ liệu lịch!');
 
-  // 1. Cất tuần hiện tại của Content vào row 'backup_content'
   const { error: backupErr } = await window.sb.from('schedules').upsert({
     id: 'backup_content',
     week_label: 'BACKUP CONTENT ' + new Date().toLocaleTimeString('vi-VN'),
@@ -918,7 +863,6 @@ async function promoteContentWeek() {
     if (!confirm('Không thể ghi backup vào database (' + backupErr.message + '). Tiếp tục đôn?')) return;
   }
 
-  // 2. Đôn tuần Content: Next -> Current
   await window.sb.from('schedules').update({
     writing_short_data: nextWeek.writing_short_data,
     writing_long_data: nextWeek.writing_long_data,
@@ -926,7 +870,7 @@ async function promoteContentWeek() {
     updated_at: new Date()
   }).eq('id', 'current');
 
-  // 3. Xóa trắng tuần sau của Content
+  // Đôn tuần sau: Khởi tạo trắng 5 ca trực Page
   const blankShort = [
     { shift: "Sáng", time: "8h", slots: [[], [], [], [], [], [], []] },
     { shift: "Trưa", time: "11h", slots: [[], [], [], [], [], [], []] },
@@ -936,10 +880,7 @@ async function promoteContentWeek() {
     { shift: "Sáng", time: "19h", slots: [[], [], [], [], [], [], []] },
     { shift: "Trưa", time: "21h", slots: [[], [], [], [], [], [], []] }
   ];
-  const blankPosting = [
-    { shift: "Đêm/Sáng", time: "0h - 10h30", slots: [[], [], [], [], [], [], []] },
-    { shift: "Trưa/Tối", time: "10h30 - 23h", slots: [[], [], [], [], [], [], []] }
-  ];
+  const blankPosting = JSON.parse(JSON.stringify(DEFAULT_5_POSTING_SHIFTS));
 
   await window.sb.from('schedules').update({
     writing_short_data: blankShort,
@@ -956,14 +897,12 @@ async function rollbackContentWeek() {
   const pin = prompt('KHÔI PHỤC LỊCH CONTENT\nNhập mã PIN Admin để ROLLBACK:');
   if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
 
-  // Lấy row backup_content từ Supabase
   const { data: backupRow, error } = await window.sb
     .from('schedules')
     .select('*')
     .eq('id', 'backup_content')
     .single();
 
-  // Kiểm tra nếu chưa từng đôn hoặc đã rollback rồi
   if (error || !backupRow || !backupRow.writing_short_data) {
     return alert('Không tìm thấy bản backup nào của Content (hoặc bạn đã rollback rồi)!');
   }
@@ -972,7 +911,6 @@ async function rollbackContentWeek() {
   const confirmMsg = `XÁC NHẬN ROLLBACK LỊCH BAN CONTENT?\n\n- Toàn bộ ca Content tuần trước sẽ trả về 'Tuần Này'.\n- Ca đang có ở 'Tuần Này' sẽ chuyển về 'Tuần Sau'.\n(Lịch Design hoàn toàn không bị ảnh hưởng)`;
   if (!confirm(confirmMsg)) return;
 
-  // 1. Phục hồi Content từ backup_content -> Current
   await window.sb.from('schedules').update({
     writing_short_data: backupRow.writing_short_data,
     writing_long_data: backupRow.writing_long_data,
@@ -980,7 +918,6 @@ async function rollbackContentWeek() {
     updated_at: new Date()
   }).eq('id', 'current');
 
-  // 2. Chuyển ca trực hiện tại về lại Next
   if (currentWeek) {
     await window.sb.from('schedules').update({
       writing_short_data: currentWeek.writing_short_data,
@@ -990,7 +927,6 @@ async function rollbackContentWeek() {
     }).eq('id', 'next');
   }
 
-  // 3. Xóa trắng backup_content để không cho bấm rollback liên tiếp
   await window.sb.from('schedules').update({
     writing_short_data: null,
     writing_long_data: null,
@@ -1002,9 +938,7 @@ async function rollbackContentWeek() {
   fetchScheduleData();
 }
 
-// --------------------------------------------------
-// B. BAN DESIGN: ĐÔN TUẦN & ROLLBACK (ROW: backup_design)
-// --------------------------------------------------
+// BAN DESIGN: ĐÔN TUẦN & ROLLBACK
 async function promoteDesignWeek() {
   const pin = prompt('Nhập mã PIN Admin để ĐÔN TUẦN DESIGN:');
   if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
@@ -1013,7 +947,6 @@ async function promoteDesignWeek() {
   const nextWeek = scheduleCache['next'];
   if (!currentWeek || !nextWeek) return alert('Chưa tải được dữ liệu lịch!');
 
-  // 1. Cất tuần hiện tại của Design vào row 'backup_design'
   const { error: backupErr } = await window.sb.from('schedules').upsert({
     id: 'backup_design',
     week_label: 'BACKUP DESIGN ' + new Date().toLocaleTimeString('vi-VN'),
@@ -1025,13 +958,11 @@ async function promoteDesignWeek() {
     if (!confirm('Không thể ghi backup Design vào database (' + backupErr.message + '). Tiếp tục đôn?')) return;
   }
 
-  // 2. Đôn tuần Design: Next -> Current
   await window.sb.from('schedules').update({
     design_shifts_data: nextWeek.design_shifts_data,
     updated_at: new Date()
   }).eq('id', 'current');
 
-  // 3. Xóa trắng Design tuần sau
   const blankDesignShifts = [
     { shift: "Fix ảnh Page", time: "Hằng ngày", slots: [[], [], [], [], [], [], []] }
   ];
@@ -1049,14 +980,12 @@ async function rollbackDesignWeek() {
   const pin = prompt('KHÔI PHỤC LỊCH DESIGN\nNhập mã PIN Admin để ROLLBACK:');
   if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
 
-  // Lấy row backup_design từ Supabase
   const { data: backupRow, error } = await window.sb
     .from('schedules')
     .select('*')
     .eq('id', 'backup_design')
     .single();
 
-  // Kiểm tra nếu chưa từng đôn hoặc đã rollback rồi
   if (error || !backupRow || !backupRow.design_shifts_data) {
     return alert('Không tìm thấy bản backup nào của Design (hoặc bạn đã rollback rồi)!');
   }
@@ -1065,13 +994,11 @@ async function rollbackDesignWeek() {
   const confirmMsg = `XÁC NHẬN ROLLBACK LỊCH BAN DESIGN?\n\n- Ca trực Design tuần trước sẽ trả về 'Tuần Này'.\n- Ca đang có ở 'Tuần Này' sẽ chuyển về 'Tuần Sau'.\n(Lịch Content hoàn toàn không bị ảnh hưởng)`;
   if (!confirm(confirmMsg)) return;
 
-  // 1. Phục hồi Design từ backup_design -> Current
   await window.sb.from('schedules').update({
     design_shifts_data: backupRow.design_shifts_data,
     updated_at: new Date()
   }).eq('id', 'current');
 
-  // 2. Chuyển ca trực hiện tại về lại Next
   if (currentWeek) {
     await window.sb.from('schedules').update({
       design_shifts_data: currentWeek.design_shifts_data,
@@ -1079,7 +1006,6 @@ async function rollbackDesignWeek() {
     }).eq('id', 'next');
   }
 
-  // 3. Xóa trắng backup_design để không cho bấm rollback liên tiếp
   await window.sb.from('schedules').update({
     design_shifts_data: null,
     updated_at: new Date()
@@ -1089,31 +1015,22 @@ async function rollbackDesignWeek() {
   fetchScheduleData();
 }
 
-// --------------------------------------------------
-// GẮN SỰ KIỆN CLICK THEO BAN ĐANG CHỌN
-// --------------------------------------------------
 if (btnPromoteWeek) {
   btnPromoteWeek.onclick = () => {
-    if (currentActiveTeam === 'design') {
-      promoteDesignWeek();
-    } else {
-      promoteContentWeek();
-    }
+    if (currentActiveTeam === 'design') promoteDesignWeek();
+    else promoteContentWeek();
   };
 }
 
 if (btnRollbackWeek) {
   btnRollbackWeek.onclick = () => {
-    if (currentActiveTeam === 'design') {
-      rollbackDesignWeek();
-    } else {
-      rollbackContentWeek();
-    }
+    if (currentActiveTeam === 'design') rollbackDesignWeek();
+    else rollbackContentWeek();
   };
 }
 
 // ==============================================================================
-// PHẦN 9: ĐIỀU HƯỚNG TAB BAN & CHUYỂN TUẦN (ĐẦY ĐỦ CẢ TAB VÀ NÚT TUẦN)
+// PHẦN 9: ĐIỀU HƯỚNG TAB BAN & CHUYỂN TUẦN
 // ==============================================================================
 const sectionContent = document.getElementById('section-content-team');
 const sectionDesign = document.getElementById('section-design-team');
@@ -1121,7 +1038,6 @@ const btnContentTab = document.getElementById('tab-btn-content');
 const btnDesignTab = document.getElementById('tab-btn-design');
 
 if (btnContentTab && btnDesignTab) {
-  // Khi chọn tab Content
   btnContentTab.onclick = () => {
     currentActiveTeam = 'content';
     btnContentTab.classList.add('active');
@@ -1129,23 +1045,14 @@ if (btnContentTab && btnDesignTab) {
     if (sectionContent) sectionContent.style.display = 'block';
     if (sectionDesign) sectionDesign.style.display = 'none';
 
-    // Đổi nhãn nút Đôn tuần sang Content (Vàng)
-    if (promoteBtnText) {
-      promoteBtnText.innerText = 'ĐÔN TUẦN CONTENT';
-    } else if (btnPromoteWeek) {
-      btnPromoteWeek.innerHTML = '<i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN CONTENT';
-    }
+    if (promoteBtnText) promoteBtnText.innerText = 'ĐÔN TUẦN CONTENT';
+    else if (btnPromoteWeek) btnPromoteWeek.innerHTML = '<i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN CONTENT';
     if (btnPromoteWeek) btnPromoteWeek.style.background = 'var(--neo-yellow)';
 
-    // Đổi nhãn nút Rollback sang Content
-    if (rollbackBtnText) {
-      rollbackBtnText.innerText = 'ROLLBACK CONTENT';
-    } else if (btnRollbackWeek) {
-      btnRollbackWeek.innerHTML = '<i class="fa-solid fa-rotate-left"></i> ROLLBACK CONTENT';
-    }
+    if (rollbackBtnText) rollbackBtnText.innerText = 'ROLLBACK CONTENT';
+    else if (btnRollbackWeek) btnRollbackWeek.innerHTML = '<i class="fa-solid fa-rotate-left"></i> ROLLBACK CONTENT';
   };
 
-  // Khi chọn tab Design
   btnDesignTab.onclick = () => {
     currentActiveTeam = 'design';
     btnDesignTab.classList.add('active');
@@ -1153,28 +1060,17 @@ if (btnContentTab && btnDesignTab) {
     if (sectionDesign) sectionDesign.style.display = 'block';
     if (sectionContent) sectionContent.style.display = 'none';
 
-    // Đổi nhãn nút Đôn tuần sang Design (Tím)
-    if (promoteBtnText) {
-      promoteBtnText.innerText = 'ĐÔN TUẦN DESIGN';
-    } else if (btnPromoteWeek) {
-      btnPromoteWeek.innerHTML = '<i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN DESIGN';
-    }
+    if (promoteBtnText) promoteBtnText.innerText = 'ĐÔN TUẦN DESIGN';
+    else if (btnPromoteWeek) btnPromoteWeek.innerHTML = '<i class="fa-solid fa-forward-step"></i> ĐÔN TUẦN DESIGN';
     if (btnPromoteWeek) btnPromoteWeek.style.background = 'var(--neo-purple)';
 
-    // Đổi nhãn nút Rollback sang Design
-    if (rollbackBtnText) {
-      rollbackBtnText.innerText = 'ROLLBACK DESIGN';
-    } else if (btnRollbackWeek) {
-      btnRollbackWeek.innerHTML = '<i class="fa-solid fa-rotate-left"></i> ROLLBACK DESIGN';
-    }
+    if (rollbackBtnText) rollbackBtnText.innerText = 'ROLLBACK DESIGN';
+    else if (btnRollbackWeek) btnRollbackWeek.innerHTML = '<i class="fa-solid fa-rotate-left"></i> ROLLBACK DESIGN';
 
     fetchDesignTasks();
   };
 }
 
-// --------------------------------------------------
-// CÁC SỰ KIỆN CHUYỂN TUẦN (TUẦN NÀY / TUẦN SAU)
-// --------------------------------------------------
 const btnThisWeek = document.getElementById('btn-this-week');
 const btnNextWeek = document.getElementById('btn-next-week');
 
@@ -1194,7 +1090,6 @@ if (btnThisWeek && btnNextWeek) {
   };
 }
 
-// Lắng nghe tín hiệu khi người dùng đổi tên ở thanh Header
 window.addEventListener('identityChanged', () => {
   renderActiveSchedule();
 });
@@ -1217,13 +1112,11 @@ async function refreshAllData() {
 const btnRefreshAll = document.getElementById('btn-refresh-all');
 if (btnRefreshAll) btnRefreshAll.onclick = refreshAllData;
 
-// Tự động tải lại khi bật máy điện thoại từ chế độ ngủ (Deep-Sleep Recovery)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshAllData();
 });
 window.addEventListener('focus', refreshAllData);
 
-// Supabase Realtime Channels
 window.sb.channel('realtime_schedules_all')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, fetchScheduleData)
   .on('postgres_changes', { event: '*', schema: 'public', table: 'design_tasks' }, fetchDesignTasks)
