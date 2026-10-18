@@ -6,7 +6,7 @@
  * 1. Cấu hình Supabase & State ứng dụng
  * 2. Bảng mã màu độc quyền Ban Design
  * 3. Tải & đồng bộ dữ liệu từ Database (Schedules, Design Tasks, Leaves)
- * 4. Phân ca trực tuần (Content, Trực Page 5 ca, Des Ca)
+ * 4. Phân ca trực tuần (Content 5 ca chuẩn: 8h, 11h, 16h, 19h, 21h; Trực Page 5 ca, Des Ca)
  * 5. Bảng quản lý Task Design Backlog (Lọc, Checkbox, Xóa kèm dọn sạch Storage)
  * 6. Lightbox & Tải ảnh gốc (Hỗ trợ Save to Photos trên iOS qua Web Share API)
  * 7. Bảng theo dõi Nghỉ phép (Leaves)
@@ -67,7 +67,7 @@ function getMemberPillStyle(member, columnKey, fallbackBg = '') {
 }
 
 // ==============================================================================
-// PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE & AUTO-MIGRATION 5 CA TRỰC PAGE
+// PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE & AUTO-MIGRATION
 // ==============================================================================
 
 // Cấu trúc chuẩn 5 ca trực Fanpage mỗi ngày
@@ -84,7 +84,6 @@ async function fetchScheduleData() {
   if (error) return console.error('Lỗi lấy lịch ca trực:', error.message);
 
   for (const item of data) {
-    // Tự động nâng cấp bảng trực Page từ bản 2 ca cũ lên chuẩn 5 ca mới
     if (item.posting_data && item.posting_data.length < 5 && (item.id === 'current' || item.id === 'next')) {
       item.posting_data = JSON.parse(JSON.stringify(DEFAULT_5_POSTING_SHIFTS));
       window.sb.from('schedules').update({ posting_data: item.posting_data }).eq('id', item.id).then();
@@ -115,14 +114,48 @@ async function fetchLeavesData() {
   leavesList = data || [];
   renderLeavesTable();
 }
+
 // ==============================================================================
-// TỰ ĐỘNG GOM SLOT T7/CN CŨ VÀO 2 Ô HỢP NHẤT (KHÔNG MẤT DỮ LIỆU ĐĂNG KÝ)
+// TỰ ĐỘNG CHUẨN HÓA BUỔI & GOM SLOT CUỐI TUẦN (KHÔNG MẤT DỮ LIỆU)
 // ==============================================================================
 function autoMigrateContentWeekends(weekObj, id) {
   if (!weekObj || !weekObj.writing_short_data) return;
   let changed = false;
 
-  // Gom các slot T7 (idx 5) & CN (idx 6) từ dòng Trưa (1) & Chiều (2) về Ô 1 (dòng 0)
+  // 1. Chuẩn hóa tên buổi & giờ cho 3 ca ngày (8h, 11h, 16h)
+  const shortMeta = [
+    { shift: "Sáng", time: "8h" },
+    { shift: "Trưa", time: "11h" },
+    { shift: "Chiều", time: "16h" }
+  ];
+  shortMeta.forEach((m, idx) => {
+    if (weekObj.writing_short_data[idx]) {
+      if (weekObj.writing_short_data[idx].shift !== m.shift || weekObj.writing_short_data[idx].time !== m.time) {
+        weekObj.writing_short_data[idx].shift = m.shift;
+        weekObj.writing_short_data[idx].time = m.time;
+        changed = true;
+      }
+    }
+  });
+
+  // 2. Chuẩn hóa tên buổi & giờ cho 2 ca tối (19h, 21h) - Xóa bỏ nhãn Sáng/Trưa cũ
+  const longMeta = [
+    { shift: "Tối", time: "19h" },
+    { shift: "Đêm", time: "21h" }
+  ];
+  if (weekObj.writing_long_data) {
+    longMeta.forEach((m, idx) => {
+      if (weekObj.writing_long_data[idx]) {
+        if (weekObj.writing_long_data[idx].shift !== m.shift || weekObj.writing_long_data[idx].time !== m.time) {
+          weekObj.writing_long_data[idx].shift = m.shift;
+          weekObj.writing_long_data[idx].time = m.time;
+          changed = true;
+        }
+      }
+    });
+  }
+
+  // 3. Gom ca T7 (5) & CN (6) của Trưa (1) và Chiều (2) về Ô Bài Ngắn (0)
   [5, 6].forEach(colIdx => {
     for (let r = 1; r < weekObj.writing_short_data.length; r++) {
       const oldSlots = weekObj.writing_short_data[r].slots[colIdx];
@@ -138,7 +171,7 @@ function autoMigrateContentWeekends(weekObj, id) {
     }
   });
 
-  // Gom các slot T7 & CN từ dòng Tối 2 về Ô 2 (dòng 0 của writing_long_data)
+  // 4. Gom ca T7 & CN của Đêm (1) về Ô Full-time (0)
   if (weekObj.writing_long_data && weekObj.writing_long_data.length > 1) {
     [5, 6].forEach(colIdx => {
       const oldSlots = weekObj.writing_long_data[1].slots[colIdx];
@@ -170,7 +203,6 @@ function renderActiveSchedule() {
   const weekObj = scheduleCache[currentTab];
   if (!weekObj) return;
 
-  // Tự động bảo toàn dữ liệu T7 & CN
   autoMigrateContentWeekends(weekObj, currentTab);
 
   const labelEl = document.getElementById('current-week-label');
@@ -178,24 +210,24 @@ function renderActiveSchedule() {
 
   const myName = localStorage.getItem('gl_current_user') || 'Vinci';
 
-  // Helper render ruột một ô slot
+  // Helper render ô slot
   const renderSlotCellContent = (slotsArr, columnKey, rIdx, cIdx, maxCapacity, customTag = '') => {
     const isFull = slotsArr.length >= maxCapacity;
     return `
       <div class="slot-container">
-        ${customTag ? `<div class="weekend-group-tag ${customTag.includes('MATCHDAY') ? 'tag-matchday' : ''}">${customTag}</div>` : ''}
+        ${customTag ? `<div class="weekend-group-tag ${customTag.includes('FULL-TIME') ? 'tag-matchday' : ''}">${customTag}</div>` : ''}
         ${slotsArr.map((member, sIdx) => {
           const pillStyle = getMemberPillStyle(member, columnKey, '');
           return `
             <div class="slot-pill" style="${pillStyle}" 
-                 onclick="handleRemoveSlot('${columnKey}', ${rIdx},${cIdx}, ${sIdx}, '${member}')" 
+                 onclick="handleRemoveSlot('${columnKey}', ${rIdx}, ${cIdx}, ${sIdx}, '${member}')" 
                  title="Click để hủy ca">
               <strong>${member}</strong>${member === myName ? `<i class="fa-solid fa-xmark btn-del-mini" style="color: inherit;"></i>` : ''}
             </div>
           `;
         }).join('')}
         ${!isFull ? `
-          <button class="btn-slot-join" onclick="handleAddSlot('${columnKey}',${rIdx}, ${cIdx},${maxCapacity})">
+          <button class="btn-slot-join" onclick="handleAddSlot('${columnKey}', ${rIdx}, ${cIdx}, ${maxCapacity})">
             + Nhận (${slotsArr.length}/${maxCapacity})
           </button>
         ` : `<span class="slot-full-tag">ĐÃ ĐỦ ${maxCapacity} NGƯỜI</span>`}
@@ -203,7 +235,7 @@ function renderActiveSchedule() {
     `;
   };
 
-  // 1. RENDER BẢNG CONTENT DUY NHẤT (5 DÒNG, T7 & CN GỘP THÀNH 2 Ô LỚN)
+  // 1. RENDER BẢNG CONTENT (5 DÒNG: SÁNG 8H, TRƯA 11H, CHIỀU 16H, TỐI 19H, ĐÊM 21H)
   const bodyContent = document.getElementById('body-writing-content');
   if (bodyContent) {
     const shortRows = weekObj.writing_short_data || [];
@@ -211,73 +243,69 @@ function renderActiveSchedule() {
 
     let html = '';
 
-    // DÒNG 0: Sáng (Trước 9h) - Chứa Ô lớn T7 & CN thứ nhất (rowspan=3)
-    const r0 = shortRows[0] || { shift: "Sáng", time: "Trước 9h", slots: [[],[],[],[],[],[],[]] };
+    // DÒNG 0: Sáng (8h) - Ô T7 & CN thứ nhất (rowspan=3)
+    const r0 = shortRows[0] || { slots: [[],[],[],[],[],[],[]] };
     html += `<tr>
-      <td class="shift-title">${r0.shift || 'Sáng'}</td>
-      <td class="shift-time">${r0.time || 'Trước 9h'}</td>`;
+      <td class="shift-title">Sáng</td>
+      <td class="shift-time">8h</td>`;
     for (let c = 0; c <= 4; c++) {
       const slots = Array.isArray(r0.slots[c]) ? r0.slots[c] : [];
       html += `<td>${renderSlotCellContent(slots, 'writing_short_data', 0, c, 5)}</td>`;
     }
-    // Ô T7 (rowspan=3, max 5 slot bài ngắn)
     const t7Short = Array.isArray(r0.slots[5]) ? r0.slots[5] : [];
     html += `<td rowspan="3" class="weekend-slot-cell">
       ${renderSlotCellContent(t7Short, 'writing_short_data', 0, 5, 5, '⚡ BÀI NGẮN')}
     </td>`;
-    // Ô CN (rowspan=3, max 5 slot bài ngắn)
     const cnShort = Array.isArray(r0.slots[6]) ? r0.slots[6] : [];
     html += `<td rowspan="3" class="weekend-slot-cell">
       ${renderSlotCellContent(cnShort, 'writing_short_data', 0, 6, 5, '⚡ BÀI NGẮN')}
     </td></tr>`;
 
-    // DÒNG 1: Trưa (Trước 11h) - T7 & CN bị gộp nên chỉ render T2 -> T6
-    const r1 = shortRows[1] || { shift: "Trưa", time: "Trước 11h", slots: [[],[],[],[],[],[],[]] };
+    // DÒNG 1: Trưa (11h) - T2 -> T6
+    const r1 = shortRows[1] || { slots: [[],[],[],[],[],[],[]] };
     html += `<tr>
-      <td class="shift-title">${r1.shift || 'Trưa'}</td>
-      <td class="shift-time">${r1.time || 'Trước 11h'}</td>`;
+      <td class="shift-title">Trưa</td>
+      <td class="shift-time">11h</td>`;
     for (let c = 0; c <= 4; c++) {
       const slots = Array.isArray(r1.slots[c]) ? r1.slots[c] : [];
       html += `<td>${renderSlotCellContent(slots, 'writing_short_data', 1, c, 5)}</td>`;
     }
     html += `</tr>`;
 
-    // DÒNG 2: Chiều (14h - 18h) - T2 -> T6
-    const r2 = shortRows[2] || { shift: "Chiều", time: "14h - 18h", slots: [[],[],[],[],[],[],[]] };
+    // DÒNG 2: Chiều (16h) - T2 -> T6
+    const r2 = shortRows[2] || { slots: [[],[],[],[],[],[],[]] };
     html += `<tr>
-      <td class="shift-title">${r2.shift || 'Chiều'}</td>
-      <td class="shift-time">${r2.time || '14h - 18h'}</td>`;
+      <td class="shift-title">Chiều</td>
+      <td class="shift-time">16h</td>`;
     for (let c = 0; c <= 4; c++) {
       const slots = Array.isArray(r2.slots[c]) ? r2.slots[c] : [];
       html += `<td>${renderSlotCellContent(slots, 'writing_short_data', 2, c, 5)}</td>`;
     }
     html += `</tr>`;
 
-    // DÒNG 3: Tối 1 (19h) - Chứa Ô lớn T7 & CN thứ hai (rowspan=2)
-    const r3 = longRows[0] || { shift: "Tối 1", time: "19h", slots: [[],[],[],[],[],[],[]] };
+    // DÒNG 3: Tối (19h) - Ô T7 & CN thứ hai (rowspan=2)
+    const r3 = longRows[0] || { slots: [[],[],[],[],[],[],[]] };
     html += `<tr>
-      <td class="shift-title">${r3.shift || 'Tối 1'}</td>
-      <td class="shift-time">${r3.time || '19h (Dài)'}</td>`;
+      <td class="shift-title">Tối</td>
+      <td class="shift-time">19h</td>`;
     for (let c = 0; c <= 4; c++) {
       const slots = Array.isArray(r3.slots[c]) ? r3.slots[c] : [];
       html += `<td>${renderSlotCellContent(slots, 'writing_long_data', 0, c, 3)}</td>`;
     }
-    // Ô T7 (rowspan=2, max 5 slot Matchday)
     const t7Match = Array.isArray(r3.slots[5]) ? r3.slots[5] : [];
     html += `<td rowspan="2" class="weekend-slot-cell weekend-matchday-cell">
       ${renderSlotCellContent(t7Match, 'writing_long_data', 0, 5, 5, '🔥 FULL-TIME')}
     </td>`;
-    // Ô CN (rowspan=2, max 5 slot Matchday)
     const cnMatch = Array.isArray(r3.slots[6]) ? r3.slots[6] : [];
     html += `<td rowspan="2" class="weekend-slot-cell weekend-matchday-cell">
       ${renderSlotCellContent(cnMatch, 'writing_long_data', 0, 6, 5, '🔥 FULL-TIME')}
     </td></tr>`;
 
-    // DÒNG 4: Tối 2 (21h) - T2 -> T6
-    const r4 = longRows[1] || { shift: "Tối 2", time: "21h", slots: [[],[],[],[],[],[],[]] };
+    // DÒNG 4: Đêm (21h) - T2 -> T6
+    const r4 = longRows[1] || { slots: [[],[],[],[],[],[],[]] };
     html += `<tr>
-      <td class="shift-title">${r4.shift || 'Tối 2'}</td>
-      <td class="shift-time">${r4.time || '21h (Dài)'}</td>`;
+      <td class="shift-title">Đêm</td>
+      <td class="shift-time">21h</td>`;
     for (let c = 0; c <= 4; c++) {
       const slots = Array.isArray(r4.slots[c]) ? r4.slots[c] : [];
       html += `<td>${renderSlotCellContent(slots, 'writing_long_data', 1, c, 3)}</td>`;
@@ -287,7 +315,7 @@ function renderActiveSchedule() {
     bodyContent.innerHTML = html;
   }
 
-  // 2. Bảng Trực Page (5 ca/ngày) & Des Ca giữ nguyên logic
+  // 2. BẢNG TRỰC PAGE (5 CA) & BẢNG DES CA
   const renderMultiSlotRows = (dataMatrix, columnKey, maxCapacity, customBg = '') => {
     if (!dataMatrix) return '';
     return dataMatrix.map((row, rIdx) => `
@@ -805,7 +833,6 @@ if (formEditTask) {
           if (progressBar) progressBar.style.width = `${percent}%`;
         });
 
-        // Xóa ảnh mẫu task cũ trong Storage khi Des tải ảnh mới lên
         if (oldStorageFileName && oldStorageFileName !== extractStorageFileName(finalImgUrl)) {
           console.log("Xóa ảnh mẫu task cũ khỏi Storage:", oldStorageFileName);
           await deleteFilesFromStorage([oldStorageFileName]);
@@ -1016,15 +1043,15 @@ async function promoteContentWeek() {
     updated_at: new Date()
   }).eq('id', 'current');
 
-  // Đôn tuần sau: Khởi tạo trắng 5 ca trực Page
+  // Đôn tuần mới chuẩn 5 ca: Sáng (8h), Trưa (11h), Chiều (16h), Tối (19h), Đêm (21h)
   const blankShort = [
     { shift: "Sáng", time: "8h", slots: [[], [], [], [], [], [], []] },
     { shift: "Trưa", time: "11h", slots: [[], [], [], [], [], [], []] },
     { shift: "Chiều", time: "16h", slots: [[], [], [], [], [], [], []] }
   ];
   const blankLong = [
-    { shift: "Sáng", time: "19h", slots: [[], [], [], [], [], [], []] },
-    { shift: "Trưa", time: "21h", slots: [[], [], [], [], [], [], []] }
+    { shift: "Tối", time: "19h", slots: [[], [], [], [], [], [], []] },
+    { shift: "Đêm", time: "21h", slots: [[], [], [], [], [], [], []] }
   ];
   const blankPosting = JSON.parse(JSON.stringify(DEFAULT_5_POSTING_SHIFTS));
 
