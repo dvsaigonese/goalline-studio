@@ -80,50 +80,36 @@
         </div>
 
         <!-- ==============================================
-             KHU VỰC 1: BAN CONTENT
+             KHU VỰC 1: BAN CONTENT (HỢP NHẤT 1 BẢNG 5 DÒNG DUY NHẤT)
              ============================================== -->
         <div id="section-content-team">
-            <!-- BẢNG BÀI NGẮN (TỐI ĐA 5 SLOT) -->
             <div class="schedule-card card-yellow">
-                <div class="schedule-card-header">
-                    <div class="header-badge"><i class="fa-solid fa-bolt"></i> BÀI NGẮN</div>
-                    <h3>ĐĂNG KÝ LỊCH VIẾT BÀI NGẮN (2 BÀI/NGƯỜI/TUẦN - TỐI ĐA 5 SLOT)</h3>
+                <div class="schedule-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="header-badge"><i class="fa-solid fa-pen-nib"></i> LỊCH CONTENT</div>
+                        <h3>PHÂN CA BÀI VIẾT (BÀI NGẮN &amp; MATCHDAY / BÀI DÀI)</h3>
+                    </div>
+                    <div class="schedule-notice-pill">
+                        📌 <strong>T2–T6:</strong> Ngắn max 5, Dài max 3 &bull; <strong>T7–CN:</strong> Freestyle &amp; Matchday (Max 5/nhóm)
+                    </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="grid-table">
+                    <table class="grid-table content-unified-table">
                         <thead>
                             <tr>
                                 <th style="width: 85px;">BUỔI</th>
-                                <th style="width: 120px;">GIỜ</th>
-                                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+                                <th style="width: 125px;">KHUNG GIỜ</th>
+                                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th>
+                                <th style="background:#ffeaa7; width: 165px;">T7 (CUỐI TUẦN)</th>
+                                <th style="background:#ffeaa7; width: 165px;">CN (CUỐI TUẦN)</th>
                             </tr>
                         </thead>
-                        <tbody id="body-writing-short"></tbody>
+                        <tbody id="body-writing-content"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- BẢNG BÀI DÀI (TỐI ĐA 3 SLOT) -->
-            <div class="schedule-card card-orange">
-                <div class="schedule-card-header" style="background:#fff4ea;">
-                    <div class="header-badge" style="background:var(--neo-orange); color:black;"><i class="fa-solid fa-newspaper"></i> BÀI DÀI</div>
-                    <h3>ĐĂNG KÝ LỊCH VIẾT BÀI DÀI (1 BÀI/NGƯỜI/TUẦN - TỐI ĐA 3 SLOT)</h3>
-                </div>
-                <div class="table-responsive">
-                    <table class="grid-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 85px;">BUỔI</th>
-                                <th style="width: 120px;">GIỜ</th>
-                                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
-                            </tr>
-                        </thead>
-                        <tbody id="body-writing-long"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- BẢNG TRỰC PAGE (TỐI ĐA 2 SLOT) -->
+            <!-- BẢNG TRỰC PAGE (5 CA - GIỮ NGUYÊN) -->
             <div class="schedule-card card-cyan">
                 <div class="schedule-card-header">
                     <div class="header-badge"><i class="fa-solid fa-bullhorn"></i> TRỰC PAGE</div>

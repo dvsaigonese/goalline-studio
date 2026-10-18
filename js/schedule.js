@@ -115,6 +115,53 @@ async function fetchLeavesData() {
   leavesList = data || [];
   renderLeavesTable();
 }
+// ==============================================================================
+// TỰ ĐỘNG GOM SLOT T7/CN CŨ VÀO 2 Ô HỢP NHẤT (KHÔNG MẤT DỮ LIỆU ĐĂNG KÝ)
+// ==============================================================================
+function autoMigrateContentWeekends(weekObj, id) {
+  if (!weekObj || !weekObj.writing_short_data) return;
+  let changed = false;
+
+  // Gom các slot T7 (idx 5) & CN (idx 6) từ dòng Trưa (1) & Chiều (2) về Ô 1 (dòng 0)
+  [5, 6].forEach(colIdx => {
+    for (let r = 1; r < weekObj.writing_short_data.length; r++) {
+      const oldSlots = weekObj.writing_short_data[r].slots[colIdx];
+      if (Array.isArray(oldSlots) && oldSlots.length > 0) {
+        oldSlots.forEach(member => {
+          if (!weekObj.writing_short_data[0].slots[colIdx].includes(member)) {
+            weekObj.writing_short_data[0].slots[colIdx].push(member);
+          }
+        });
+        weekObj.writing_short_data[r].slots[colIdx] = [];
+        changed = true;
+      }
+    }
+  });
+
+  // Gom các slot T7 & CN từ dòng Tối 2 về Ô 2 (dòng 0 của writing_long_data)
+  if (weekObj.writing_long_data && weekObj.writing_long_data.length > 1) {
+    [5, 6].forEach(colIdx => {
+      const oldSlots = weekObj.writing_long_data[1].slots[colIdx];
+      if (Array.isArray(oldSlots) && oldSlots.length > 0) {
+        oldSlots.forEach(member => {
+          if (!weekObj.writing_long_data[0].slots[colIdx].includes(member)) {
+            weekObj.writing_long_data[0].slots[colIdx].push(member);
+          }
+        });
+        weekObj.writing_long_data[1].slots[colIdx] = [];
+        changed = true;
+      }
+    });
+  }
+
+  if (changed) {
+    window.sb.from('schedules').update({
+      writing_short_data: weekObj.writing_short_data,
+      writing_long_data: weekObj.writing_long_data,
+      updated_at: new Date()
+    }).eq('id', id).then();
+  }
+}
 
 // ==============================================================================
 // PHẦN 4: RENDER BẢNG PHÂN CA TRỰC TUẦN
@@ -123,11 +170,124 @@ function renderActiveSchedule() {
   const weekObj = scheduleCache[currentTab];
   if (!weekObj) return;
 
+  // Tự động bảo toàn dữ liệu T7 & CN
+  autoMigrateContentWeekends(weekObj, currentTab);
+
   const labelEl = document.getElementById('current-week-label');
   if (labelEl) labelEl.innerText = weekObj.week_label;
 
   const myName = localStorage.getItem('gl_current_user') || 'Vinci';
 
+  // Helper render ruột một ô slot
+  const renderSlotCellContent = (slotsArr, columnKey, rIdx, cIdx, maxCapacity, customTag = '') => {
+    const isFull = slotsArr.length >= maxCapacity;
+    return `
+      <div class="slot-container">
+        ${customTag ? `<div class="weekend-group-tag ${customTag.includes('MATCHDAY') ? 'tag-matchday' : ''}">${customTag}</div>` : ''}
+        ${slotsArr.map((member, sIdx) => {
+          const pillStyle = getMemberPillStyle(member, columnKey, '');
+          return `
+            <div class="slot-pill" style="${pillStyle}" 
+                 onclick="handleRemoveSlot('${columnKey}', ${rIdx},${cIdx}, ${sIdx}, '${member}')" 
+                 title="Click để hủy ca">
+              <strong>${member}</strong>${member === myName ? `<i class="fa-solid fa-xmark btn-del-mini" style="color: inherit;"></i>` : ''}
+            </div>
+          `;
+        }).join('')}
+        ${!isFull ? `
+          <button class="btn-slot-join" onclick="handleAddSlot('${columnKey}',${rIdx}, ${cIdx},${maxCapacity})">
+            + Nhận (${slotsArr.length}/${maxCapacity})
+          </button>
+        ` : `<span class="slot-full-tag">ĐÃ ĐỦ ${maxCapacity} NGƯỜI</span>`}
+      </div>
+    `;
+  };
+
+  // 1. RENDER BẢNG CONTENT DUY NHẤT (5 DÒNG, T7 & CN GỘP THÀNH 2 Ô LỚN)
+  const bodyContent = document.getElementById('body-writing-content');
+  if (bodyContent) {
+    const shortRows = weekObj.writing_short_data || [];
+    const longRows = weekObj.writing_long_data || [];
+
+    let html = '';
+
+    // DÒNG 0: Sáng (Trước 9h) - Chứa Ô lớn T7 & CN thứ nhất (rowspan=3)
+    const r0 = shortRows[0] || { shift: "Sáng", time: "Trước 9h", slots: [[],[],[],[],[],[],[]] };
+    html += `<tr>
+      <td class="shift-title">${r0.shift || 'Sáng'}</td>
+      <td class="shift-time">${r0.time || 'Trước 9h'}</td>`;
+    for (let c = 0; c <= 4; c++) {
+      const slots = Array.isArray(r0.slots[c]) ? r0.slots[c] : [];
+      html += `<td>${renderSlotCellContent(slots, 'writing_short_data', 0, c, 5)}</td>`;
+    }
+    // Ô T7 (rowspan=3, max 5 slot bài ngắn)
+    const t7Short = Array.isArray(r0.slots[5]) ? r0.slots[5] : [];
+    html += `<td rowspan="3" class="weekend-slot-cell">
+      ${renderSlotCellContent(t7Short, 'writing_short_data', 0, 5, 5, '⚡ BÀI NGẮN')}
+    </td>`;
+    // Ô CN (rowspan=3, max 5 slot bài ngắn)
+    const cnShort = Array.isArray(r0.slots[6]) ? r0.slots[6] : [];
+    html += `<td rowspan="3" class="weekend-slot-cell">
+      ${renderSlotCellContent(cnShort, 'writing_short_data', 0, 6, 5, '⚡ BÀI NGẮN')}
+    </td></tr>`;
+
+    // DÒNG 1: Trưa (Trước 11h) - T7 & CN bị gộp nên chỉ render T2 -> T6
+    const r1 = shortRows[1] || { shift: "Trưa", time: "Trước 11h", slots: [[],[],[],[],[],[],[]] };
+    html += `<tr>
+      <td class="shift-title">${r1.shift || 'Trưa'}</td>
+      <td class="shift-time">${r1.time || 'Trước 11h'}</td>`;
+    for (let c = 0; c <= 4; c++) {
+      const slots = Array.isArray(r1.slots[c]) ? r1.slots[c] : [];
+      html += `<td>${renderSlotCellContent(slots, 'writing_short_data', 1, c, 5)}</td>`;
+    }
+    html += `</tr>`;
+
+    // DÒNG 2: Chiều (14h - 18h) - T2 -> T6
+    const r2 = shortRows[2] || { shift: "Chiều", time: "14h - 18h", slots: [[],[],[],[],[],[],[]] };
+    html += `<tr>
+      <td class="shift-title">${r2.shift || 'Chiều'}</td>
+      <td class="shift-time">${r2.time || '14h - 18h'}</td>`;
+    for (let c = 0; c <= 4; c++) {
+      const slots = Array.isArray(r2.slots[c]) ? r2.slots[c] : [];
+      html += `<td>${renderSlotCellContent(slots, 'writing_short_data', 2, c, 5)}</td>`;
+    }
+    html += `</tr>`;
+
+    // DÒNG 3: Tối 1 (19h) - Chứa Ô lớn T7 & CN thứ hai (rowspan=2)
+    const r3 = longRows[0] || { shift: "Tối 1", time: "19h", slots: [[],[],[],[],[],[],[]] };
+    html += `<tr>
+      <td class="shift-title">${r3.shift || 'Tối 1'}</td>
+      <td class="shift-time">${r3.time || '19h (Dài)'}</td>`;
+    for (let c = 0; c <= 4; c++) {
+      const slots = Array.isArray(r3.slots[c]) ? r3.slots[c] : [];
+      html += `<td>${renderSlotCellContent(slots, 'writing_long_data', 0, c, 3)}</td>`;
+    }
+    // Ô T7 (rowspan=2, max 5 slot Matchday)
+    const t7Match = Array.isArray(r3.slots[5]) ? r3.slots[5] : [];
+    html += `<td rowspan="2" class="weekend-slot-cell weekend-matchday-cell">
+      ${renderSlotCellContent(t7Match, 'writing_long_data', 0, 5, 5, '🔥 FULL-TIME')}
+    </td>`;
+    // Ô CN (rowspan=2, max 5 slot Matchday)
+    const cnMatch = Array.isArray(r3.slots[6]) ? r3.slots[6] : [];
+    html += `<td rowspan="2" class="weekend-slot-cell weekend-matchday-cell">
+      ${renderSlotCellContent(cnMatch, 'writing_long_data', 0, 6, 5, '🔥 FULL-TIME')}
+    </td></tr>`;
+
+    // DÒNG 4: Tối 2 (21h) - T2 -> T6
+    const r4 = longRows[1] || { shift: "Tối 2", time: "21h", slots: [[],[],[],[],[],[],[]] };
+    html += `<tr>
+      <td class="shift-title">${r4.shift || 'Tối 2'}</td>
+      <td class="shift-time">${r4.time || '21h (Dài)'}</td>`;
+    for (let c = 0; c <= 4; c++) {
+      const slots = Array.isArray(r4.slots[c]) ? r4.slots[c] : [];
+      html += `<td>${renderSlotCellContent(slots, 'writing_long_data', 1, c, 3)}</td>`;
+    }
+    html += `</tr>`;
+
+    bodyContent.innerHTML = html;
+  }
+
+  // 2. Bảng Trực Page (5 ca/ngày) & Des Ca giữ nguyên logic
   const renderMultiSlotRows = (dataMatrix, columnKey, maxCapacity, customBg = '') => {
     if (!dataMatrix) return '';
     return dataMatrix.map((row, rIdx) => `
@@ -164,25 +324,11 @@ function renderActiveSchedule() {
     `).join('');
   };
 
-  // 1. Bảng Bài Ngắn (Tối đa 5 slots)
-  const bodyWritingShort = document.getElementById('body-writing-short');
-  if (bodyWritingShort) {
-    bodyWritingShort.innerHTML = renderMultiSlotRows(weekObj.writing_short_data, 'writing_short_data', 5);
-  }
-
-  // 2. Bảng Bài Dài (Tối đa 3 slots)
-  const bodyWritingLong = document.getElementById('body-writing-long');
-  if (bodyWritingLong) {
-    bodyWritingLong.innerHTML = renderMultiSlotRows(weekObj.writing_long_data, 'writing_long_data', 3);
-  }
-
-  // 3. Bảng Trực Page (5 ca/ngày, tối đa 2 slots/ca)
   const bodyPosting = document.getElementById('body-posting');
   if (bodyPosting) {
     bodyPosting.innerHTML = renderMultiSlotRows(weekObj.posting_data, 'posting_data', 2, 'var(--neo-blue)');
   }
 
-  // 4. Bảng Des Ca (Tối đa 2 slots/ngày, tự động nhận màu Designer)
   const bodyDesignShifts = document.getElementById('body-design-shifts');
   if (bodyDesignShifts) {
     bodyDesignShifts.innerHTML = renderMultiSlotRows(weekObj.design_shifts_data, 'design_shifts_data', 2, 'var(--neo-orange)');

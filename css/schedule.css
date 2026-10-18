@@ -718,3 +718,93 @@ body.dark-mode .design-task-table td {
 body.dark-mode .design-task-table td span[style*="color:#aaa"] {
   color: #64748b !important;
 }
+
+.weekend-slot-cell {
+  vertical-align: top !important;
+  background: #fffdf5 !important;
+  border-left: 2px solid var(--neo-black) !important;
+  padding: 10px 8px !important;
+}
+
+.weekend-matchday-cell {
+  background: #fff8f0 !important;
+  border-top: 2px solid var(--neo-black) !important;
+}
+
+/* Badge nhận diện nhóm việc cuối tuần */
+.weekend-group-tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 3px 6px;
+  background: var(--neo-yellow);
+  color: var(--neo-black);
+  border: 1.5px solid var(--neo-black);
+  box-shadow: 1px 1px 0 var(--neo-black);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.weekend-group-tag.tag-matchday {
+  background: var(--neo-orange);
+  color: #000;
+}
+
+/* Pill chú thích ở Header */
+.schedule-notice-pill {
+  background: var(--neo-shadow-hover);
+  border: 1.5px solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+
+/* ==============================================================================
+   ĐỒNG BỘ DARK MODE CHUẨN STEALTH CHO CẢ 2 BẢNG CONTENT & TRỰC PAGE
+   ============================================================================== */
+
+/* 1. ĐỒNG BỘ CẢ 2 BẢNG VỀ CHUNG 1 STYLE THAN CHÌ LÌ (HẾT VIỀN TRẮNG LÓA) */
+body.dark-mode #body-writing-content .slot-pill,
+body.dark-mode #body-posting .slot-pill {
+  background: #242630 !important;        /* Nền than chì như bảng dưới */
+  color: #f3f4f6 !important;             /* Chữ xám sáng */
+  border: 1.5px solid #3d4150 !important;/* Viền xám mảnh tiệp màu, không bị trắng */
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+body.dark-mode #body-writing-content .slot-pill:hover,
+body.dark-mode #body-posting .slot-pill:hover {
+  background: #2f3240 !important;
+  border-color: #52576b !important;
+}
+
+body.dark-mode #body-writing-content .slot-pill strong,
+body.dark-mode #body-posting .slot-pill strong {
+  color: #f3f4f6 !important;
+}
+
+/* 2. CÁC Ô T7 & CN GỘP DÒNG: GIỮ NỀN VÀ VIỀN Y HỆT CÁC Ô BÌNH THƯỜNG */
+body.dark-mode .weekend-slot-cell,
+body.dark-mode .weekend-matchday-cell {
+  background: #18191f !important;
+  border-color: #2b2d36 !important;
+}
+
+/* 3. NHÃN FULL-TIME / FREESTYLE CUỐI TUẦN DỊU MẮT */
+body.dark-mode .weekend-group-tag {
+  background: transparent !important;
+  border: 1px solid #3d4150 !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+  border-radius: 4px;
+}
+
+body.dark-mode .weekend-group-tag.tag-matchday {
+  border-color: #7c2d12 !important;
+  color: #fb923c !important;             /* Cam ấm nhẹ nhàng */
+  background: #1f1412 !important;
+}
