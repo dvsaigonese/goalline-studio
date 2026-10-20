@@ -27,23 +27,41 @@ export default {
         const { width, height } = canvasInfo;
         const rawTitle = settings.title || "Hãy nhập {title}"; 
         const lines = rawTitle.split('\n');
-        let titleFontSize = width * 0.04; 
+        
+        // Cỡ chữ chuẩn tỉ lệ poster 1200x1500
+        const titleFontSize = width * 0.04; // 48px
 
         ctx.save();
         ctx.textAlign = 'left'; 
         ctx.textBaseline = 'middle';
         ctx.font = `bold ${titleFontSize}px Albula, Arial, sans-serif`;
 
-        const lineHeight = titleFontSize * 1.3; 
-        const centerY = height * 0.85; 
-        const startY = centerY - ((lines.length - 1) * lineHeight) / 2;
+        // Giãn dòng thoáng đãng, chống dính dấu thanh tiếng Việt
+        const lineHeight = Math.round(titleFontSize * 1.48); // ~71px
 
-        const spacingPx = Math.round(titleFontSize * -0.05); 
+        // Tọa độ tâm chuẩn của 2 dòng theo mẫu
+        const sampleCenterY = height * 0.87; // ~1305px
+
+        // LOGIC TỰ ĐỘNG TÍNH TOẠ ĐỘ DÒNG ĐẦU TIÊN (startY)
+        let startY;
+        if (lines.length <= 2) {
+            // 1 dòng: rơi vào đúng tâm giữa 2 dòng mẫu
+            // 2 dòng: đối xứng đúng vị trí dòng 1 & 2 của mẫu
+            startY = sampleCenterY - ((lines.length - 1) * lineHeight) / 2;
+        } else {
+            // 3 dòng trở lên: cố định dòng cuối ở vị trí dòng 2 của mẫu, đôn các dòng trước lên trên
+            const fixedBottomY = sampleCenterY + (lineHeight / 2);
+            startY = fixedBottomY - ((lines.length - 1) * lineHeight);
+        }
+
+        // Kerning nhẹ giúp chữ liên kết chắc chắn
+        const spacingPx = Math.round(titleFontSize * -0.04); 
 
         lines.forEach((line, index) => {
             const currentY = startY + (index * lineHeight); 
             const textParts = line.split(/({[^}]+})/g); 
 
+            // 1. Đo tổng bề ngang của cả dòng để căn giữa Canvas
             let totalWidth = 0;
             textParts.forEach(part => {
                 if (part.length > 0) {
@@ -58,6 +76,7 @@ export default {
 
             let currentX = (width - totalWidth) / 2;
 
+            // 2. Vẽ từng ký tự & tô màu vàng highlight {từ khóa}
             textParts.forEach(part => {
                 if (part.length === 0) return;
                 const isHighlight = part.startsWith('{') && part.endsWith('}');
@@ -73,6 +92,7 @@ export default {
                 }
             });
         });
+
         ctx.restore();
     }
 };

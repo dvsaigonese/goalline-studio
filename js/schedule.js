@@ -39,6 +39,15 @@ let selectedTaskIds = new Set(); // Chứa các ID task được tick chọn
 let currentTaskModalImageUrl = '';
 let currentTaskModalImageTitle = '';
 
+// Cấu trúc chuẩn 5 ca trực Fanpage mỗi ngày
+const DEFAULT_5_POSTING_SHIFTS = [
+  { shift: "Sáng",  time: "6h - 10h",  slots: [[], [], [], [], [], [], []] },
+  { shift: "Trưa",  time: "10h - 14h", slots: [[], [], [], [], [], [], []] },
+  { shift: "Chiều", time: "14h - 18h", slots: [[], [], [], [], [], [], []] },
+  { shift: "Tối",   time: "19h - 23h", slots: [[], [], [], [], [], [], []] },
+  { shift: "Đêm",   time: "23h - 6h",  slots: [[], [], [], [], [], [], []] }
+];
+
 // ==============================================================================
 // PHẦN 2: BẢNG MÃ MÀU ĐỘC QUYỀN BAN DESIGN (DICTIONARY)
 // ==============================================================================
@@ -67,29 +76,24 @@ function getMemberPillStyle(member, columnKey, fallbackBg = '') {
 }
 
 // ==============================================================================
-// PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE & AUTO-MIGRATION
+// PHẦN 3: TẢI DỮ LIỆU TỪ SUPABASE DATABASE (CHỈ ĐỌC, KHÔNG TỰ Ý GHI ĐÈ)
 // ==============================================================================
-
-// Cấu trúc chuẩn 5 ca trực Fanpage mỗi ngày
-const DEFAULT_5_POSTING_SHIFTS = [
-  { shift: "Sáng",  time: "6h - 10h",  slots: [[], [], [], [], [], [], []] },
-  { shift: "Trưa",  time: "10h - 14h", slots: [[], [], [], [], [], [], []] },
-  { shift: "Chiều", time: "14h - 18h", slots: [[], [], [], [], [], [], []] },
-  { shift: "Tối",   time: "19h - 23h", slots: [[], [], [], [], [], [], []] },
-  { shift: "Đêm",   time: "23h - 6h",  slots: [[], [], [], [], [], [], []] }
-];
+// Biến khóa ngăn sự kiện window.onfocus ghi đè dữ liệu cũ khi vừa đóng hộp thoại confirm/prompt
+let isMutatingSchedule = false;
 
 async function fetchScheduleData() {
+  // Nếu đang trong quá trình bấm Nhận/Hủy ca thì không cho phép tải đè
+  if (isMutatingSchedule) return;
+
   const { data, error } = await window.sb.from('schedules').select('*');
   if (error) return console.error('Lỗi lấy lịch ca trực:', error.message);
 
-  for (const item of data) {
-    if (item.posting_data && item.posting_data.length < 5 && (item.id === 'current' || item.id === 'next')) {
-      item.posting_data = JSON.parse(JSON.stringify(DEFAULT_5_POSTING_SHIFTS));
-      window.sb.from('schedules').update({ posting_data: item.posting_data }).eq('id', item.id).then();
-    }
+  // Kiểm tra lần nữa phòng trường hợp mạng trả về trễ đúng lúc người dùng vừa bấm nút
+  if (isMutatingSchedule) return;
+
+  data.forEach(item => {
     scheduleCache[item.id] = item;
-  }
+  });
   renderActiveSchedule();
 }
 
@@ -116,94 +120,11 @@ async function fetchLeavesData() {
 }
 
 // ==============================================================================
-// TỰ ĐỘNG CHUẨN HÓA BUỔI & GOM SLOT CUỐI TUẦN (KHÔNG MẤT DỮ LIỆU)
-// ==============================================================================
-function autoMigrateContentWeekends(weekObj, id) {
-  if (!weekObj || !weekObj.writing_short_data) return;
-  let changed = false;
-
-  // 1. Chuẩn hóa tên buổi & giờ cho 3 ca ngày (8h, 11h, 16h)
-  const shortMeta = [
-    { shift: "Sáng", time: "8h" },
-    { shift: "Trưa", time: "11h" },
-    { shift: "Chiều", time: "16h" }
-  ];
-  shortMeta.forEach((m, idx) => {
-    if (weekObj.writing_short_data[idx]) {
-      if (weekObj.writing_short_data[idx].shift !== m.shift || weekObj.writing_short_data[idx].time !== m.time) {
-        weekObj.writing_short_data[idx].shift = m.shift;
-        weekObj.writing_short_data[idx].time = m.time;
-        changed = true;
-      }
-    }
-  });
-
-  // 2. Chuẩn hóa tên buổi & giờ cho 2 ca tối (19h, 21h) - Xóa bỏ nhãn Sáng/Trưa cũ
-  const longMeta = [
-    { shift: "Tối", time: "19h" },
-    { shift: "Đêm", time: "21h" }
-  ];
-  if (weekObj.writing_long_data) {
-    longMeta.forEach((m, idx) => {
-      if (weekObj.writing_long_data[idx]) {
-        if (weekObj.writing_long_data[idx].shift !== m.shift || weekObj.writing_long_data[idx].time !== m.time) {
-          weekObj.writing_long_data[idx].shift = m.shift;
-          weekObj.writing_long_data[idx].time = m.time;
-          changed = true;
-        }
-      }
-    });
-  }
-
-  // 3. Gom ca T7 (5) & CN (6) của Trưa (1) và Chiều (2) về Ô Bài Ngắn (0)
-  [5, 6].forEach(colIdx => {
-    for (let r = 1; r < weekObj.writing_short_data.length; r++) {
-      const oldSlots = weekObj.writing_short_data[r].slots[colIdx];
-      if (Array.isArray(oldSlots) && oldSlots.length > 0) {
-        oldSlots.forEach(member => {
-          if (!weekObj.writing_short_data[0].slots[colIdx].includes(member)) {
-            weekObj.writing_short_data[0].slots[colIdx].push(member);
-          }
-        });
-        weekObj.writing_short_data[r].slots[colIdx] = [];
-        changed = true;
-      }
-    }
-  });
-
-  // 4. Gom ca T7 & CN của Đêm (1) về Ô Full-time (0)
-  if (weekObj.writing_long_data && weekObj.writing_long_data.length > 1) {
-    [5, 6].forEach(colIdx => {
-      const oldSlots = weekObj.writing_long_data[1].slots[colIdx];
-      if (Array.isArray(oldSlots) && oldSlots.length > 0) {
-        oldSlots.forEach(member => {
-          if (!weekObj.writing_long_data[0].slots[colIdx].includes(member)) {
-            weekObj.writing_long_data[0].slots[colIdx].push(member);
-          }
-        });
-        weekObj.writing_long_data[1].slots[colIdx] = [];
-        changed = true;
-      }
-    });
-  }
-
-  if (changed) {
-    window.sb.from('schedules').update({
-      writing_short_data: weekObj.writing_short_data,
-      writing_long_data: weekObj.writing_long_data,
-      updated_at: new Date()
-    }).eq('id', id).then();
-  }
-}
-
-// ==============================================================================
 // PHẦN 4: RENDER BẢNG PHÂN CA TRỰC TUẦN
 // ==============================================================================
 function renderActiveSchedule() {
   const weekObj = scheduleCache[currentTab];
   if (!weekObj) return;
-
-  autoMigrateContentWeekends(weekObj, currentTab);
 
   const labelEl = document.getElementById('current-week-label');
   if (labelEl) labelEl.innerText = weekObj.week_label;
@@ -220,14 +141,14 @@ function renderActiveSchedule() {
           const pillStyle = getMemberPillStyle(member, columnKey, '');
           return `
             <div class="slot-pill" style="${pillStyle}" 
-                 onclick="handleRemoveSlot('${columnKey}', ${rIdx}, ${cIdx}, ${sIdx}, '${member}')" 
+                 onclick="handleRemoveSlot('${columnKey}', ${rIdx},${cIdx}, ${sIdx}, '${member}')" 
                  title="Click để hủy ca">
               <strong>${member}</strong>${member === myName ? `<i class="fa-solid fa-xmark btn-del-mini" style="color: inherit;"></i>` : ''}
             </div>
           `;
         }).join('')}
         ${!isFull ? `
-          <button class="btn-slot-join" onclick="handleAddSlot('${columnKey}', ${rIdx}, ${cIdx}, ${maxCapacity})">
+          <button class="btn-slot-join" onclick="handleAddSlot('${columnKey}',${rIdx}, ${cIdx},${maxCapacity})">
             + Nhận (${slotsArr.length}/${maxCapacity})
           </button>
         ` : `<span class="slot-full-tag">ĐÃ ĐỦ ${maxCapacity} NGƯỜI</span>`}
@@ -363,11 +284,13 @@ function renderActiveSchedule() {
   }
 }
 
-// Xử lý nhận ca trực
+// ==============================================================================
+// XỬ LÝ NHẬN CA & HỦY CA (KHÓA CHẶN FOCUS GHI ĐÈ KHI ĐÓNG HỘP THOẠI CONFIRM)
+// ==============================================================================
 window.handleAddSlot = async (columnKey, rIdx, cIdx, maxCapacity) => {
   const myName = localStorage.getItem('gl_current_user') || 'Vinci';
   const targetWeek = scheduleCache[currentTab];
-  if (!targetWeek) return;
+  if (!targetWeek || !targetWeek[columnKey] || !targetWeek[columnKey][rIdx]) return;
 
   const currentSlots = Array.isArray(targetWeek[columnKey][rIdx].slots[cIdx])
     ? targetWeek[columnKey][rIdx].slots[cIdx] : [];
@@ -375,40 +298,86 @@ window.handleAddSlot = async (columnKey, rIdx, cIdx, maxCapacity) => {
   if (currentSlots.length >= maxCapacity) return alert(`Ca này đã đủ ${maxCapacity} thành viên!`);
   if (currentSlots.includes(myName)) return alert(`Bạn (${myName}) đã nhận slot này rồi!`);
 
-  if (!confirm(`Nhận 1 slot ca này cho [${myName}]?`)) return;
+  // BẬT KHÓA TRƯỚC KHI MỞ CONFIRM (Chặn sự kiện window.onfocus khi hộp thoại đóng)
+  isMutatingSchedule = true;
 
-  const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
-  if (!Array.isArray(updatedMatrix[rIdx].slots[cIdx])) updatedMatrix[rIdx].slots[cIdx] = [];
-  updatedMatrix[rIdx].slots[cIdx].push(myName);
+  if (!confirm(`Nhận 1 slot ca này cho [${myName}]?`)) {
+    setTimeout(() => { isMutatingSchedule = false; }, 300);
+    return;
+  }
 
-  await window.sb.from('schedules').update({ 
-    [columnKey]: updatedMatrix, 
-    updated_at: new Date() 
-  }).eq('id', currentTab);
+  try {
+    const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
+    if (!Array.isArray(updatedMatrix[rIdx].slots[cIdx])) updatedMatrix[rIdx].slots[cIdx] = [];
+    updatedMatrix[rIdx].slots[cIdx].push(myName);
+
+    // 1. Hiện tên lên giao diện ngay lập tức (0ms)
+    targetWeek[columnKey] = updatedMatrix;
+    renderActiveSchedule();
+
+    // 2. Lưu xuống Database
+    const { error } = await window.sb.from('schedules').update({ 
+      [columnKey]: updatedMatrix, 
+      updated_at: new Date() 
+    }).eq('id', currentTab);
+
+    if (error) {
+      alert('Lỗi lưu ca trực: ' + error.message);
+    }
+  } finally {
+    // Mở khóa sau khi DB đã lưu xong hoàn toàn
+    setTimeout(() => {
+      isMutatingSchedule = false;
+    }, 400);
+  }
 };
 
-// Xử lý hủy ca trực
 window.handleRemoveSlot = async (columnKey, rIdx, cIdx, sIdx, memberName) => {
   const myName = localStorage.getItem('gl_current_user') || 'Vinci';
   const targetWeek = scheduleCache[currentTab];
-  if (!targetWeek) return;
+  if (!targetWeek || !targetWeek[columnKey] || !targetWeek[columnKey][rIdx]) return;
+
+  // BẬT KHÓA TRƯỚC KHI MỞ CONFIRM / PROMPT
+  isMutatingSchedule = true;
 
   if (memberName === myName) {
-    if (!confirm(`Hủy ca của bạn (${myName})?`)) return;
+    if (!confirm(`Hủy ca của bạn (${myName})?`)) {
+      setTimeout(() => { isMutatingSchedule = false; }, 300);
+      return;
+    }
   } else {
     const pin = prompt(`Slot của [${memberName}]. Nhập PIN Admin để xóa:`);
-    if (pin !== '2026') return pin !== null && alert('Sai mã PIN Admin!');
+    if (pin !== '2026') {
+      if (pin !== null) alert('Sai mã PIN Admin!');
+      setTimeout(() => { isMutatingSchedule = false; }, 300);
+      return;
+    }
   }
 
-  const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
-  updatedMatrix[rIdx].slots[cIdx].splice(sIdx, 1);
+  try {
+    const updatedMatrix = JSON.parse(JSON.stringify(targetWeek[columnKey]));
+    updatedMatrix[rIdx].slots[cIdx].splice(sIdx, 1);
 
-  await window.sb.from('schedules').update({ 
-    [columnKey]: updatedMatrix, 
-    updated_at: new Date() 
-  }).eq('id', currentTab);
+    // 1. Xóa tên trên giao diện ngay lập tức (0ms)
+    targetWeek[columnKey] = updatedMatrix;
+    renderActiveSchedule();
+
+    // 2. Lưu xuống Database
+    const { error } = await window.sb.from('schedules').update({ 
+      [columnKey]: updatedMatrix, 
+      updated_at: new Date() 
+    }).eq('id', currentTab);
+
+    if (error) {
+      alert('Lỗi hủy ca trực: ' + error.message);
+    }
+  } finally {
+    // Mở khóa sau khi DB đã lưu xong hoàn toàn
+    setTimeout(() => {
+      isMutatingSchedule = false;
+    }, 400);
+  }
 };
-
 // ==============================================================================
 // PHẦN 5: QUẢN LÝ TASK DESIGN BACKLOG
 // ==============================================================================
@@ -834,11 +803,9 @@ if (formEditTask) {
         });
 
         if (oldStorageFileName && oldStorageFileName !== extractStorageFileName(finalImgUrl)) {
-          console.log("Xóa ảnh mẫu task cũ khỏi Storage:", oldStorageFileName);
           await deleteFilesFromStorage([oldStorageFileName]);
         }
       } else if (oldStorageFileName && finalImgUrl !== oldImgUrl) {
-        console.log("URL ảnh task thay đổi, dọn ảnh cũ khỏi Storage:", oldStorageFileName);
         await deleteFilesFromStorage([oldStorageFileName]);
       }
 
@@ -1045,8 +1012,8 @@ async function promoteContentWeek() {
 
   // Đôn tuần mới chuẩn 5 ca: Sáng (8h), Trưa (11h), Chiều (16h), Tối (19h), Đêm (21h)
   const blankShort = [
-    { shift: "Sáng", time: "8h", slots: [[], [], [], [], [], [], []] },
-    { shift: "Trưa", time: "11h", slots: [[], [], [], [], [], [], []] },
+    { shift: "Sáng",  time: "8h",  slots: [[], [], [], [], [], [], []] },
+    { shift: "Trưa",  time: "11h", slots: [[], [], [], [], [], [], []] },
     { shift: "Chiều", time: "16h", slots: [[], [], [], [], [], [], []] }
   ];
   const blankLong = [
@@ -1271,6 +1238,7 @@ window.addEventListener('identityChanged', () => {
 // PHẦN 10: TỰ ĐỘNG PHỤC HỒI DỮ LIỆU & REALTIME SYNC
 // ==============================================================================
 async function refreshAllData() {
+  if (isMutatingSchedule) return; // Chặn làm mới ngầm khi vừa bấm hộp thoại
   const icon = document.getElementById('refresh-icon');
   if (icon) icon.classList.add('fa-spin');
   try {
