@@ -1,6 +1,14 @@
+// js/board/shapes/Polygon.js
+import { generateId } from '../utils.js';
+
 export class Polygon {
-    constructor(points = []) {
-        this.points = points; 
+    constructor(points = [], id = null) {
+        this.id = id || ('poly_' + generateId());
+        this.points = points.map(p => ({ x: p.x, y: p.y }));
+    }
+
+    clone() {
+        return new Polygon(this.points.map(p => ({ x: p.x, y: p.y })), this.id);
     }
 
     draw(ctx, isSelected = false, userScale = 1.0) {
@@ -19,14 +27,12 @@ export class Polygon {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-        
-        // Vẽ các điểm neo (Handles) khi được chọn
+
         if (isSelected) {
-            ctx.fillStyle = "#facc15"; // Màu vàng sáng cho dễ nhìn
+            ctx.fillStyle = "#facc15";
             ctx.strokeStyle = "black";
             for (let p of this.points) {
                 ctx.beginPath();
-                // Vẽ to ra một chút để dễ click (radius = 5)
                 ctx.arc(p.x, p.y, 5 * userScale, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
@@ -35,7 +41,6 @@ export class Polygon {
         ctx.restore();
     }
 
-    // Di chuyển cả khối
     move(dx, dy) {
         for (let i = 0; i < this.points.length; i++) {
             this.points[i].x += dx;
@@ -43,53 +48,35 @@ export class Polygon {
         }
     }
 
-    // --- LOGIC MỚI: Kiểm tra click trúng đỉnh nào ---
-    // Trả về index của điểm trúng, hoặc -1 nếu không trúng
     getHitVertexIndex(x, y, userScale = 1.0) {
-        // Bán kính vùng click (Hitbox) nên to hơn hình vẽ một chút cho dễ bấm
-        const hitRadius = 8 * userScale; 
-
+        const hitRadius = 8 * userScale;
         for (let i = 0; i < this.points.length; i++) {
-            const dx = x - this.points[i].x;
-            const dy = y - this.points[i].y;
-            // Kiểm tra khoảng cách
-            if (dx*dx + dy*dy <= hitRadius*hitRadius) {
+            if (Math.hypot(x - this.points[i].x, y - this.points[i].y) <= hitRadius) {
                 return i;
             }
         }
         return -1;
     }
 
-    // Kiểm tra click trúng thân (giữ nguyên)
     isHit(x, y) {
+        if (this.points.length < 3) return false;
         let isInside = false;
-        let minX = this.points[0].x, maxX = this.points[0].x;
-        let minY = this.points[0].y, maxY = this.points[0].y;
-
-        for (let n = 1; n < this.points.length; n++) {
-            const q = this.points[n];
-            minX = Math.min(q.x, minX);
-            maxX = Math.max(q.x, maxX);
-            minY = Math.min(q.y, minY);
-            maxY = Math.max(q.y, maxY);
-        }
-
-        if (x < minX || x > maxX || y < minY || y > maxY) {
-            return false;
-        }
-
-        let i = 0, j = this.points.length - 1;
-        for (i, j; i < this.points.length; j = i++) {
-            if (
-                (this.points[i].y > y) !== (this.points[j].y > y) &&
-                x <
-                ((this.points[j].x - this.points[i].x) * (y - this.points[i].y)) /
-                (this.points[j].y - this.points[i].y) +
-                this.points[i].x
-            ) {
-                isInside = !isInside;
-            }
+        for (let i = 0, j = this.points.length - 1; i < this.points.length; j = i++) {
+            const xi = this.points[i].x, yi = this.points[i].y;
+            const xj = this.points[j].x, yj = this.points[j].y;
+            const intersect = ((yi > y) !== (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) isInside = !isInside;
         }
         return isInside;
+    }
+
+    static interpolate(p1, p2, t) {
+        if (!p1 || !p2 || p1.points.length !== p2.points.length) return p2;
+        const pts = p2.points.map((pt, idx) => ({
+            x: p1.points[idx].x + (pt.x - p1.points[idx].x) * t,
+            y: p1.points[idx].y + (pt.y - p1.points[idx].y) * t
+        }));
+        return new Polygon(pts, p2.id);
     }
 }

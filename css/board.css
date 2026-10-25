@@ -520,3 +520,474 @@ body.dark-mode .copyright {
   color: #9ca3af !important;
   border: 1.5px solid #383b45 !important;
 }
+
+/* ==============================================================================
+   BỔ SUNG CHO TACTICAL BOARD V3.0 (ĐÃ FIX TRÀN CỘT PHẢI & CHỐNG ĐÈ KEYFRAME BAR)
+   Thay thế cho khối CSS v3.0 ở cuối file css/board.css
+   ============================================================================== */
+
+.app-container {
+  display: grid !important;
+  /* Khóa chặt cột giữa bằng minmax(0, 1fr) và thu gọn cột trái/phải vừa vặn */
+  grid-template-columns: 220px minmax(0, 1fr) 310px !important;
+  grid-template-rows: minmax(0, 1fr) 60px !important;
+  grid-template-areas:
+    "slides  canvas   settings"
+    "slides  toolbar  settings" !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  overflow: hidden !important;
+}
+
+.slides-sidebar,
+.canvas-area,
+.toolbar,
+.settings-panel {
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.project-quickbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* CỘT SLIDE DECK BÊN TRÁI */
+.slides-sidebar {
+  grid-area: slides;
+  background: var(--neo-bg);
+  border-right: var(--neo-border-w) solid var(--neo-black);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.slides-header {
+  padding: 10px 12px;
+  border-bottom: var(--neo-border-w) solid var(--neo-black);
+  background: var(--neo-white);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.neo-btn-xs {
+  padding: 5px 9px;
+  border: 2px solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--neo-white);
+  color: var(--neo-black);
+  white-space: nowrap;
+}
+
+.neo-btn-xs:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--neo-black);
+}
+
+.btn-action-yellow { background: var(--neo-yellow); color: #000; }
+
+.slides-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slide-card {
+  background: var(--neo-white);
+  border: 2.5px solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.1s;
+}
+
+.slide-card.active {
+  background: #fffbeb;
+  border-color: var(--neo-black);
+  border-left: 7px solid var(--neo-green);
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.slide-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.slide-kf-pill {
+  background: var(--neo-black);
+  color: var(--neo-yellow);
+  padding: 1px 5px;
+  font-size: 0.62rem;
+}
+
+.slide-card-title {
+  font-weight: 800;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slide-card-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.slide-card-actions button {
+  background: var(--neo-bg);
+  border: 1.5px solid var(--neo-black);
+  padding: 2px 6px;
+  font-size: 0.68rem;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.slide-meta-box {
+  padding: 10px;
+  border-top: var(--neo-border-w) solid var(--neo-black);
+  background: var(--neo-white);
+}
+
+/* ==============================================================================
+   CHUẨN HÓA THANH KEYFRAME BAR: THẲNG TẮP 1 HÀNG, KHÔNG RỚT DÒNG, ẨN SCROLLBAR
+   ============================================================================== */
+
+.keyframe-bar {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100%;
+  height: 48px !important;              /* Khóa cứng chiều cao thanh bar */
+  flex-shrink: 0;
+  z-index: 20;
+  background: var(--neo-white);
+  border: var(--neo-border-w) solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  padding: 0 10px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;          /* Tuyệt đối không rớt dòng */
+  gap: 10px !important;
+  overflow: hidden !important;
+}
+
+/* Cụm chức năng Trái & Phải */
+.kf-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;              /* Giúp co giãn mượt trên mọi kích thước màn hình */
+  height: 100%;
+}
+
+.kf-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;            /* Luôn giữ nguyên kích thước, cố định góc phải */
+  height: 100%;
+  border-left: 2px solid var(--neo-black);
+  padding-left: 10px;
+}
+
+/* ĐỒNG BỘ CHIỀU CAO 32PX CHO TẤT CẢ CÁC NÚT & BADGE TRÊN THANH BAR */
+.kf-badge {
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 0.85rem;
+  background: var(--neo-black);
+  color: var(--neo-yellow);
+  padding: 0 10px !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Cụm chứa các tab Sa bàn: Cuộn ngang mượt mà, KHÔNG HIỆN THANH CUỘN XÁM */
+.keyframe-tabs {
+  display: flex !important;
+  gap: 5px !important;
+  align-items: center !important;
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  max-width: 420px;
+  height: 100%;
+  scrollbar-width: none !important;      /* Firefox: Ẩn scrollbar */
+  -ms-overflow-style: none !important;  /* IE/Edge: Ẩn scrollbar */
+}
+
+.keyframe-tabs::-webkit-scrollbar {
+  display: none !important;             /* Chrome/Edge/Safari: Ẩn hoàn toàn scrollbar */
+}
+
+.kf-tab-btn {
+  height: 32px !important;
+  padding: 0 10px !important;
+  border: 2px solid var(--neo-black);
+  background: var(--neo-bg);
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.75rem;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--neo-black);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex !important;
+  align-items: center !important;
+  box-sizing: border-box;
+  transition: all 0.1s;
+}
+
+.kf-tab-btn.active {
+  background: var(--neo-yellow) !important;
+  color: #000 !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--neo-black);
+}
+
+/* Các nút bấm thêm/xóa sa bàn & action */
+.keyframe-bar .neo-btn-xs {
+  height: 32px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 0.8rem;
+  border: 2px solid var(--neo-black);
+  box-shadow: 2px 2px 0 var(--neo-black);
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Cụm điều khiển bên phải (Ghost toggle, Speed, Play button) */
+.kf-ghost-toggle {
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--neo-bg);
+  border: 2px solid var(--neo-black);
+  padding: 0 8px !important;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.kf-duration-box {
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--neo-bg);
+  border: 2px solid var(--neo-black);
+  padding: 0 8px !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.kf-duration-box input {
+  width: 38px;
+  height: 22px;
+  border: 1.5px solid var(--neo-black);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  padding: 0;
+  outline: none;
+}
+
+.canvas-wrapper {
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  flex-shrink: 1;
+}
+
+#canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  display: block;
+}
+
+.zoom-controls {
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  flex-shrink: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.copyright {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* THU GỌN TOOLBAR ĐÁY & CỘT PHẢI ĐỂ KHÔNG BỊ TRÀN */
+.toolbar {
+  padding: 0 12px !important;
+  gap: 8px !important;
+  overflow-x: auto;
+}
+
+.tool-action-btn {
+  height: 38px !important;
+  padding: 0 12px !important;
+  font-size: 13px !important;
+  white-space: nowrap;
+}
+
+.settings-panel {
+  padding: 14px 12px !important;
+  gap: 12px !important;
+}
+
+/* PROJECT MODAL MỞ RỘNG */
+.startup-box-wide {
+  max-width: 680px !important;
+  text-align: left !important;
+}
+
+.startup-box-wide h2, .startup-box-wide .modal-desc {
+  text-align: center;
+}
+
+.saved-projects-wrap {
+  border: 2.5px solid var(--neo-black);
+  background: var(--neo-bg);
+  margin-bottom: 16px;
+}
+
+.saved-header {
+  background: var(--neo-black);
+  color: var(--neo-white);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.count-pill {
+  background: var(--neo-yellow);
+  color: #000;
+  padding: 2px 8px;
+}
+
+.saved-projects-list {
+  max-height: 210px;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saved-project-item {
+  background: var(--neo-white);
+  border: 2px solid var(--neo-black);
+  box-shadow: var(--neo-shadow-sm);
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.saved-project-info strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.saved-project-info small {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #555;
+}
+
+.saved-project-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.new-project-name-row {
+  margin-bottom: 12px;
+}
+
+.divider-text {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 900;
+  margin: 12px 0;
+}
+
+body.dark-mode .slides-sidebar,
+body.dark-mode .slide-meta-box,
+body.dark-mode .slides-header,
+body.dark-mode .keyframe-bar {
+  background: #18191f !important;
+  border-color: #333640 !important;
+}
+
+body.dark-mode .slide-card {
+  background: #20222a !important;
+  border-color: #383b45 !important;
+  color: #e5e7eb !important;
+}
+
+body.dark-mode .slide-card.active {
+  background: #122e20 !important;
+  border-left-color: #00f076 !important;
+}

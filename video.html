@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Video Studio #07 | Goal-Line Studio</title>
+    <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Barlow+Condensed:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/video.css" />
+</head>
+<body class="landing-body video-body">
+
+    <!-- MODAL QUẢN LÝ DỰ ÁN VIDEO -->
+    <div id="video-project-modal" class="neo-modal-overlay">
+        <div class="neo-modal">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-film"></i> VIDEO STUDIO PROJECTS</h3>
+                <button class="btn-modal-close" id="btn-close-vid-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>TẠO DỰ ÁN VIDEO MỚI</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="new-vid-proj-name" placeholder="Nhập tên dự án video (VD: Tập 12 - Giải mã lối chơi Brighton)..." />
+                        <button id="btn-create-vid-proj" class="btn-neo-back" style="background:var(--neo-green); color:#000; flex-shrink:0;">
+                            <i class="fa-solid fa-plus"></i> TẠO MỚI
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>DỰ ÁN ĐÃ LƯU TRONG TRÌNH DUYỆT (INDEXEDDB)</label>
+                    <div id="vid-projects-list" class="vid-projects-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP NAVIGATION -->
+    <header class="top-nav">
+        <div class="brand-badge">
+            <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
+            <div class="brand-text">
+                <span class="studio-title">VIDEO <em>STUDIO</em></span>
+                <span class="system-tag">MODULE 07 • SLIDESHOW & TACTICAL ANIMATION SEQUENCER</span>
+            </div>
+        </div>
+
+        <div class="vid-top-actions">
+            <button id="btn-open-vid-projects" class="btn-neo-back" style="background:var(--neo-yellow); color:#000;">
+                <i class="fa-solid fa-folder-open"></i>
+                <span id="vid-active-proj-name">PROJECT: UNTITLED</span>
+            </button>
+            <a href="board.html" class="btn-neo-back" style="background:var(--neo-blue); color:#000;" title="Quay về Tactical Board để vẽ thêm sa bàn">
+                <i class="fa-solid fa-chalkboard-user"></i> TACTICAL BOARD
+            </a>
+            <button id="btn-export-master" class="btn-neo-back" style="background:var(--neo-green); color:#000; font-size:0.95rem; padding:8px 16px;">
+                <i class="fa-solid fa-download"></i> EXPORT FULL VIDEO
+            </button>
+        </div>
+
+        <div class="header-status">
+            <button class="btn-neo-back" onclick="toggleDarkMode()" title="Chuyển chế độ Sáng / Tối">
+                <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+            </button>
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span id="current-user-display">ADMIN: ?</span>
+            </div>
+            <a href="index.html" class="btn-neo-back">
+                <i class="fa-solid fa-arrow-left"></i> HOME
+            </a>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE GRID -->
+    <div class="video-workspace">
+
+        <!-- 1. CỘT TRÁI: THÊM MEDIA, ĐỊNH DẠNG KHUNG HÌNH & NHẠC NỀN -->
+        <aside class="vid-left-panel">
+            <!-- NHẬP MEDIA -->
+            <div class="neo-card card-green">
+                <div class="card-badge">ADD FRAMES</div>
+                <label class="section-label">Thêm Ảnh / Video Ngắn</label>
+                <p class="small-note">Chấp nhận nhiều ảnh (PNG/JPG/WebP) hoặc các clip animation ngắn (MP4/WebM).</p>
+                <button id="btn-upload-media" class="neo-btn-full btn-action-green">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> TẢI ẢNH / VIDEO LÊN
+                </button>
+                <input type="file" id="media-file-input" accept="image/*,video/*" multiple hidden />
+
+                <button id="btn-add-title-card" class="neo-btn-full mt-2" style="background:var(--neo-yellow); color:#000;">
+                    <i class="fa-solid fa-heading"></i> + THÊM SLIDE TIÊU ĐỀ
+                </button>
+            </div>
+
+            <!-- KÍCH THƯỚC & TỶ LỆ KHUNG HÌNH -->
+            <div class="neo-card card-blue">
+                <div class="card-badge">RESOLUTION</div>
+                <label class="section-label">Tỷ lệ Khung hình (Aspect Ratio)</label>
+                <select id="aspect-preset" class="form-control neo-select">
+                    <option value="1920x1080">16:9 Ngang (YouTube / 1920×1080)</option>
+                    <option value="1080x1920">9:16 Dọc (TikTok / Reels / 1080×1920)</option>
+                    <option value="1080x1080">1:1 Vuông (Facebook / 1080×1080)</option>
+                    <option value="1080x1350">4:5 Dọc (Instagram / 1080×1350)</option>
+                    <option value="custom">Tùy biến (Custom Width × Height)</option>
+                </select>
+
+                <div id="custom-res-row" class="custom-res-row mt-2" style="display:none;">
+                    <input type="number" id="custom-width" class="form-control" value="1920" min="320" max="3840" placeholder="W" />
+                    <span>×</span>
+                    <input type="number" id="custom-height" class="form-control" value="1080" min="320" max="3840" placeholder="H" />
+                </div>
+            </div>
+
+            <!-- NHẠC NỀN (BACKGROUND AUDIO) -->
+            <div class="neo-card card-purple">
+                <div class="card-badge">AUDIO TRACK</div>
+                <label class="section-label">Nhạc Nền Chạy Suốt Video</label>
+                <button id="btn-upload-audio" class="neo-btn-full" style="background:var(--neo-purple); color:#000;">
+                    <i class="fa-solid fa-music"></i> CHỌN FILE NHẠC (.MP3/.WAV)
+                </button>
+                <input type="file" id="audio-file-input" accept="audio/*" hidden />
+
+                <div id="audio-info-box" class="audio-info-box mt-2" style="display:none;">
+                    <div class="audio-name-row">
+                        <span id="audio-filename">track.mp3</span>
+                        <button id="btn-remove-audio" title="Gỡ nhạc nền">&times;</button>
+                    </div>
+                    <div class="row-input mt-2">
+                        <span class="small-label">Volume:</span>
+                        <input type="range" id="audio-volume" min="0" max="1" step="0.05" value="0.6" style="flex:1;" />
+                        <span id="audio-vol-label" class="small-label">60%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WATERMARK THƯƠNG HIỆU -->
+            <div class="neo-card card-yellow">
+                <div class="card-badge">BRANDING</div>
+                <label class="checkbox-row">
+                    <input type="checkbox" id="toggle-watermark" checked />
+                    <span>Hiện Watermark "GOAL-LINE STUDIO"</span>
+                </label>
+            </div>
+        </aside>
+
+        <!-- 2. TRUNG TÂM: MÀN HÌNH PREVIEW CANVAS & THANH ĐIỀU KHIỂN PLAYBACK -->
+        <main class="vid-center-stage">
+            <div class="stage-canvas-wrap">
+                <canvas id="video-canvas" width="1920" height="1080"></canvas>
+
+                <!-- OVERLAY TIẾN TRÌNH RENDER KHI EXPORT -->
+                <div id="export-progress-overlay" class="export-overlay" style="display:none;">
+                    <div class="export-box">
+                        <div class="export-spinner"><i class="fa-solid fa-compact-disc fa-spin"></i></div>
+                        <h3 id="export-status-title">RENDERING FULL VIDEO...</h3>
+                        <p id="export-status-desc">Đang ghép các frame và thu âm thanh...</p>
+                        <div class="progress-bar-outer">
+                            <div id="export-progress-fill" class="progress-bar-inner" style="width:0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THANH PLAYBACK CONTROL -->
+            <div class="playback-bar">
+                <button id="btn-prev-frame" class="neo-btn-xs" title="Frame trước">
+                    <i class="fa-solid fa-backward-step"></i>
+                </button>
+                <button id="btn-play-master" class="neo-btn-xs btn-action-green" style="padding:6px 16px; font-size:0.95rem;">
+                    <i class="fa-solid fa-play"></i> PLAY PREVIEW
+                </button>
+                <button id="btn-next-frame" class="neo-btn-xs" title="Frame kế tiếp">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+
+                <div class="timecode-box">
+                    <span id="current-timecode">00:00.0</span>
+                    <span>/</span>
+                    <span id="total-timecode">00:00.0</span>
+                </div>
+
+                <input type="range" id="master-scrubber" class="master-scrubber" min="0" max="10" step="0.05" value="0" />
+
+                <span id="vid-status-log" class="vid-status-pill">READY</span>
+            </div>
+        </main>
+
+        <!-- 3. CỘT PHẢI: CHỈNH SỬA CHI TIẾT TỪNG FRAME (THỜI GIAN, TEXT, SUBTITLE, HIỆU ỨNG) -->
+        <aside class="vid-right-panel">
+            <div class="panel-header">
+                <h3>FRAME INSPECTOR</h3>
+                <span id="inspector-frame-badge" class="badge-tag">FRAME #1</span>
+            </div>
+
+            <div id="inspector-empty" class="inspector-empty" style="display:none;">
+                Hãy chọn 1 Frame dưới thanh Timeline hoặc tải Ảnh/Video lên để chỉnh sửa.
+            </div>
+
+            <div id="inspector-controls" class="inspector-controls">
+                <!-- THỜI LƯỢNG & HIỆU ỨNG CHUYỂN CẢNH -->
+                <div class="neo-card card-yellow">
+                    <div class="card-badge">TIMING & MOTION</div>
+                    <label class="section-label">Thời gian xuất hiện (Giây)</label>
+                    <div class="row-input">
+                        <input type="range" id="frame-duration-range" class="range-slider" min="0.5" max="20" step="0.5" value="4" />
+                        <input type="number" id="frame-duration-num" class="form-control num-input" min="0.5" max="60" step="0.5" value="4" />
+                    </div>
+                    <button id="btn-apply-duration-all" class="neo-btn-xs mt-2" style="width:100%; justify-content:center;">
+                        ÁP DỤNG SỐ GIÂY NÀY CHO TẤT CẢ FRAME
+                    </button>
+
+                    <label class="section-label mt-2">Hiệu ứng chuyển cảnh (Transition)</label>
+                    <select id="frame-transition" class="form-control neo-select">
+                        <option value="fade">Crossfade (Mờ dần mượt mà)</option>
+                        <option value="slide">Slide Left (Lướt ngang như Canva)</option>
+                        <option value="wipe">Broadcast Wipe (Quét dọc thể thao)</option>
+                        <option value="none">Cut (Chuyển trực tiếp)</option>
+                    </select>
+
+                    <label class="section-label mt-2">Chuyển động Ảnh (Motion)</label>
+                    <select id="frame-motion" class="form-control neo-select">
+                        <option value="kenburns-in">Ken Burns Zoom In (Phóng nhẹ)</option>
+                        <option value="kenburns-out">Ken Burns Zoom Out (Thu nhẹ)</option>
+                        <option value="none">Tĩnh (Static)</option>
+                    </select>
+
+                    <label class="section-label mt-2">Co giãn khung hình (Fit Mode)</label>
+                    <select id="frame-fit" class="form-control neo-select">
+                        <option value="contain">Vừa khung + Nền mờ (Contain Blur)</option>
+                        <option value="cover">Lấp đầy khung (Cover Crop)</option>
+                    </select>
+                </div>
+
+                <!-- CHÈN TIÊU ĐỀ & PHỤ ĐỀ (SUBTITLES) -->
+                <div class="neo-card card-pink">
+                    <div class="card-badge">TEXT & SUBTITLE</div>
+                    <label class="section-label">Tiêu đề Frame (Headline)</label>
+                    <input type="text" id="frame-title-input" class="form-control" placeholder="VD: BƯỚC 1: KHỐI PRESSING TẦM CAO" />
+
+                    <label class="section-label mt-2">Phụ đề / Thuyết minh (Subtitle)</label>
+                    <textarea id="frame-sub-input" class="form-control" rows="3" placeholder="Nhập vài dòng giải thích sẽ hiện bên dưới màn hình..."></textarea>
+
+                    <div class="row-input mt-2">
+                        <div style="flex:1;">
+                            <label class="small-label">Vị trí chữ:</label>
+                            <select id="frame-text-pos" class="form-control neo-select">
+                                <option value="bottom">Đáy màn hình (Sub)</option>
+                                <option value="top">Đầu màn hình</option>
+                                <option value="center">Chính giữa (Banner)</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label class="small-label">Cỡ chữ:</label>
+                            <select id="frame-text-size" class="form-control neo-select">
+                                <option value="0.85">Nhỏ</option>
+                                <option value="1.0" selected>Vừa chuẩn</option>
+                                <option value="1.3">Lớn</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row-input mt-2">
+                        <label class="small-label">Màu nền hộp chữ:</label>
+                        <select id="frame-box-style" class="form-control neo-select">
+                            <option value="neo-dark">Đen Neobrutal + Viền Vàng</option>
+                            <option value="neo-yellow">Vàng Goal-Line + Chữ Đen</option>
+                            <option value="clean-sub">Phụ đề phim trong suốt</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 4. ĐÁY MÀN HÌNH: TIMELINE SEQUENCER (KÉO/SẮP XẾP THỨ TỰ CÁC FRAME) -->
+        <section class="vid-timeline-bar">
+            <div class="timeline-header">
+                <span><i class="fa-solid fa-layer-group"></i> TIMELINE SEQUENCER (<span id="timeline-count">0</span> FRAMES)</span>
+                <div class="timeline-quick-btns">
+                    <button id="btn-clear-timeline" class="neo-btn-xs btn-action-pink">
+                        <i class="fa-solid fa-trash-can"></i> XÓA HẾT TIMELINE
+                    </button>
+                </div>
+            </div>
+            <div id="timeline-track" class="timeline-track">
+                <!-- Các thẻ Frame được render động tại đây -->
+            </div>
+        </section>
+
+    </div>
+
+    <script type="module" src="js/video/video.js"></script>
+    <script src="js/identity.js"></script>
+</body>
+</html>

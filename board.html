@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Tactical Board | Goal-Line Studio</title>
+    <title>Tactical Board v3 | Goal-Line Studio</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
     
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,38 +21,48 @@
       <span style="font-family: 'Seriguela';">10</span>
     </div>
 
-    <!-- STARTUP MODAL DIALOG -->
-    <div id="startup-modal" class="startup-overlay">
-      <div class="startup-box">
-        <div class="modal-badge">TACTICAL DESK</div>
+    <!-- STARTUP / PROJECT MANAGER MODAL -->
+    <div id="startup-modal" class="startup-overlay" style="display:none;">
+      <div class="startup-box startup-box-wide">
+        <div class="modal-badge">TACTICAL DESK • MULTI-PROJECT</div>
 
-        <div id="continue-section" style="display:none;">
-          <button id="btn-continue" class="startup-btn btn-success-neo">
-            <i class="fa-solid fa-play"></i>
-            <span>CONTINUE PREVIOUS WORK</span>
-            <small>Khôi phục sơ đồ chiến thuật đã lưu</small>
-          </button>
-          <div class="divider-text">— HOẶC TẠO SƠ ĐỒ MỚI —</div>
+        <h2>GOAL-LINE TACTICAL BOARD</h2>
+        <p class="modal-desc">Quản lý các dự án sa bàn, tạo chuỗi chuyển động (Keyframes) & đẩy thẳng sang Video Studio #07</p>
+
+        <!-- DANH SÁCH DỰ ÁN ĐÃ LƯU TRONG INDEXEDDB -->
+        <div id="saved-projects-section" class="saved-projects-wrap">
+          <div class="saved-header">
+            <span><i class="fa-solid fa-folder-open"></i> DỰ ÁN CỦA BẠN (AUTO-SAVED IN BROWSER DB)</span>
+            <span id="saved-projects-count" class="count-pill">0 PROJECTS</span>
+          </div>
+          <div id="saved-projects-list" class="saved-projects-list"></div>
         </div>
 
-        <h2>GOAL-LINE BOARD</h2>
-        <p class="modal-desc">Chọn khung sân chiến thuật khởi tạo:</p>
+        <div class="divider-text">— TẠO DỰ ÁN MỚI —</div>
+
+        <div class="new-project-name-row">
+          <input type="text" id="new-project-name-input" class="form-control" placeholder="Tên dự án mới (VD: Phân tích Pressing Arsenal vs Man City)..." />
+        </div>
         
         <div class="startup-options">
           <button id="btn-template-mode" class="startup-btn btn-primary-neo">
             <i class="fa-solid fa-layer-group"></i>
             <span>STANDARD PITCH</span>
-            <small>Mẫu sân bóng đá 2D chuẩn</small>
+            <small>Khởi tạo dự án với sân 2D chuẩn</small>
           </button>
 
           <button id="btn-custom-mode" class="startup-btn btn-accent-neo">
             <i class="fa-solid fa-upload"></i>
-            <span>CUSTOM IMAGE</span>
-            <small>Tải ảnh sân / sơ đồ riêng của bạn</small>
+            <span>CUSTOM IMAGE PITCH</span>
+            <small>Tải ảnh mặt sân / sa bàn riêng</small>
           </button>
           
           <input type="file" id="custom-img-input" accept="image/*" hidden>
         </div>
+
+        <button id="btn-close-project-modal" class="neo-btn-full mt-2" style="background:#eee;">
+          ĐÓNG CỬA SỐ
+        </button>
       </div>
     </div>
 
@@ -62,8 +72,22 @@
           <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
           <div class="brand-text">
               <span class="studio-title">TACTICAL <em>BOARD</em></span>
-              <span class="system-tag">2D FORMATION & TACTICAL ANALYSIS ENGINE</span>
+              <span class="system-tag">MULTI-PROJECT • KEYFRAME ANIMATOR • VIDEO BRIDGE</span>
           </div>
+      </div>
+
+      <!-- THANH ĐIỀU KHIỂN DỰ ÁN NHANH TRÊN TOPBAR -->
+      <div class="project-quickbar">
+          <button id="btn-open-projects" class="btn-neo-back" style="background:var(--neo-yellow); color:#000;">
+              <i class="fa-solid fa-folder-tree"></i>
+              <span id="active-project-label">PROJECT: DEFAULT</span>
+          </button>
+          <button id="btn-rename-project" class="btn-neo-back" title="Đổi tên dự án hiện tại">
+              <i class="fa-solid fa-pen"></i>
+          </button>
+          <button id="btn-push-module7" class="btn-neo-back" style="background:var(--neo-green); color:#000;" title="Đóng gói toàn bộ các Trang/Animation trong dự án này sang Module 07 để dựng Video">
+              <i class="fa-solid fa-film"></i> EXPORT SANG MODULE 07 (VIDEO)
+          </button>
       </div>
 
       <div class="header-status">
@@ -74,25 +98,78 @@
               <span class="pulse-dot"></span>
               <span id="current-user-display">ADMIN: ?</span>
           </div>
-          <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
-              <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
-          </button>
+          <a href="video.html" class="btn-neo-back" title="Mở thẳng Video Studio #07">
+              <i class="fa-solid fa-clapperboard"></i> MOD 07
+          </a>
           <a href="index.html" class="btn-neo-back">
-              <i class="fa-solid fa-arrow-left"></i> VỀ HOME
+              <i class="fa-solid fa-arrow-left"></i> HOME
           </a>
       </div>
     </header>
 
     <!-- MAIN APP WRAPPER -->
     <div class="app-container">
+
+      <!-- 0. LEFT SLIDE DECK (QUẢN LÝ CÁC TRANG / SLIDE TRONG DỰ ÁN) -->
+      <aside class="slides-sidebar">
+        <div class="slides-header">
+          <span>SLIDE DECK (<span id="slide-total-count">1</span>)</span>
+          <button id="btn-add-slide" class="neo-btn-xs btn-action-green" title="Thêm trang sa bàn mới vào dự án">
+            <i class="fa-solid fa-plus"></i> TRANG MỚI
+          </button>
+        </div>
+
+        <div id="slides-list" class="slides-list">
+          <!-- Render động danh sách các Trang/Slide trong Dự án -->
+        </div>
+
+        <div class="slide-meta-box">
+          <label class="small-label">TIÊU ĐỀ TRANG / CAPTION:</label>
+          <input type="text" id="slide-title-input" class="form-control" placeholder="VD: Build-up 3-2-5..." />
+          <label class="small-label mt-2">PHỤ ĐỀ (MANG SANG MOD 07):</label>
+          <textarea id="slide-sub-input" class="form-control" rows="2" placeholder="Nhập vài dòng giải thích chiến thuật cho frame này..."></textarea>
+        </div>
+      </aside>
       
-      <!-- 1. CANVAS WORKSPACE -->
+      <!-- 1. CANVAS WORKSPACE + KEYFRAME ANIMATION BAR -->
       <main class="canvas-area">
+        <!-- THANH KEYFRAME (SA BÀN 1 -> SA BÀN 2 -> SA BÀN N) -->
+        <div class="keyframe-bar">
+          <div class="kf-left">
+            <span class="kf-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> ANIMATION KEYFRAMES:</span>
+            <div id="keyframe-tabs" class="keyframe-tabs">
+              <!-- Nút Sa bàn 1, Sa bàn 2... -->
+            </div>
+            <button id="btn-add-keyframe" class="neo-btn-xs btn-action-yellow" title="Nhân bản sa bàn hiện tại sang nhịp tiếp theo để kéo cầu thủ di chuyển">
+              <i class="fa-solid fa-plus"></i> + SA BÀN TIẾP THEO
+            </button>
+            <button id="btn-del-keyframe" class="neo-btn-xs btn-action-pink" title="Xóa nhịp sa bàn đang chọn">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="kf-right">
+            <label class="kf-ghost-toggle" title="Hiện vệt đường chạy (màu vàng/xanh) nối từ Sa bàn trước tới Sa bàn này. Kéo chấm xanh ở giữa để uốn cong hướng chạy!">
+              <input type="checkbox" id="toggle-ghost-path" checked />
+              <span>GHOST PATH</span>
+            </label>
+            <div class="kf-duration-box" title="Thời gian di chuyển giữa mỗi nhịp sa bàn (giây)">
+              <span>SPEED:</span>
+              <input type="number" id="kf-duration-input" min="0.5" max="10" step="0.5" value="2.0" />
+              <span>s/step</span>
+            </div>
+            <button id="btn-play-anim" class="neo-btn-xs btn-action-green">
+              <i class="fa-solid fa-play"></i> PLAY ANIM
+            </button>
+          </div>
+        </div>
+
         <div class="canvas-wrapper">
           <canvas id="canvas"></canvas>
         </div>
+
         <div class="zoom-controls">
-          <span class="copyright">TACTICAL BOARD • GOAL-LINE STUDIO</span>
+          <span class="copyright" id="canvas-step-indicator">SLIDE 1 • SA BÀN 1 • KÉO CẦU THỦ ĐỂ SẮP ĐỘI HÌNH</span>
         </div>
       </main>
 
@@ -100,23 +177,27 @@
       <nav class="toolbar">
         <div class="neo-log-container">
           <span class="log-tag">STATUS</span>
-          <span id="editor-log" class="log-text">READY • SELECT & DRAG OBJECTS</span>
+          <span id="editor-log" class="log-text">READY • MULTI-PROJECT & ANIMATION ENGINE v3</span>
         </div>
 
         <div class="neo-sep"></div>
 
         <div class="tool-group">
-          <button id="reset-btn" class="tool-action-btn btn-action-orange" title="Làm mới toàn bộ chiến thuật">
+          <button id="reset-btn" class="tool-action-btn btn-action-orange" title="Làm mới sa bàn hiện tại">
             <i class="fa-solid fa-rotate-left"></i>
-            <span>RESET</span>
+            <span>CLEAR</span>
           </button>
-          <button id="delete-btn" class="tool-action-btn btn-action-pink" title="Xóa phần tử đang chọn">
+          <button id="delete-btn" class="tool-action-btn btn-action-pink" title="Xóa phần tử đang chọn (Delete)">
             <i class="fa-regular fa-trash-can"></i>
             <span>DELETE</span>
           </button>
-          <button id="export-btn" class="tool-action-btn btn-action-green" title="Xuất ảnh chiến thuật">
-            <i class="fa-solid fa-download"></i>
-            <span>EXPORT</span>
+          <button id="export-btn" class="tool-action-btn" style="background:var(--neo-yellow);" title="Xuất lẻ ảnh JPG của sa bàn hiện tại">
+            <i class="fa-solid fa-image"></i>
+            <span>XUẤT ẢNH LẺ</span>
+          </button>
+          <button id="export-video-btn" class="tool-action-btn btn-action-green" title="Quay và tải về Video Animation ngắn (5-10s) của Trang hiện tại">
+            <i class="fa-solid fa-video"></i>
+            <span>XUẤT VIDEO LẺ</span>
           </button>
         </div>
       </nav>
@@ -125,7 +206,7 @@
       <aside class="settings-panel">
         <div class="panel-header">
           <h3>TACTICS</h3>
-          <span class="badge-tag">ENGINE v2</span>
+          <span class="badge-tag">ENGINE v3</span>
         </div>
 
         <!-- SCALE CONTROLS -->
@@ -149,6 +230,9 @@
             <option value="vertical">Vertical (Full)</option>
             <option value="half">Half Pitch (Attacking)</option>
           </select>
+          <button id="btn-change-bg-inline" class="neo-btn-full mt-2" style="background:var(--neo-blue); color:#000; font-size:12px; padding:6px;">
+            <i class="fa-solid fa-image"></i> ĐỔI ẢNH NỀN SÂN CUSTOM
+          </button>
         </div>
 
         <!-- PLAYER & BALL SQUAD -->
@@ -194,7 +278,7 @@
 
           <div class="tip-banner mt-2">
             <i class="fa-solid fa-circle-info"></i>
-            <span><strong>Cách vẽ:</strong> Bật ON, <u>nhấn & kéo chuột</u> qua sân để vẽ mũi tên.</span>
+            <span><strong>Mẹo Animation:</strong> Ở Sa bàn 2, kéo cầu thủ tới chỗ mới rồi nắm <u>chấm tròn xanh</u> trên đường nối để bẻ cong hướng di chuyển!</span>
           </div>
 
           <div class="row-input mt-2">
