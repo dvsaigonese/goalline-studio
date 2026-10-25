@@ -7,47 +7,40 @@ import { Storage } from './storage.js';
 import { GLDatabase } from '../shared/gl-db.js';
 import {
     canvas, ctx, loadImages, resizeCanvas, drawPitch, clearCanvas, getImages, responsiveConstant,
-    setCustomBackground, clearCustomBackground
+    setCustomBackground, clearCustomBackground, getCustomBackground
 } from './canvas.js';
 import { getMousePos, generateId } from './utils.js';
 
-// --- CẤU TRÚC DỮ LIỆU DỰ ÁN & STATE ---
+// --- STATE MANAGEMENT ---
 const AppState = {
-    project: null,          // Dự án đang mở { id, name, pitchType, customBgData, slides: [] }
-    currentSlideIdx: 0,     // Index của Trang (Slide) đang chọn
-    currentKfIdx: 0,        // Index của Nhịp sa bàn (Keyframe) đang chọn trong Slide
+    project: null,
+    currentSlideIdx: 0,
+    currentKfIdx: 0,
 
-    // Các mảng đối tượng đang hiển thị trên Canvas (tham chiếu tới Keyframe hiện tại)
     circles: [],
     arrows: [],
     texts: [],
     polygons: [],
     pitchType: 'horizontal',
 
-    // Selection & Dragging
     selectedObj: null,
-    selectedType: null, // 'circle', 'arrow', 'text', 'polygon'
+    selectedType: null,
     isDragging: false,
     dragOffset: { x: 0, y: 0 },
-    isDraggingPathHandle: false, // Kéo điểm uốn cong đường chạy cầu thủ (pathCx, pathCy)
+    isDraggingPathHandle: false,
 
     lastMousePos: { x: 0, y: 0 },
     polygonDragIndex: -1,
 
-    // Drawing Modes
-    mode: 'select', // 'select', 'drawArrow', 'drawPolygon'
+    mode: 'select',
     drawingArrow: null,
     drawingPolygonPoints: [],
-    arrowDragPoint: null, // 'from', 'to', 'control', 'body'
+    arrowDragPoint: null,
 
-    // Hiển thị vệt di chuyển từ Sa bàn trước
     showGhostPath: true,
-
-    // Trạng thái chạy Animation
     isPlayingAnim: false,
     animReqId: null,
 
-    // Global Scale
     userScale: 1.0
 };
 
@@ -56,7 +49,6 @@ function setLog(text) {
     if (logEl) logEl.textContent = text.toUpperCase();
 }
 
-// --- HÀM TIỆN ÍCH KHỞI TẠO KEYFRAME & SLIDE ---
 function createEmptyKeyframe() {
     return {
         id: 'kf_' + generateId(),
@@ -67,12 +59,14 @@ function createEmptyKeyframe() {
     };
 }
 
-function createNewSlide(title = "Trang chiến thuật 1") {
+function createNewSlide(title = "Trang chiến thuật 1", pitchType = "horizontal", customBgData = null) {
     return {
         id: 'slide_' + generateId(),
         title: title,
         subtitle: "",
-        stepDuration: 2.0, // Số giây di chuyển giữa mỗi nhịp sa bàn
+        pitchType: pitchType || 'horizontal',
+        customBgData: customBgData || null,
+        stepDuration: 2.0,
         keyframes: [createEmptyKeyframe()]
     };
 }
@@ -84,19 +78,21 @@ function createNewProject(name = "Dự án Chiến thuật Mới", pitchType = "
         pitchType: pitchType,
         customBgData: customBgData,
         updatedAt: Date.now(),
-        slides: [createNewSlide("Slide 1: Cấu trúc đội hình")]
+        slides: [createNewSlide("Slide 1: Cấu trúc đội hình", pitchType, customBgData)]
     };
 }
 
-// Chuyển đổi dữ liệu thô từ IndexedDB sang các instance Class (Circle, Arrow, Polygon, TextObj)
 function hydrateProject(rawProj) {
     if (!rawProj.slides || rawProj.slides.length === 0) {
-        rawProj.slides = [createNewSlide("Slide 1")];
+        rawProj.slides = [createNewSlide("Slide 1", rawProj.pitchType, rawProj.customBgData)];
     }
     rawProj.slides.forEach((slide, sIdx) => {
         slide.title = slide.title || `Slide ${sIdx + 1}`;
         slide.subtitle = slide.subtitle || "";
         slide.stepDuration = parseFloat(slide.stepDuration) || 2.0;
+        slide.pitchType = slide.pitchType || rawProj.pitchType || 'horizontal';
+        slide.customBgData = slide.customBgData !== undefined ? slide.customBgData : (rawProj.customBgData || null);
+
         if (!slide.keyframes || slide.keyframes.length === 0) {
             slide.keyframes = [createEmptyKeyframe()];
         }
@@ -119,7 +115,42 @@ function hydrateProject(rawProj) {
     return rawProj;
 }
 
-// Đồng bộ tham chiếu mảng từ Keyframe hiện tại vào AppState
+/**
+ * Nạp ảnh nền & hướng sân độc lập của từng Slide
+ */
+async function applySlideBackground(slide) {
+    if (!slide) return;
+    AppState.pitchType = slide.pitchType || 'horizontal';
+
+    if (slide.customBgData) {
+        await setCustomBackground(slide.customBgData);
+        document.getElementById("pitch-type").disabled = true;
+        updatePitchCustomUI(true);
+    } else {
+        clearCustomBackground();
+        document.getElementById("pitch-type").disabled = false;
+        updatePitchCustomUI(false);
+    }
+
+    const pitchSelect = document.getElementById("pitch-type");
+    if (pitchSelect) pitchSelect.value = AppState.pitchType;
+
+    resizeCanvas(AppState.pitchType);
+}
+
+function updatePitchCustomUI(hasCustom) {
+    const revertBtn = document.getElementById("btn-revert-pitch-inline");
+    const changeBtn = document.getElementById("btn-change-bg-inline");
+    if (revertBtn) {
+        revertBtn.style.display = hasCustom ? "block" : "none";
+    }
+    if (changeBtn) {
+        changeBtn.innerHTML = hasCustom
+            ? `<i class="fa-solid fa-image"></i> ĐỔI ẢNH NỀN KHÁC (TRANG NÀY)`
+            : `<i class="fa-solid fa-image"></i> ĐỔI ẢNH NỀN TRANG NÀY`;
+    }
+}
+
 function syncActiveKeyframeRefs() {
     if (!AppState.project) return;
     const slides = AppState.project.slides;
@@ -133,9 +164,8 @@ function syncActiveKeyframeRefs() {
     AppState.arrows = kf.arrows;
     AppState.texts = kf.texts;
     AppState.polygons = kf.polygons;
-    AppState.pitchType = AppState.project.pitchType || 'horizontal';
+    AppState.pitchType = slide.pitchType || 'horizontal';
 
-    // Cập nhật UI input của Slide
     const titleInput = document.getElementById("slide-title-input");
     const subInput = document.getElementById("slide-sub-input");
     const durInput = document.getElementById("kf-duration-input");
@@ -162,15 +192,9 @@ function updateBottomIndicator() {
     el.textContent = `${slide.title.toUpperCase()} • SA BÀN ${AppState.currentKfIdx + 1}/${totalKf} ${totalKf > 1 ? '• BẤM PLAY ANIM ĐỂ XEM CHUYỂN ĐỘNG' : ''}`;
 }
 
-// Lưu tự động vào IndexedDB (kèm debounce nhẹ để mượt khi kéo chuột)
 let saveTimer = null;
 function queueAutoSave() {
     if (!AppState.project) return;
-    // Giữ tương thích ngược với localStorage cho 1 sa bàn đơn lẻ
-    try {
-        Storage.save(AppState.circles, AppState.arrows, AppState.texts, AppState.polygons, AppState.pitchType);
-    } catch (e) { /* Bỏ qua nếu vượt quota localStorage */ }
-
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
         try {
@@ -182,7 +206,6 @@ function queueAutoSave() {
     }, 250);
 }
 
-// --- KHỞI ĐỘNG ỨNG DỤNG ---
 async function init() {
     await loadImages();
 
@@ -193,34 +216,13 @@ async function init() {
     document.getElementById("global-scale").value = AppState.userScale;
     document.getElementById("scale-number").value = AppState.userScale;
 
-    // Kiểm tra xem có dữ liệu cũ ở localStorage chưa được migrate sang IndexedDB không
     let projects = await GLDatabase.getAllTacticalProjects();
-    if (projects.length === 0) {
-        const legacy = Storage.load();
-        const hasLegacy = legacy.circles.length > 0 || legacy.arrows.length > 0 || legacy.texts.length > 0 || legacy.polygons.length > 0;
-        const legacyBg = localStorage.getItem('customBgData') || null;
-        if (hasLegacy || legacyBg) {
-            const migrated = createNewProject("Dự án Khôi phục (Legacy)", legacy.pitchType || 'horizontal', legacyBg);
-            migrated.slides[0].keyframes[0] = {
-                id: 'kf_' + generateId(),
-                circles: legacy.circles,
-                arrows: legacy.arrows,
-                texts: legacy.texts,
-                polygons: legacy.polygons
-            };
-            await GLDatabase.saveTacticalProject(migrated);
-            projects = await GLDatabase.getAllTacticalProjects();
-        }
-    }
-
-    // Nếu đã có dự án gần nhất, mở luôn để làm việc tiếp nhưng vẫn cho phép mở Modal Quản lý dự án
     const lastId = localStorage.getItem('gl_last_tactical_project_id');
     const found = projects.find(p => p.id === lastId) || projects[0];
 
     if (found) {
         await loadProjectIntoWorkspace(found);
         await refreshProjectModalList();
-        // Mở modal lúc đầu để người dùng chọn tiếp tục hoặc tạo dự án mới
         document.getElementById("startup-modal").style.display = "flex";
     } else {
         const defaultProj = createNewProject("Phân tích Chiến thuật #01", "horizontal", null);
@@ -228,6 +230,17 @@ async function init() {
         await loadProjectIntoWorkspace(defaultProj);
         await refreshProjectModalList();
         document.getElementById("startup-modal").style.display = "flex";
+    }
+
+    // Cho phép cuộn chuột ngang trên danh sách Keyframes
+    const kfTabsEl = document.getElementById("keyframe-tabs");
+    if (kfTabsEl) {
+        kfTabsEl.addEventListener("wheel", (e) => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                kfTabsEl.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
     }
 
     setLog("READY • CHỌN DỰ ÁN HOẶC BẮT ĐẦU SÁNG TẠO");
@@ -240,16 +253,10 @@ async function loadProjectIntoWorkspace(rawProj) {
     AppState.currentKfIdx = 0;
     AppState.selectedObj = null;
 
-    if (AppState.project.customBgData) {
-        await setCustomBackground(AppState.project.customBgData);
-        document.getElementById("pitch-type").disabled = true;
-    } else {
-        clearCustomBackground();
-        document.getElementById("pitch-type").disabled = false;
-    }
+    const firstSlide = AppState.project.slides[0];
+    await applySlideBackground(firstSlide);
 
     syncActiveKeyframeRefs();
-    resizeCanvas(AppState.pitchType);
     render();
 }
 
@@ -316,7 +323,6 @@ async function refreshProjectModalList() {
     });
 }
 
-// --- RENDER SIDEBAR TRANG (SLIDES) & THANH NHỊP SA BÀN (KEYFRAMES) ---
 function renderSlidesSidebar() {
     const listEl = document.getElementById("slides-list");
     const countEl = document.getElementById("slide-total-count");
@@ -330,14 +336,18 @@ function renderSlidesSidebar() {
         const card = document.createElement("div");
         card.className = `slide-card ${idx === AppState.currentSlideIdx ? 'active' : ''}`;
         const kfCount = slide.keyframes.length;
+        const bgBadgeText = slide.customBgData ? '🖼️ ẢNH RIÊNG' : `⚽ SÂN ${slide.pitchType.toUpperCase()}`;
 
         card.innerHTML = `
             <div class="slide-card-top">
                 <span>TRANG #${idx + 1}</span>
-                <span class="slide-kf-pill">${kfCount > 1 ? `🎬 ${kfCount} SA BÀN (ANIM)` : '🖼️ 1 SA BÀN (TĨNH)'}</span>
+                <span class="slide-kf-pill">${kfCount > 1 ? `🎬 ${kfCount} SA BÀN` : '🖼️ 1 SA BÀN'}</span>
             </div>
             <div class="slide-card-title">${slide.title || `Trang ${idx + 1}`}</div>
-            <div class="slide-card-actions">
+            <div style="font-family:var(--font-mono); font-size:0.65rem; color:#444; margin-top:2px;">
+                <span style="background:var(--neo-yellow); padding:1px 6px; border:1px solid #000; font-weight:800;">${bgBadgeText}</span>
+            </div>
+            <div class="slide-card-actions" style="margin-top:6px;">
                 <button class="btn-slide-up" title="Đẩy lên" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
                 <button class="btn-slide-down" title="Đẩy xuống" ${idx === slides.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>
                 <button class="btn-slide-dup" title="Nhân bản trang"><i class="fa-regular fa-copy"></i></button>
@@ -345,12 +355,13 @@ function renderSlidesSidebar() {
             </div>
         `;
 
-        card.addEventListener("click", (e) => {
+        card.addEventListener("click", async (e) => {
             if (e.target.closest("button")) return;
             stopAnimationPreview();
             AppState.currentSlideIdx = idx;
             AppState.currentKfIdx = 0;
             AppState.selectedObj = null;
+            await applySlideBackground(slide);
             syncActiveKeyframeRefs();
             render();
             setLog(`ĐANG CHỌN TRANG #${idx + 1}: ${slide.title}`);
@@ -376,21 +387,27 @@ function renderSlidesSidebar() {
             queueAutoSave();
         });
 
-        card.querySelector(".btn-slide-dup").addEventListener("click", () => {
+        card.querySelector(".btn-slide-dup").addEventListener("click", async () => {
             const cloneRaw = JSON.parse(JSON.stringify(slide));
             cloneRaw.id = 'slide_' + generateId();
             cloneRaw.title = `${slide.title} (Copy)`;
+            cloneRaw.pitchType = slide.pitchType;
+            cloneRaw.customBgData = slide.customBgData;
+
             slides.splice(idx + 1, 0, cloneRaw);
             hydrateProject(AppState.project);
             AppState.currentSlideIdx = idx + 1;
             AppState.currentKfIdx = 0;
+            AppState.selectedObj = null;
+
+            await applySlideBackground(slides[AppState.currentSlideIdx]);
             syncActiveKeyframeRefs();
             render();
             queueAutoSave();
             setLog(`ĐÃ NHÂN BẢN TRANG #${idx + 1}`);
         });
 
-        card.querySelector(".btn-slide-del").addEventListener("click", () => {
+        card.querySelector(".btn-slide-del").addEventListener("click", async () => {
             if (slides.length <= 1) {
                 alert("Dự án cần có ít nhất 1 trang sa bàn!");
                 return;
@@ -399,6 +416,7 @@ function renderSlidesSidebar() {
             slides.splice(idx, 1);
             if (AppState.currentSlideIdx >= slides.length) AppState.currentSlideIdx = slides.length - 1;
             AppState.currentKfIdx = 0;
+            await applySlideBackground(slides[AppState.currentSlideIdx]);
             syncActiveKeyframeRefs();
             render();
             queueAutoSave();
@@ -431,13 +449,11 @@ function renderKeyframeTabs() {
     });
 }
 
-// --- VÒNG LẶP VẼ CHÍNH (RENDER LOOP) ---
 function render() {
     clearCanvas();
     drawPitch(AppState.pitchType);
     const imgs = getImages();
 
-    // 1. Vẽ Polygons
     AppState.polygons.forEach((p) => {
         const isSelected = (AppState.selectedObj === p);
         p.draw(ctx, isSelected, AppState.userScale);
@@ -446,7 +462,6 @@ function render() {
         new Polygon(AppState.drawingPolygonPoints).draw(ctx, true, AppState.userScale);
     }
 
-    // 2. Vẽ vệt di chuyển (Ghost Path) từ Sa bàn trước (nếu đang ở Sa bàn >= 2 và không trong lúc chạy Animation)
     if (AppState.showGhostPath && !AppState.isPlayingAnim && AppState.currentKfIdx > 0 && AppState.project) {
         const prevKf = AppState.project.slides[AppState.currentSlideIdx].keyframes[AppState.currentKfIdx - 1];
         if (prevKf) {
@@ -460,7 +475,6 @@ function render() {
         }
     }
 
-    // 3. Vẽ Arrows
     AppState.arrows.forEach((a) => {
         const isSelected = (AppState.selectedObj === a);
         a.draw(ctx, responsiveConstant, isSelected, AppState.userScale, 1.0);
@@ -469,13 +483,11 @@ function render() {
         AppState.drawingArrow.draw(ctx, responsiveConstant, true, AppState.userScale, 1.0);
     }
 
-    // 4. Vẽ Circles (Cầu thủ & Bóng)
     AppState.circles.forEach((c) => {
         const isSelected = (AppState.selectedObj === c);
         c.draw(ctx, imgs.ball, responsiveConstant, isSelected, AppState.userScale);
     });
 
-    // 5. Vẽ Texts
     AppState.texts.forEach((t) => {
         const isSelected = (AppState.selectedObj === t);
         t.draw(ctx, responsiveConstant, isSelected, AppState.userScale);
@@ -484,14 +496,10 @@ function render() {
     queueAutoSave();
 }
 
-// --- ENGINE NỘI SUY ANIMATION GIỮA CÁC NHỊP SA BÀN (ĐÃ FIX BUG UNDEFINED CIRCLES) ---
 function easeInOutCubic(x) {
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 }
 
-/**
- * Vẽ 1 frame nội suy giữa Keyframe k1 và Keyframe k2 ở tiến trình t (0.0 -> 1.0)
- */
 function renderInterpolatedStep(kf1, kf2, rawT) {
     if (!kf1 || !kf2) return;
 
@@ -509,14 +517,12 @@ function renderInterpolatedStep(kf1, kf2, rawT) {
     const texts1 = kf1.texts || [];
     const texts2 = kf2.texts || [];
 
-    // 1. Nội suy Polygons
     polys2.forEach(p2 => {
         const p1 = polys1.find(p => p.id === p2.id);
         const polyToDraw = p1 ? Polygon.interpolate(p1, p2, t) : p2;
         polyToDraw.draw(ctx, false, AppState.userScale);
     });
 
-    // 2. Nội suy Arrows
     arrows2.forEach(a2 => {
         const a1 = arrows1.find(a => a.id === a2.id);
         if (a1) {
@@ -527,7 +533,6 @@ function renderInterpolatedStep(kf1, kf2, rawT) {
         }
     });
 
-    // 3. Nội suy Circles (Cầu thủ & Trái bóng)
     circles2.forEach(c2 => {
         const c1 = circles1.find(c => c.id === c2.id);
         if (c1) {
@@ -537,7 +542,6 @@ function renderInterpolatedStep(kf1, kf2, rawT) {
             c2.draw(ctx, imgs.ball, responsiveConstant, false, AppState.userScale, t);
         }
     });
-    // Vẽ nốt các cầu thủ có ở Sa bàn 1 nhưng bị xóa ở Sa bàn 2 (mờ dần)
     circles1.forEach(c1 => {
         const stillExists = circles2.some(c2 => c2.id === c1.id);
         if (!stillExists) {
@@ -545,7 +549,6 @@ function renderInterpolatedStep(kf1, kf2, rawT) {
         }
     });
 
-    // 4. Nội suy Texts
     texts2.forEach(txt2 => {
         const txt1 = texts1.find(tx => tx.id === txt2.id);
         const txtInterp = txt1 ? TextObj.interpolate(txt1, txt2, t) : txt2;
@@ -591,7 +594,6 @@ function playSlideAnimation(onFinishCallback = null) {
     const stepMs = Math.max(200, (parseFloat(slide.stepDuration) || 2.0) * 1000);
     const totalDurationMs = totalSteps * stepMs;
 
-    // Khởi tạo startTime ngay trong tick đầu tiên của requestAnimationFrame để tránh elapsed bị âm
     let startTime = null;
 
     function stepLoop(now) {
@@ -622,12 +624,11 @@ function playSlideAnimation(onFinishCallback = null) {
     AppState.animReqId = requestAnimationFrame(stepLoop);
 }
 
-// --- SỰ KIỆN CHUỘT TRÊN CANVAS ---
+// --- MOUSE EVENTS ---
 canvas.addEventListener("mousedown", (e) => {
     if (AppState.isPlayingAnim) stopAnimationPreview();
     const pos = getMousePos(canvas, e);
 
-    // Mode: Draw Arrow
     if (document.getElementById("draw-arrow-input").checked) {
         AppState.mode = 'drawArrow';
         const color = document.getElementById("arrow-color").value;
@@ -638,7 +639,6 @@ canvas.addEventListener("mousedown", (e) => {
         return;
     }
 
-    // Mode: Draw Polygon
     if (document.getElementById("draw-polygon-input").checked) {
         AppState.mode = 'drawPolygon';
         AppState.drawingPolygonPoints.push({ x: pos.x, y: pos.y });
@@ -647,10 +647,8 @@ canvas.addEventListener("mousedown", (e) => {
         return;
     }
 
-    // Mode: Select & Drag
     AppState.mode = 'select';
 
-    // 0. Kiểm tra xem người dùng có click vào nút chỉnh độ cong đường chạy (Ghost Path Handle) của cầu thủ đang chọn không
     if (
         AppState.showGhostPath &&
         AppState.currentKfIdx > 0 &&
@@ -673,7 +671,6 @@ canvas.addEventListener("mousedown", (e) => {
     AppState.isDraggingPathHandle = false;
     AppState.polygonDragIndex = -1;
 
-    // 1. Check Text
     for (let i = AppState.texts.length - 1; i >= 0; i--) {
         if (AppState.texts[i].isHit(pos.x, pos.y, ctx, responsiveConstant, AppState.userScale)) {
             AppState.selectedObj = AppState.texts[i];
@@ -686,7 +683,6 @@ canvas.addEventListener("mousedown", (e) => {
         }
     }
 
-    // 2. Check Circle
     for (let i = AppState.circles.length - 1; i >= 0; i--) {
         if (AppState.circles[i].isHit(pos.x, pos.y, AppState.userScale)) {
             AppState.selectedObj = AppState.circles[i];
@@ -700,7 +696,6 @@ canvas.addEventListener("mousedown", (e) => {
         }
     }
 
-    // 3. Check Arrow
     for (let i = AppState.arrows.length - 1; i >= 0; i--) {
         const arr = AppState.arrows[i];
         if (arr.isHitHandle(pos.x, pos.y, 'control', responsiveConstant, AppState.userScale)) {
@@ -746,7 +741,6 @@ canvas.addEventListener("mousedown", (e) => {
         }
     }
 
-    // 4. Check Polygon
     for (let i = AppState.polygons.length - 1; i >= 0; i--) {
         const poly = AppState.polygons[i];
         const vertexIndex = poly.getHitVertexIndex(pos.x, pos.y, AppState.userScale);
@@ -848,9 +842,7 @@ canvas.addEventListener("mouseup", () => {
     render();
 });
 
-// --- CÁC NÚT QUẢN LÝ KEYFRAME, SLIDE & DỰ ÁN ---
-
-// Thêm Nhịp Sa bàn tiếp theo (Clone toàn bộ cầu thủ/bóng từ Sa bàn hiện tại sang Sa bàn mới)
+// --- ACTIONS & CONTROLS ---
 document.getElementById("btn-add-keyframe").addEventListener("click", () => {
     if (!AppState.project) return;
     stopAnimationPreview();
@@ -873,7 +865,6 @@ document.getElementById("btn-add-keyframe").addEventListener("click", () => {
     setLog(`ĐÃ TẠO SA BÀN ${AppState.currentKfIdx + 1} • HÃY KÉO CẦU THỦ TỚI VỊ TRÍ MỚI!`);
 });
 
-// Xóa Nhịp Sa bàn hiện tại
 document.getElementById("btn-del-keyframe").addEventListener("click", () => {
     if (!AppState.project) return;
     const slide = AppState.project.slides[AppState.currentSlideIdx];
@@ -891,13 +882,11 @@ document.getElementById("btn-del-keyframe").addEventListener("click", () => {
     setLog("ĐÃ XÓA NHỊP SA BÀN");
 });
 
-// Bật/tắt Ghost Path
 document.getElementById("toggle-ghost-path").addEventListener("change", (e) => {
     AppState.showGhostPath = e.target.checked;
     render();
 });
 
-// Đổi tốc độ giây/step
 document.getElementById("kf-duration-input").addEventListener("input", (e) => {
     if (!AppState.project) return;
     const val = parseFloat(e.target.value);
@@ -907,7 +896,6 @@ document.getElementById("kf-duration-input").addEventListener("input", (e) => {
     }
 });
 
-// Nút Play / Stop Animation
 document.getElementById("btn-play-anim").addEventListener("click", () => {
     if (AppState.isPlayingAnim) {
         stopAnimationPreview();
@@ -917,21 +905,25 @@ document.getElementById("btn-play-anim").addEventListener("click", () => {
     }
 });
 
-// Thêm Trang (Slide) mới vào dự án
-document.getElementById("btn-add-slide").addEventListener("click", () => {
+// Thêm trang mới hoàn toàn độc lập
+document.getElementById("btn-add-slide").addEventListener("click", async () => {
     if (!AppState.project) return;
     stopAnimationPreview();
     const newIndex = AppState.project.slides.length + 1;
-    const slide = createNewSlide(`Slide ${newIndex}: Tình huống mới`);
+    // Trang mới mặc định dùng sân 2D chuẩn, độc lập với ảnh của trang trước
+    const slide = createNewSlide(`Slide ${newIndex}: Tình huống mới`, 'horizontal', null);
     AppState.project.slides.push(slide);
     AppState.currentSlideIdx = AppState.project.slides.length - 1;
     AppState.currentKfIdx = 0;
+    AppState.selectedObj = null;
+
+    await applySlideBackground(slide);
     syncActiveKeyframeRefs();
     render();
-    setLog(`ĐÃ THÊM TRANG #${newIndex}`);
+    queueAutoSave();
+    setLog(`ĐÃ THÊM TRANG MỚI #${newIndex} (SÂN MỚI ĐỘC LẬP)`);
 });
 
-// Cập nhật Tiêu đề & Phụ đề của Trang
 document.getElementById("slide-title-input").addEventListener("input", (e) => {
     if (!AppState.project) return;
     AppState.project.slides[AppState.currentSlideIdx].title = e.target.value;
@@ -946,7 +938,6 @@ document.getElementById("slide-sub-input").addEventListener("input", (e) => {
     queueAutoSave();
 });
 
-// Quản lý Modal Dự án
 document.getElementById("btn-open-projects").addEventListener("click", async () => {
     await refreshProjectModalList();
     document.getElementById("startup-modal").style.display = "flex";
@@ -966,7 +957,6 @@ document.getElementById("btn-rename-project").addEventListener("click", () => {
     }
 });
 
-// Tạo Dự án mới với Sân chuẩn
 document.getElementById("btn-template-mode").addEventListener("click", async () => {
     const nameInput = document.getElementById("new-project-name-input");
     const projName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : `Dự án Chiến thuật #${Math.floor(Math.random() * 90 + 10)}`;
@@ -978,7 +968,6 @@ document.getElementById("btn-template-mode").addEventListener("click", async () 
     setLog(`ĐÃ TẠO DỰ ÁN MỚI: ${projName}`);
 });
 
-// Tạo Dự án mới hoặc đổi nền với Ảnh Custom
 document.getElementById("btn-custom-mode").addEventListener("click", () => {
     document.getElementById("custom-img-input").click();
 });
@@ -987,6 +976,22 @@ document.getElementById("btn-change-bg-inline").addEventListener("click", () => 
     document.getElementById("custom-img-input").click();
 });
 
+// Nút huỷ ảnh custom quay về sân chuẩn
+const revertBtn = document.getElementById("btn-revert-pitch-inline");
+if (revertBtn) {
+    revertBtn.addEventListener("click", async () => {
+        const curSlide = AppState.project?.slides[AppState.currentSlideIdx];
+        if (!curSlide) return;
+        curSlide.customBgData = null;
+        await applySlideBackground(curSlide);
+        render();
+        renderSlidesSidebar();
+        queueAutoSave();
+        setLog(`ĐÃ ĐƯA TRANG #${AppState.currentSlideIdx + 1} VỀ SÂN 2D CHUẨN`);
+    });
+}
+
+// Xử lý nạp ảnh custom: Chỉ lưu vào trang hiện tại!
 document.getElementById("custom-img-input").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1003,24 +1008,38 @@ document.getElementById("custom-img-input").addEventListener("change", (e) => {
             nameInput.value = "";
             await loadProjectIntoWorkspace(newProj);
         } else if (AppState.project) {
-            AppState.project.customBgData = imgUrl;
-            await setCustomBackground(imgUrl);
-            document.getElementById("pitch-type").disabled = true;
-            resizeCanvas(AppState.pitchType);
-            render();
-            queueAutoSave();
+            const curSlide = AppState.project.slides[AppState.currentSlideIdx];
+            if (curSlide) {
+                curSlide.customBgData = imgUrl;
+                await applySlideBackground(curSlide);
+                render();
+                renderSlidesSidebar();
+                queueAutoSave();
+                setLog(`ĐÃ CẬP NHẬT ẢNH NỀN RIÊNG CHO TRANG #${AppState.currentSlideIdx + 1}`);
+            }
         }
         document.getElementById("startup-modal").style.display = "none";
-        setLog("ĐÃ CẬP NHẬT ẢNH NỀN SÂN CUSTOM");
     };
     reader.readAsDataURL(file);
+    e.target.value = "";
 });
 
-// --- XUẤT VIDEO ANIMATION LẺ CHO SLIDE HIỆN TẠI & BRIDGE SANG MODULE 07 ---
+// Đổi hướng sân cho riêng trang hiện tại
+document.getElementById("pitch-type").addEventListener("change", (e) => {
+    const newPitch = e.target.value;
+    AppState.pitchType = newPitch;
+    const curSlide = AppState.project?.slides[AppState.currentSlideIdx];
+    if (curSlide) {
+        curSlide.pitchType = newPitch;
+        curSlide.customBgData = null; // chọn hướng sân chuẩn thì bỏ ảnh custom
+    }
+    resizeCanvas(AppState.pitchType);
+    render();
+    renderSlidesSidebar();
+    queueAutoSave();
+    setLog(`HƯỚNG SÂN TRANG #${AppState.currentSlideIdx + 1}: ${newPitch.toUpperCase()}`);
+});
 
-/**
- * Hàm quay lại quá trình chuyển động của một Slide thành Blob Video (.webm)
- */
 async function recordSlideAnimationBlob(slideIndex) {
     const prevSlideIdx = AppState.currentSlideIdx;
     const prevKfIdx = AppState.currentKfIdx;
@@ -1028,14 +1047,22 @@ async function recordSlideAnimationBlob(slideIndex) {
     AppState.currentSlideIdx = slideIndex;
     AppState.currentKfIdx = 0;
     AppState.selectedObj = null;
+
+    const targetSlide = AppState.project.slides[slideIndex];
+    await applySlideBackground(targetSlide);
+
     syncActiveKeyframeRefs();
     render();
 
     const slide = AppState.project.slides[slideIndex];
     const snapshotDataUrl = canvas.toDataURL("image/png");
 
-    // Nếu Slide chỉ có 1 Sa bàn tĩnh, trả về ảnh tĩnh ngay lập tức
     if (slide.keyframes.length < 2) {
+        await applySlideBackground(AppState.project.slides[prevSlideIdx]);
+        AppState.currentSlideIdx = prevSlideIdx;
+        AppState.currentKfIdx = prevKfIdx;
+        syncActiveKeyframeRefs();
+        render();
         return {
             mediaType: 'image',
             dataUrl: snapshotDataUrl,
@@ -1044,7 +1071,6 @@ async function recordSlideAnimationBlob(slideIndex) {
         };
     }
 
-    // Nếu Slide có >= 2 Sa bàn, tiến hành ghi hình Canvas ở 60fps
     const stream = canvas.captureStream(60);
     let mimeType = 'video/webm;codecs=vp9';
     if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
@@ -1063,10 +1089,11 @@ async function recordSlideAnimationBlob(slideIndex) {
     const stepSec = parseFloat(slide.stepDuration) || 2.0;
 
     return new Promise((resolve) => {
-        recorder.onstop = () => {
+        recorder.onstop = async () => {
             const blob = new Blob(chunks, { type: mimeType });
             AppState.currentSlideIdx = prevSlideIdx;
             AppState.currentKfIdx = prevKfIdx;
+            await applySlideBackground(AppState.project.slides[prevSlideIdx]);
             syncActiveKeyframeRefs();
             render();
             resolve({
@@ -1086,7 +1113,6 @@ async function recordSlideAnimationBlob(slideIndex) {
     });
 }
 
-// Nút Xuất Video Lẻ ngay tại Tactical Board
 document.getElementById("export-video-btn").addEventListener("click", async () => {
     if (!AppState.project) return;
     const slide = AppState.project.slides[AppState.currentSlideIdx];
@@ -1107,7 +1133,6 @@ document.getElementById("export-video-btn").addEventListener("click", async () =
     }
 });
 
-// Nút EXPORT SANG MODULE 07 (VIDEO STUDIO)
 document.getElementById("btn-push-module7").addEventListener("click", async () => {
     if (!AppState.project) return;
     stopAnimationPreview();
@@ -1150,7 +1175,6 @@ document.getElementById("btn-push-module7").addEventListener("click", async () =
     window.location.href = "video.html";
 });
 
-// --- CÁC NÚT CÔNG CỤ CƠ BẢN (GIỮ NGUYÊN TƯƠNG THÍCH) ---
 const scaleSlider = document.getElementById("global-scale");
 const scaleNumber = document.getElementById("scale-number");
 
@@ -1169,14 +1193,6 @@ scaleNumber.addEventListener("input", (e) => {
     AppState.userScale = val;
     scaleSlider.value = val;
     setLog(`OBJECT SCALE: ${val.toFixed(1)}X`);
-    render();
-});
-
-document.getElementById("pitch-type").addEventListener("change", (e) => {
-    AppState.pitchType = e.target.value;
-    if (AppState.project) AppState.project.pitchType = AppState.pitchType;
-    resizeCanvas(AppState.pitchType);
-    setLog(`PITCH ORIENTATION: ${e.target.value.toUpperCase()}`);
     render();
 });
 
@@ -1323,16 +1339,5 @@ window.addEventListener("resize", () => {
     resizeCanvas(AppState.pitchType);
     render();
 });
-
-// Cho phép lăn con lăn chuột để cuộn ngang danh sách Sa bàn siêu tiện lợi
-const kfTabsEl = document.getElementById("keyframe-tabs");
-if (kfTabsEl) {
-    kfTabsEl.addEventListener("wheel", (e) => {
-        if (e.deltaY !== 0) {
-            e.preventDefault();
-            kfTabsEl.scrollLeft += e.deltaY;
-        }
-    }, { passive: false });
-}
 
 init();

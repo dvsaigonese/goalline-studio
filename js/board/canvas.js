@@ -23,12 +23,24 @@ export const getImages = () => images;
 
 export let responsiveConstant = 1;
 
+/**
+ * Đặt ảnh custom cho canvas (truyền null để xóa ảnh custom quay về sân 2D)
+ */
 export const setCustomBackground = (imgUrl) => {
     return new Promise((resolve) => {
+        if (!imgUrl) {
+            customBgImage = null;
+            resolve(null);
+            return;
+        }
         const img = new Image();
         img.onload = () => {
             customBgImage = img;
             resolve(img);
+        };
+        img.onerror = () => {
+            customBgImage = null;
+            resolve(null);
         };
         img.src = imgUrl;
     });
@@ -37,6 +49,8 @@ export const setCustomBackground = (imgUrl) => {
 export const clearCustomBackground = () => {
     customBgImage = null;
 };
+
+export const getCustomBackground = () => customBgImage;
 
 export function resizeCanvas(pitchType) {
     const container = document.querySelector('.canvas-area');
@@ -48,7 +62,6 @@ export function resizeCanvas(pitchType) {
     const kfHeight = kfBar ? kfBar.offsetHeight + 14 : 60;
     const zoomHeight = zoomCtrl ? zoomCtrl.offsetHeight + 12 : 34;
 
-    // Diện tích thực tế còn lại dành riêng cho mặt sân
     const availWidth = Math.max(280, container.clientWidth - 36);
     const availHeight = Math.max(220, container.clientHeight - kfHeight - zoomHeight - 28);
     const dpr = window.devicePixelRatio || 1;
@@ -80,56 +93,6 @@ export function resizeCanvas(pitchType) {
 
     return responsiveConstant;
 }
-
-export const saveCustomBackgroundToStorage = () => {
-    if (!customBgImage) {
-        localStorage.removeItem('customBgData');
-        return;
-    }
-
-    const tempCanvas = document.createElement('canvas');
-    const ctxTemp = tempCanvas.getContext('2d');
-
-    const maxWidth = 1280;
-    let w = customBgImage.naturalWidth;
-    let h = customBgImage.naturalHeight;
-
-    if (w > maxWidth) {
-        h = Math.round(h * (maxWidth / w));
-        w = maxWidth;
-    }
-
-    tempCanvas.width = w;
-    tempCanvas.height = h;
-    ctxTemp.drawImage(customBgImage, 0, 0, w, h);
-
-    try {
-        const dataURL = tempCanvas.toDataURL('image/jpeg', 0.7);
-        localStorage.setItem('customBgData', dataURL);
-    } catch (e) {
-        console.warn("Image too large to save to LocalStorage");
-    }
-};
-
-export const loadCustomBackgroundFromStorage = () => {
-    return new Promise((resolve) => {
-        const dataURL = localStorage.getItem('customBgData');
-        if (dataURL) {
-            const img = new Image();
-            img.onload = () => {
-                customBgImage = img;
-                resolve(true);
-            };
-            img.onerror = () => {
-                localStorage.removeItem('customBgData');
-                resolve(false);
-            };
-            img.src = dataURL;
-        } else {
-            resolve(false);
-        }
-    });
-};
 
 export function drawPitch(pitchType) {
     const dpr = window.devicePixelRatio || 1;
