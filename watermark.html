@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Watermark & Title Engine | Goal-Line Studio</title>
+    <title>Watermark & Title Engine v3 Pro | Goal-Line Studio</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,14 +14,31 @@
 </head>
 <body class="landing-body watermark-body">
 
+    <!-- PRELOAD FONT ALBULA ĐỂ TRÁNH VĂNG FONT KHI MỚI MỞ -->
+    <div style="position:absolute; left:-9999px; top:-9999px; opacity:0; pointer-events:none;" aria-hidden="true">
+        <span style="font-family:'Albula'; font-weight:bold;">GOAL-LINE PRELOAD</span>
+    </div>
+
     <!-- TOP NAVIGATION ĐỒNG BỘ TOÀN STUDIO -->
     <header class="top-nav">
         <div class="brand-badge">
             <a href="index.html" class="logo-box" id="home-btn" style="text-decoration:none;">GL</a>
             <div class="brand-text">
                 <span class="studio-title">WATERMARK <em>ENGINE</em></span>
-                <span class="system-tag">POST-PRODUCTION & TITLE ENGINE</span>
+                <span class="system-tag">POST-PRODUCTION & TITLE ENGINE v3.0 PRO</span>
             </div>
+        </div>
+
+        <div class="wm-top-quickbar">
+            <button id="copy-wm-btn" class="btn-neo-back" style="background:var(--neo-yellow); color:#000; font-weight:900;" title="Copy thẳng ảnh thành phẩm vào Clipboard để Ctrl+V lên Facebook / Messenger / Zalo">
+                <i class="fa-regular fa-copy"></i> COPY ẢNH
+            </button>
+            <button id="export-wm-btn" class="btn-neo-back" style="background:var(--neo-green); color:#000; font-weight:900;" title="Tải file ảnh chất lượng cao về máy">
+                <i class="fa-solid fa-download"></i> TẢI ẢNH VỀ
+            </button>
+            <button id="push-mod7-btn" class="btn-neo-back" style="background:var(--neo-blue); color:#000; font-weight:900;" title="Đẩy poster này sang Module 07 (Video Studio) làm 1 Frame trình chiếu">
+                <i class="fa-solid fa-film"></i> SANG MOD 07
+            </button>
         </div>
 
         <div class="header-status">
@@ -35,60 +52,94 @@
             <button class="btn-neo-back" id="btn-change-identity" onclick="openIdentitySelector()" style="padding: 6px 12px; font-size: 0.85rem;" title="Thay đổi định danh tài khoản">
                 <i class="fa-solid fa-user-pen"></i> ĐỔI TÊN
             </button>
-            
-            <!-- Nút Export chính được đưa lên Header nổi bật -->
-            <button id="export-wm-btn" class="btn-neo-back" style="background:var(--neo-green); color:#000; font-weight:900;" title="Xuất ảnh thành phẩm">
-                <i class="fa-solid fa-download"></i> EXPORT
-            </button>
             <a href="index.html" class="btn-neo-back">
-                <i class="fa-solid fa-arrow-left"></i> VỀ HOME
+                <i class="fa-solid fa-arrow-left"></i> HOME
             </a>
         </div>
     </header>
 
     <div class="app-container">
-        <!-- CANVAS WORKSPACE -->
-        <main class="canvas-area">
+        <!-- 1. CANVAS WORKSPACE -->
+        <main class="canvas-area" id="wm-dropzone">
             <div id="wm-wrapper">
                 <div id="empty-state">
                     <div class="empty-icon-box">
-                        <i class="fa-solid fa-images"></i>
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
                     </div>
-                    <p class="empty-title">WORKSPACE EMPTY</p>
-                    <p class="empty-sub">Cài đặt bố cục và chọn ảnh từ panel bên phải.</p>
+                    <p class="empty-title">THẢ ẢNH VÀO ĐÂY HOẶC BẤM CTRL + V</p>
+                    <p class="empty-sub">Hỗ trợ Kéo-Thả ảnh trực tiếp vào từng ô, Dán ảnh từ Clipboard (Ctrl+V), hoặc chọn file ở cột phải.</p>
                 </div>
                 
                 <canvas id="wm-canvas"></canvas>
             </div>
         </main>
 
-        <!-- SIDEBAR CONTROLS -->
-        <aside class="settings-panel">
-            <div class="panel-header">
-                <h3>SETTINGS</h3>
-                <span class="badge-tag">ENGINE v2.0</span>
+        <!-- 2. BOTTOM QUICK-ACTION TOOLBAR (THAO TÁC NHANH TRÊN SLOT ĐANG CHỌN) -->
+        <nav class="wm-toolbar">
+            <div class="wm-log-box">
+                <span class="wm-log-tag" id="active-slot-pill">NO SLOT</span>
+                <span id="wm-status-text" class="wm-log-text">MẸO: COPY ẢNH TRÊN MẠNG RỒI BẤM CTRL+V ĐỂ DÁN NGAY VÀO KHUNG</span>
             </div>
 
-            <!-- TÁCH SELECT: ACTIVE & RETRO TEMPLATES -->
-            <div class="wm-workflow-card card-accent-yellow">
+            <div class="wm-toolbar-actions">
+                <button type="button" id="btn-slot-flip" class="wm-tool-btn" title="Lật ngang ảnh trong ô đang chọn (Flip Horizontal)">
+                    <i class="fa-solid fa-left-right"></i>
+                    <span>LẬT NGANG</span>
+                </button>
+                <button type="button" id="btn-slot-fit" class="wm-tool-btn" title="Căn vừa khít lại ảnh vào ô đang chọn (Double-click lên ảnh)">
+                    <i class="fa-solid fa-expand"></i>
+                    <span>FIT KHUNG</span>
+                </button>
+                <button type="button" id="btn-slot-swap" class="wm-tool-btn" style="background:var(--neo-yellow);" title="Đổi vị trí ảnh của ô đang chọn với ô kế tiếp">
+                    <i class="fa-solid fa-retweet"></i>
+                    <span>ĐỔI CHỖ Ô</span>
+                </button>
+                <button type="button" id="btn-slot-bw" class="wm-tool-btn" title="Bật/Tắt hiệu ứng Đen Trắng (Grayscale) cho riêng ô đang chọn">
+                    <i class="fa-solid fa-circle-half-stroke"></i>
+                    <span>B&W Ô NÀY</span>
+                </button>
+                <button type="button" id="btn-reset-all" class="wm-tool-btn" style="background:var(--neo-pink);" title="Xóa toàn bộ ảnh và làm mới">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>LÀM MỚI</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- 3. SIDEBAR CONTROLS -->
+        <aside class="settings-panel">
+            <div class="panel-header">
+                <h3>WATERMARK PRO</h3>
+                <span class="badge-tag" id="canvas-res-badge">1200×1500</span>
+            </div>
+
+            <!-- THANH TAB LỌC NHANH CÔNG CỤ (CHUẨN THỨ TỰ) -->
+            <div class="wm-filter-tabs">
+                <button type="button" class="wm-tab-btn" data-tab="template">FRAME/GIẢI</button>
+                <button type="button" class="wm-tab-btn" data-tab="layout">BỐ CỤC/ẢNH</button>
+                <button type="button" class="wm-tab-btn" data-tab="title">TITLE/FX</button>
+                <button type="button" class="wm-tab-btn tab-all-full active" data-tab="all">ALL (HIỂN THỊ TẤT CẢ CÔNG CỤ)</button>
+            </div>
+
+            <!-- CARD 1: TEMPLATES & TỶ LỆ KHUNG HÌNH -->
+            <div class="wm-workflow-card card-accent-yellow" data-wm-cat="template">
                 <div class="card-badge">TEMPLATES</div>
                 
                 <label class="section-label">Active Template</label>
                 <select id="active-template" class="wm-select">
-                    <option value="Season26_27" selected>Season 2026/2027</option>
+                    <option value="Season26_27" selected>Season 2026/2027 (Chuẩn)</option>
                     <option value="Season26_27Stories">Season 2026/2027 Stories</option>
                     <option value="Season26_27UCL">Season 2026/2027 (UCL)</option>
                     <option value="Season26_27UEL">Season 2026/2027 (UEL)</option>
                 </select>
 
-                <label class="section-label">Retro Template</label>
+                <label class="section-label mt-1">Retro & Special Template</label>
                 <select id="retro-template" class="wm-select">
                     <option value="" disabled selected hidden>-- Select Retro --</option>
-                    <option value="original">Original</option>
-                    <option value="wc26">World Cup 26</option>
+                    <option value="original">Original Standard</option>
+                    <option value="wc26">World Cup 26 Mode</option>
                 </select>
 
-                <!-- Thẻ gốc ẩn để layout.js không bị lỗi -->
+                <!-- Thẻ gốc ẩn để tương thích hoàn toàn -->
                 <select id="template-mode" style="display: none;">
                     <option value="Season26_27">Season 2026/2027</option>
                     <option value="Season26_27Stories">Season 2026/2027 Stories</option>
@@ -97,77 +148,129 @@
                     <option value="original">Original</option>
                     <option value="wc26">World Cup 26</option>
                 </select>
+
+                <label class="section-label mt-1">Kích thước khung xuất (Canvas Ratio)</label>
+                <select id="canvas-ratio-select" class="wm-select">
+                    <option value="1200x1500" selected>4:5 Poster Chuẩn (1200×1500)</option>
+                    <option value="1080x1920">9:16 Stories / Reels (1080×1920)</option>
+                    <option value="1200x1200">1:1 Vuông (1200×1200)</option>
+                    <option value="1920x1080">16:9 Ngang Thumbnail (1920×1080)</option>
+                </select>
             </div>
 
-            <!-- LEAGUE PICKER -->
-            <div class="wm-workflow-card card-accent-blue" id="league-section" style="display: block;">
+            <!-- CARD 2: LEAGUE PICKER -->
+            <div class="wm-workflow-card card-accent-blue" id="league-section" data-wm-cat="template" style="display: flex;">
                 <div class="card-badge">CLUB / LEAGUE</div>
-                <label class="section-label">Search League</label>
+                <label class="section-label">Search League / Tournament</label>
                 <div class="search-container">
-                    <input type="text" id="league-search-input" class="form-control" placeholder="Gõ tên (ví dụ: PREMIER)..." autocomplete="off">
+                    <input type="text" id="league-search-input" class="form-control" placeholder="Gõ tên giải (VD: PREMIER, LA LIGA)..." autocomplete="off">
                     <ul id="league-search-results"></ul>
                 </div>
             </div>
 
-            <!-- LAYOUT CONTROLS -->
-            <div class="wm-workflow-card card-accent-pink">
+            <!-- CARD 3: LAYOUT & GRID CONFIG (7 BỐ CỤC CHUYÊN NGHIỆP) -->
+            <div class="wm-workflow-card card-accent-pink" data-wm-cat="layout">
                 <div class="card-badge">GRID CONFIG</div>
-                <label class="section-label">Aspect Ratio (4:5)</label>
+                <label class="section-label">Bố Cục Ghép Ảnh (Collage Layout)</label>
                 
-                <label class="input-label">Mode</label>
                 <select id="layout-mode" class="wm-select">
-                    <option value="single">Single Image</option>
-                    <option value="collage">Collage (Split)</option>
+                    <option value="single">🖼️ Single Image (1 Ảnh Đơn)</option>
+                    <option value="collage">🪟 Split Linear (Chia Cột / Hàng)</option>
+                    <option value="t-top">📐 T-Grid 3 Ô (1 Lớn Trên + 2 Nhỏ Dưới)</option>
+                    <option value="t-bottom">📐 Inverted T-Grid 3 Ô (2 Nhỏ Trên + 1 Lớn Dưới)</option>
+                    <option value="hero-left">◧ Hero Left 3 Ô (1 Lớn Trái + 2 Nhỏ Phải)</option>
+                    <option value="quad">田 Quad Grid 2×2 (4 Ô Góc)</option>
                 </select>
 
                 <div id="collage-options">
-                    <label class="input-label">Split Direction</label>
-                    <select id="split-direction" class="wm-select">
-                        <option value="vertical">Vertical (|||)</option>
-                        <option value="horizontal">Horizontal (三)</option>
-                    </select>
+                    <div class="row-input mt-1">
+                        <div style="flex:1.4;">
+                            <label class="input-label">Hướng chia</label>
+                            <select id="split-direction" class="wm-select">
+                                <option value="vertical">Dọc (|||)</option>
+                                <option value="horizontal">Ngang (三)</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label class="input-label">Số ô (2-10)</label>
+                            <input type="number" id="split-count" class="form-control" min="2" max="10" value="2">
+                        </div>
+                    </div>
+                </div>
 
-                    <label class="input-label">Splits Count</label>
-                    <input type="number" id="split-count" class="form-control" min="2" max="10" value="2">
+                <div class="row-input mt-1">
+                    <label class="input-label" style="margin:0; flex:1;">Độ dày đường kẻ chia ô (px):</label>
+                    <input type="number" id="divider-line-width" class="form-control" min="0" max="24" step="2" value="0" style="width:70px; text-align:center;" title="Vẽ đường viền trắng/đen ngăn cách giữa các ô ảnh khi xuất file">
                 </div>
             </div>
 
-            <!-- UPLOAD GROUP -->
-            <div class="wm-workflow-card card-accent-green" id="upload-group">
+            <!-- CARD 4: SOURCE IMAGES & UPLOAD SLOTS -->
+            <div class="wm-workflow-card card-accent-green" id="upload-group" data-wm-cat="layout">
                 <div class="card-badge">ASSETS</div>
-                <label class="section-label">Source Images</label>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label class="section-label">Danh sách Ô Ảnh (Slots)</label>
+                    <span style="font-family:var(--font-mono); font-size:0.68rem; font-weight:800; background:var(--neo-yellow); padding:1px 6px; border:1px solid #000;">CTRL+V ĐỂ DÁN</span>
+                </div>
                 <div id="file-inputs-container"></div>
             </div>
             
             <!-- COLLAGE INSTRUCTIONS -->
-            <div class="setting-group collage-controls" id="collage-instructions">
-                <label class="instruction-title"><i class="fa-solid fa-arrow-pointer"></i> EDIT MODE</label>
-                <p>1. <strong>Click</strong> ảnh để chọn ô (slot).</p>
-                <p>2. <strong>Kéo chuột</strong> để căn chỉnh vị trí ảnh.</p>
-                <p>3. <strong>Cuộn chuột</strong> để zoom phóng to/thu nhỏ.</p>
-                <p>4. <strong>Kéo Divider</strong> để chia tỉ lệ khung ảnh.</p>
+            <div class="setting-group collage-controls" id="collage-instructions" data-wm-cat="layout">
+                <label class="instruction-title"><i class="fa-solid fa-wand-magic-sparkles"></i> THAO TÁC NHANH TRÊN ẢNH</label>
+                <p>• <strong>Kéo chuột / Cuộn chuột:</strong> Di chuyển & Zoom ảnh.</p>
+                <p>• <strong>Double-Click vào ô:</strong> Tự động căn khít ảnh (Auto-Fit).</p>
+                <p>• <strong>Kéo vạch %:</strong> Thay đổi tỉ lệ to/nhỏ giữa các ô.</p>
             </div>
 
-            <!-- POST METADATA & FX -->
-            <div class="wm-workflow-card card-accent-orange">
-                <div class="card-badge">POST FX</div>
-                <label class="section-label">Post Title</label>
-                <textarea id="wm-title" class="form-control" rows="3" placeholder="Nhập tiêu đề bài viết..."></textarea>
-                <small class="tip-text">Format: Dùng {từ khóa} để bôi vàng nổi bật.</small>
-
-                <div class="slider-box">
-                    <label class="input-label">Pattern Intensity</label>
-                    <input type="number" id="pattern-opacity" min="0" max="500" step="5" value="100" class="form-control">
+            <!-- CARD 5: POST TITLE, TYPOGRAPHY & FX -->
+            <div class="wm-workflow-card card-accent-orange" data-wm-cat="title">
+                <div class="card-badge">TITLE & FX</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label class="section-label">Tiêu Đề Bài Viết (Post Title)</label>
+                    <button type="button" id="btn-wrap-highlight" class="wm-mini-btn" title="Bôi đen cụm từ trong ô bên dưới rồi bấm nút này để đổi sang màu nổi bật {từ khóa}">
+                        <i class="fa-solid fa-highlighter"></i> { } BÔI VÀNG TỪ KHÓA
+                    </button>
                 </div>
 
-                <div class="slider-box">
-                    <label class="input-label">Film Grain</label>
-                    <input type="number" id="grain-intensity" min="0" max="300" step="5" value="100" class="form-control">
+                <textarea id="wm-title" class="form-control" rows="3" placeholder="Nhập tiêu đề bài viết... (Bôi đen chữ + bấm nút Bôi vàng hoặc bọc trong dấu {từ khóa})"></textarea>
+
+                <!-- BỘ ĐIỀU CHỈNH CHỮ NÂNG CAO (ÁP DỤNG CHO MỌI TEMPLATE) -->
+                <div class="wm-subbox">
+                    <div class="row-input">
+                        <div style="flex:1;">
+                            <label class="input-label">Cỡ chữ (%)</label>
+                            <input type="number" id="title-scale-input" class="form-control" min="50" max="180" step="5" value="100">
+                        </div>
+                        <div style="flex:1;">
+                            <label class="input-label">Đẩy Cao/Thấp (px)</label>
+                            <input type="number" id="title-offset-y" class="form-control" min="-400" max="200" step="10" value="0" title="Số âm (-) để đẩy chữ lên cao, số dương (+) để hạ chữ xuống thấp">
+                        </div>
+                        <div style="flex:0.8;">
+                            <label class="input-label">Màu {Key}</label>
+                            <input type="color" id="title-highlight-color" class="form-control" value="#eeff55" style="height:36px; padding:2px; cursor:pointer;">
+                        </div>
+                    </div>
+
+                    <div class="row-input mt-1">
+                        <label class="input-label" style="margin:0; flex:1;">Đổ bóng tối đáy ảnh (Vignette):</label>
+                        <input type="range" id="bottom-shadow-slider" min="0" max="100" step="5" value="0" style="flex:1;">
+                    </div>
                 </div>
 
-                <div class="slider-box">
-                    <label class="input-label">Overall Brightness</label>
-                    <input type="number" id="overall-brightness" min="0" max="200" step="5" value="100" class="form-control">
+                <!-- GLOBAL FILTERS -->
+                <div class="row-input mt-1">
+                    <div style="flex:1;">
+                        <label class="input-label">Pattern (%)</label>
+                        <input type="number" id="pattern-opacity" min="0" max="500" step="10" value="100" class="form-control">
+                    </div>
+                    <div style="flex:1;">
+                        <label class="input-label">Film Grain (%)</label>
+                        <input type="number" id="grain-intensity" min="0" max="300" step="10" value="100" class="form-control">
+                    </div>
+                    <div style="flex:1;">
+                        <label class="input-label">Độ sáng (%)</label>
+                        <input type="number" id="overall-brightness" min="20" max="200" step="5" value="100" class="form-control">
+                    </div>
                 </div>
             </div>
         </aside>

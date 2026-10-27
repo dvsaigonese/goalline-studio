@@ -1,105 +1,149 @@
+// js/watermark/layout-resizer.js
 export class LayoutResizer {
   constructor(canvas, collageState, onRatioChange) {
     this.canvas = canvas;
     this.collageState = collageState;
     this.onRatioChange = onRatioChange;
     this.isDragging = false;
-    this.dragMode = null; 
+    this.dragAxis = null; // 'x' | 'y'
 
     this.initEvents();
   }
 
-  detectSplitMode() {
+  /**
+   * Trả về thông tin các trục chia hiện tại trên Canvas
+   */
+  getSplitAxes() {
     const slots = this.collageState?.slots;
-    if (!slots || slots.length !== 2) return null;
+    if (!slots || slots.length < 2) return { xSplit: null, ySplit: null };
 
-    if (Math.abs(slots[0].y - slots[1].y) < 0.01 && Math.abs(slots[0].h - 1) < 0.01) {
-      return 'v';
+    const layoutMode = document.getElementById('layout-mode')?.value || 'single';
+
+    if (slots.length === 2) {
+      if (Math.abs(slots[0].y - slots[1].y) < 0.01 && Math.abs(slots[0].h - 1) < 0.01) {
+        return { xSplit: slots[0].w, ySplit: null, mode: '2v' };
+      }
+      if (Math.abs(slots[0].x - slots[1].x) < 0.01 && Math.abs(slots[0].w - 1) < 0.01) {
+        return { xSplit: null, ySplit: slots[0].h, mode: '2h' };
+      }
+    } else if (slots.length === 3) {
+      if (layoutMode === 't-top') {
+        return { xSplit: slots[1].w, ySplit: slots[0].h, mode: 't-top' };
+      }
+      if (layoutMode === 't-bottom') {
+        return { xSplit: slots[0].w, ySplit: slots[0].h, mode: 't-bottom' };
+      }
+      if (layoutMode === 'hero-left') {
+        return { xSplit: slots[0].w, ySplit: slots[1].h, mode: 'hero-left' };
+      }
+    } else if (slots.length === 4 && layoutMode === 'quad') {
+      return { xSplit: slots[0].w, ySplit: slots[0].h, mode: 'quad' };
     }
-    if (Math.abs(slots[0].x - slots[1].x) < 0.01 && Math.abs(slots[0].w - 1) < 0.01) {
-      return 'h';
-    }
-    return null;
+
+    return { xSplit: null, ySplit: null, mode: null };
   }
 
-  drawDivider(ctx) {
-    const mode = this.detectSplitMode();
-    if (!mode) return;
+  /**
+   * Vẽ đường kẻ ngăn cách sạch sẽ giữa các ô ảnh (hiển thị cả trên bản Export nếu dividerLineWidth > 0)
+   */
+  drawCleanDividers(ctx) {
+    const lineW = parseFloat(this.collageState?.dividerLineWidth) || 0;
+    const slots = this.collageState?.slots;
+    if (lineW <= 0 || !slots || slots.length < 2) return;
 
-    const slots = this.collageState.slots;
     const W = this.canvas.width;
     const H = this.canvas.height;
 
-    // Tự động scale kích thước theo độ phân giải thực của Canvas
-    const baseScale = Math.max(1, W / 800);
-    const bW = Math.round(200 * baseScale);
-    const bH = Math.round(60 * baseScale);
-    const fontSize = Math.round(26 * baseScale);
-    const borderWidth = Math.round(4 * baseScale);
-    const shadowOffset = Math.round(6 * baseScale);
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = lineW;
+
+    slots.forEach(s => {
+      const sx = s.x * W;
+      const sy = s.y * H;
+      const sw = s.w * W;
+      const sh = s.h * H;
+      ctx.strokeRect(sx, sy, sw, sh);
+    });
+    ctx.restore();
+  }
+
+  /**
+   * Vẽ thanh kéo & Badge % khi đang thiết kế trên Canvas (ẩn khi Export)
+   */
+  drawDivider(ctx) {
+    const { xSplit, ySplit, mode } = this.getSplitAxes();
+    if (!mode) return;
+
+    const W = this.canvas.width;
+    const H = this.canvas.height;
+    const baseScale = Math.max(0.85, W / 1000);
+    const bW = Math.round(165 * baseScale);
+    const bH = Math.round(48 * baseScale);
+    const fontSize = Math.round(21 * baseScale);
+    const borderWidth = Math.round(3.5 * baseScale);
+    const shadowOffset = Math.round(5 * baseScale);
 
     ctx.save();
-    ctx.lineWidth = Math.max(4, Math.round(5 * baseScale));
+    ctx.lineWidth = Math.max(3, Math.round(4 * baseScale));
     ctx.strokeStyle = '#000000';
 
-    if (mode === 'v') {
-      const splitX = slots[0].w * W;
-      const p1 = Math.round(slots[0].w * 100);
-      const p2 = 100 - p1;
-
-      // Vạch chia
-      ctx.beginPath();
-      ctx.moveTo(splitX, 0);
-      ctx.lineTo(splitX, H);
-      ctx.stroke();
-
-      // Vị trí Badge ở trung tâm vạch chia
-      const bX = splitX - bW / 2;
-      const bY = H / 2 - bH / 2;
-
-      // 1. Đổ bóng cứng Neobrutalism
+    const drawBadge = (cx, cy, text) => {
+      const bX = cx - bW / 2;
+      const bY = cy - bH / 2;
       ctx.fillStyle = '#000000';
       ctx.fillRect(bX + shadowOffset, bY + shadowOffset, bW, bH);
-
-      // 2. Nền vàng và viền đen dày
       ctx.fillStyle = '#ffe600';
       ctx.fillRect(bX, bY, bW, bH);
       ctx.lineWidth = borderWidth;
+      ctx.strokeStyle = '#000000';
       ctx.strokeRect(bX, bY, bW, bH);
-
-      // 3. Chữ % to rõ
       ctx.fillStyle = '#000000';
       ctx.font = `900 ${fontSize}px "JetBrains Mono", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${p1}% : ${p2}%`, splitX, H / 2);
+      ctx.fillText(text, cx, cy);
+    };
 
-    } else if (mode === 'h') {
-      const splitY = slots[0].h * H;
-      const p1 = Math.round(slots[0].h * 100);
-      const p2 = 100 - p1;
+    if (xSplit !== null) {
+      const sx = xSplit * W;
+      const p1 = Math.round(xSplit * 100);
+      let yStart = 0, yEnd = H, badgeY = H * 0.5;
+
+      if (mode === 't-top' && ySplit !== null) {
+        yStart = ySplit * H;
+        badgeY = yStart + (H - yStart) * 0.5;
+      } else if (mode === 't-bottom' && ySplit !== null) {
+        yEnd = ySplit * H;
+        badgeY = yEnd * 0.5;
+      } else if (mode === 'quad') {
+        badgeY = H * 0.25;
+      }
 
       ctx.beginPath();
-      ctx.moveTo(0, splitY);
-      ctx.lineTo(W, splitY);
+      ctx.moveTo(sx, yStart);
+      ctx.lineTo(sx, yEnd);
       ctx.stroke();
+      drawBadge(sx, badgeY, `${p1}%:${100 - p1}%`);
+    }
 
-      const bX = W / 2 - bW / 2;
-      const bY = splitY - bH / 2;
+    if (ySplit !== null) {
+      const sy = ySplit * H;
+      const p1 = Math.round(ySplit * 100);
+      let xStart = 0, xEnd = W, badgeX = W * 0.5;
 
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(bX + shadowOffset, bY + shadowOffset, bW, bH);
+      if (mode === 'hero-left' && xSplit !== null) {
+        xStart = xSplit * W;
+        badgeX = xStart + (W - xStart) * 0.5;
+      } else if (mode === 'quad') {
+        badgeX = W * 0.25;
+      }
 
-      ctx.fillStyle = '#ffe600';
-      ctx.fillRect(bX, bY, bW, bH);
-      ctx.lineWidth = borderWidth;
-      ctx.strokeRect(bX, bY, bW, bH);
-
-      ctx.fillStyle = '#000000';
-      ctx.font = `900 ${fontSize}px "JetBrains Mono", monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${p1}% : ${p2}%`, W / 2, splitY);
+      ctx.beginPath();
+      ctx.moveTo(xStart, sy);
+      ctx.lineTo(xEnd, sy);
+      ctx.stroke();
+      drawBadge(badgeX, sy, `${p1}%:${100 - p1}%`);
     }
 
     ctx.restore();
@@ -118,38 +162,32 @@ export class LayoutResizer {
       };
     };
 
-    const isNearDivider = (pos) => {
-      const mode = this.detectSplitMode();
+    const hitTestAxis = (pos) => {
+      const { xSplit, ySplit, mode } = this.getSplitAxes();
       if (!mode) return null;
 
-      const slots = this.collageState.slots;
       const W = this.canvas.width;
       const H = this.canvas.height;
-      const baseScale = Math.max(1, W / 800);
-      const lineThreshold = Math.round(30 * baseScale);
-      const bW = Math.round(200 * baseScale);
-      const bH = Math.round(60 * baseScale);
+      const threshold = Math.round(28 * Math.max(1, W / 900));
 
-      if (mode === 'v') {
-        const splitX = slots[0].w * W;
-        // Bắt chuột khi rê trúng vạch chia HOẶC trúng vào ô badge %
-        const isOverBadge = Math.abs(pos.x - splitX) <= bW / 2 && Math.abs(pos.y - H / 2) <= bH / 2;
-        if (Math.abs(pos.x - splitX) < lineThreshold || isOverBadge) return 'v';
-      } else if (mode === 'h') {
-        const splitY = slots[0].h * H;
-        const isOverBadge = Math.abs(pos.y - splitY) <= bH / 2 && Math.abs(pos.x - W / 2) <= bW / 2;
-        if (Math.abs(pos.y - splitY) < lineThreshold || isOverBadge) return 'h';
+      if (xSplit !== null && Math.abs(pos.x - xSplit * W) <= threshold) {
+        if (mode === 't-top' && pos.y < ySplit * H) return null;
+        if (mode === 't-bottom' && pos.y > ySplit * H) return null;
+        return 'x';
+      }
+      if (ySplit !== null && Math.abs(pos.y - ySplit * H) <= threshold) {
+        if (mode === 'hero-left' && pos.x < xSplit * W) return null;
+        return 'y';
       }
       return null;
     };
 
-    // Chặn pan ảnh khi đang tương tác kéo divider / badge
     this.canvas.addEventListener('mousedown', (e) => {
       const pos = getPos(e);
-      const near = isNearDivider(pos);
-      if (near) {
+      const axis = hitTestAxis(pos);
+      if (axis) {
         this.isDragging = true;
-        this.dragMode = near;
+        this.dragAxis = axis;
         e.stopImmediatePropagation();
       }
     }, true);
@@ -157,28 +195,63 @@ export class LayoutResizer {
     window.addEventListener('mousemove', (e) => {
       const pos = getPos(e);
       if (!this.isDragging) {
-        const near = isNearDivider(pos);
-        if (near === 'v') {
-          this.canvas.style.cursor = 'col-resize';
-        } else if (near === 'h') {
-          this.canvas.style.cursor = 'row-resize';
-        } else if (!this.canvas.classList.contains('editing')) {
-          this.canvas.style.cursor = '';
-        }
+        const axis = hitTestAxis(pos);
+        if (axis === 'x') this.canvas.style.cursor = 'col-resize';
+        else if (axis === 'y') this.canvas.style.cursor = 'row-resize';
+        else if (!this.canvas.classList.contains('editing')) this.canvas.style.cursor = '';
         return;
       }
 
+      const { mode } = this.getSplitAxes();
       const slots = this.collageState.slots;
-      if (this.dragMode === 'v') {
-        const ratio = Math.max(0.15, Math.min(0.85, pos.x / this.canvas.width));
-        slots[0].w = ratio;
-        slots[1].x = ratio;
-        slots[1].w = 1 - ratio;
-      } else if (this.dragMode === 'h') {
-        const ratio = Math.max(0.15, Math.min(0.85, pos.y / this.canvas.height));
-        slots[0].h = ratio;
-        slots[1].y = ratio;
-        slots[1].h = 1 - ratio;
+      const rx = Math.max(0.18, Math.min(0.82, pos.x / this.canvas.width));
+      const ry = Math.max(0.18, Math.min(0.82, pos.y / this.canvas.height));
+
+      if (mode === '2v' && this.dragAxis === 'x') {
+        slots[0].w = rx;
+        slots[1].x = rx;
+        slots[1].w = 1 - rx;
+      } else if (mode === '2h' && this.dragAxis === 'y') {
+        slots[0].h = ry;
+        slots[1].y = ry;
+        slots[1].h = 1 - ry;
+      } else if (mode === 't-top') {
+        if (this.dragAxis === 'y') {
+          slots[0].h = ry;
+          slots[1].y = ry; slots[1].h = 1 - ry;
+          slots[2].y = ry; slots[2].h = 1 - ry;
+        } else if (this.dragAxis === 'x') {
+          slots[1].w = rx;
+          slots[2].x = rx; slots[2].w = 1 - rx;
+        }
+      } else if (mode === 't-bottom') {
+        if (this.dragAxis === 'y') {
+          slots[0].h = ry;
+          slots[1].h = ry;
+          slots[2].y = ry; slots[2].h = 1 - ry;
+        } else if (this.dragAxis === 'x') {
+          slots[0].w = rx;
+          slots[1].x = rx; slots[1].w = 1 - rx;
+        }
+      } else if (mode === 'hero-left') {
+        if (this.dragAxis === 'x') {
+          slots[0].w = rx;
+          slots[1].x = rx; slots[1].w = 1 - rx;
+          slots[2].x = rx; slots[2].w = 1 - rx;
+        } else if (this.dragAxis === 'y') {
+          slots[1].h = ry;
+          slots[2].y = ry; slots[2].h = 1 - ry;
+        }
+      } else if (mode === 'quad') {
+        if (this.dragAxis === 'x') {
+          slots[0].w = rx; slots[2].w = rx;
+          slots[1].x = rx; slots[1].w = 1 - rx;
+          slots[3].x = rx; slots[3].w = 1 - rx;
+        } else if (this.dragAxis === 'y') {
+          slots[0].h = ry; slots[1].h = ry;
+          slots[2].y = ry; slots[2].h = 1 - ry;
+          slots[3].y = ry; slots[3].h = 1 - ry;
+        }
       }
 
       if (this.onRatioChange) this.onRatioChange();
@@ -187,7 +260,7 @@ export class LayoutResizer {
     window.addEventListener('mouseup', () => {
       if (this.isDragging) {
         this.isDragging = false;
-        this.dragMode = null;
+        this.dragAxis = null;
         this.canvas.style.cursor = '';
       }
     });

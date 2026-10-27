@@ -1,0 +1,16 @@
+import { addFilmGrain, drawStudioTitle, drawBottomVignette } from '../utils.js';
+
+export default {
+    id: 'epl26',
+    name: 'Premier League 26/27',
+    assetsToLoad: [{ name: 'EplFrame', src: 'assets/img/watermarkFrame/epl26.png' }],
+    titlePreset: { align: 'center', defaultHighlight: '#00ff85', centerYRatio: 0.88 },
+
+    render(ctx, canvasInfo, { assets, settings }) {
+        const { width, height } = canvasInfo;
+        if (assets.EplFrame) ctx.drawImage(assets.EplFrame, 0, 0, width, height);
+        if (settings.bottomShadow > 0) drawBottomVignette(ctx, width, height, settings.bottomShadow);
+        drawStudioTitle(ctx, canvasInfo, settings, this.titlePreset);
+        if (settings.grainIntensity > 0) addFilmGrain(ctx, width, height, settings.grainIntensity);
+    }
+};

@@ -1,18 +1,20 @@
+// js/watermark/state.js
 export const CONFIG = {
-    TARGET_WIDTH: 1200, 
+    TARGET_WIDTH: 1200,
     TARGET_HEIGHT: 1500
 };
 
-export const globalAssets = {}; 
+export const globalAssets = {};
 
 export const collageState = {
-    slots: [], 
-    activeSlotIndex: null, 
+    slots: [],
+    activeSlotIndex: null,
     isDragging: false,
     lastMouseX: 0,
     lastMouseY: 0,
     isPinching: false,
-    initialPinchDistance: 0
+    initialPinchDistance: 0,
+    dividerLineWidth: 0
 };
 
 export function hasAnyImage() {
