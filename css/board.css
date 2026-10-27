@@ -991,3 +991,146 @@ body.dark-mode .slide-card.active {
   background: #122e20 !important;
   border-left-color: #00f076 !important;
 }
+
+/* ==============================================================================
+   STYLE CHO PLAYER HIGHLIGHT & LINKER CARD (Dán vào cuối css/board.css)
+   ============================================================================== */
+.card-red-hl {
+  border-top: 8px solid #dc2626;
+}
+
+.hl-color-palette {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hl-swatch {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--neo-black);
+  box-shadow: 2px 2px 0 var(--neo-black);
+  cursor: pointer;
+  transition: transform 0.1s;
+  padding: 0;
+}
+
+.hl-swatch:hover {
+  transform: scale(1.12);
+}
+
+.hl-swatch.active {
+  outline: 3px solid var(--neo-yellow);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--neo-black);
+}
+
+.hl-color-picker {
+  width: 28px;
+  height: 26px;
+  border: 2px solid var(--neo-black);
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+/* ==============================================================================
+   STYLE BỔ SUNG CHO TACTICAL BOARD V4.0 PRO (FIX DROPDOWN FONT, TAB ALL & SLIDE TOGGLE)
+   ============================================================================== */
+
+/* 1. ĐÓNG / MỞ SLIDE DECK MƯỢT MÀ */
+.app-container.slides-collapsed {
+  grid-template-columns: 0px minmax(0, 1fr) 310px !important;
+}
+
+.app-container.slides-collapsed .slides-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border-right: none !important;
+  overflow: hidden !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 2. FIX LỖI FONT DROPDOWN & CHỮ ĐÈ LÊN MŨI TÊN TAM GIÁC */
+.form-control,
+.neo-select,
+select.form-control,
+select.neo-select,
+select.neo-select option {
+  font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+.neo-select,
+select.neo-select {
+  padding-left: 8px !important;
+  padding-right: 26px !important; /* Chừa khoảng trống bên phải cho icon tam giác */
+  background-position: right 8px center !important;
+  background-size: 9px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* 3. MENU TAB LỌC: 4 TAB CON Ở TRÊN (2x2 HOẶC 4 CỘT), NÚT ALL BỰ NHẤT Ở DƯỚI CÙNG */
+.panel-filter-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: var(--neo-black);
+  padding: 4px;
+  border: 2px solid var(--neo-black);
+  flex-shrink: 0;
+}
+
+.panel-tab-btn {
+  background: var(--neo-white);
+  color: var(--neo-black);
+  border: 1.5px solid var(--neo-black);
+  padding: 6px 2px;
+  font-family: var(--font-cond);
+  font-weight: 900;
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.1s;
+}
+
+/* Nút ALL nằm dưới cùng, trải rộng toàn bộ 4 cột */
+.panel-tab-btn.tab-all-full {
+  grid-column: 1 / -1;
+  padding: 7px 8px;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.panel-tab-btn.active {
+  background: var(--neo-yellow) !important;
+  color: #000 !important;
+}
+
+.hl-subbox {
+  background: var(--neo-bg);
+  border: 2px dashed var(--neo-black);
+  padding: 8px;
+}
+
+body.dark-mode .hl-subbox {
+  background: #121318 !important;
+  border-color: #383b45 !important;
+}
+
+body.dark-mode .panel-tab-btn {
+  background: #20222a;
+  color: #d1d5db;
+}
+
+body.dark-mode .panel-tab-btn.active {
+  background: var(--neo-yellow) !important;
+  color: #000 !important;
+}

@@ -5,7 +5,7 @@ import { generateId } from '../utils.js';
 export class Circle {
     constructor(
         x, y, radius, color, text = "", textColor = "white", detailsText = "",
-        id = null, pathCx = null, pathCy = null
+        id = null, pathCx = null, pathCy = null, showVision = false, visionAngle = 0
     ) {
         this.id = id || ('cir_' + generateId());
         this.x = x;
@@ -16,16 +16,19 @@ export class Circle {
         this.textColor = textColor;
         this.detailsText = detailsText;
 
-        // Điểm uốn cong quỹ đạo di chuyển từ Keyframe trước tới Keyframe hiện tại
         this.pathCx = pathCx;
         this.pathCy = pathCy;
+
+        // Hướng mặt / Chùm tầm nhìn chiến thuật của cầu thủ (Scanning / Body Orientation)
+        this.showVision = Boolean(showVision);
+        this.visionAngle = parseFloat(visionAngle) || 0;
     }
 
     clone() {
         return new Circle(
             this.x, this.y, this.radius, this.color,
             this.text, this.textColor, this.detailsText,
-            this.id, null, null
+            this.id, null, null, this.showVision, this.visionAngle
         );
     }
 
@@ -34,6 +37,32 @@ export class Circle {
         ctx.save();
         ctx.globalAlpha = alpha;
 
+        // 1. Vẽ chùm sáng hướng nhìn / hướng xoay người (Vision Cone) nếu cầu thủ bật showVision
+        if (this.color !== "ball" && this.showVision) {
+            const rad = (this.visionAngle * Math.PI) / 180;
+            const spread = Math.PI / 3.4; // Góc mở ~53 độ
+            const coneLen = currentRadius * 3.4;
+
+            const grad = ctx.createRadialGradient(this.x, this.y, currentRadius * 0.8, this.x, this.y, coneLen);
+            grad.addColorStop(0, "rgba(255, 230, 0, 0.45)");
+            grad.addColorStop(1, "rgba(255, 230, 0, 0.0)");
+
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.arc(this.x, this.y, coneLen, rad - spread / 2, rad + spread / 2);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Vành chỉ hướng thân người (Body Orientation Arc) ngay sát lưng/mặt cầu thủ
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, currentRadius * 1.25, rad - spread / 2, rad + spread / 2);
+            ctx.lineWidth = 3 * responsiveConstant * userScale;
+            ctx.strokeStyle = "#ffe600";
+            ctx.stroke();
+        }
+
+        // 2. Vẽ Bóng hoặc Token Cầu thủ
         if (this.color === "ball") {
             ctx.beginPath();
             ctx.arc(this.x, this.y, currentRadius / 2, 0, Math.PI * 2);
@@ -61,6 +90,7 @@ export class Circle {
             ctx.stroke();
         }
 
+        // 3. Viền chọn vàng
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(this.x, this.y, currentRadius + 4 * responsiveConstant * userScale, 0, Math.PI * 2);
@@ -69,8 +99,9 @@ export class Circle {
             ctx.stroke();
         }
 
+        // 4. Số áo
         if (this.color !== "ball" && this.text) {
-            const fontSize = 30 * responsiveConstant * userScale;
+            const fontSize = 28 * responsiveConstant * userScale;
             ctx.font = `bold ${fontSize}px ${CONFIG.fonts.number}`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -78,24 +109,22 @@ export class Circle {
             ctx.fillText(this.text, this.x, this.y + (responsiveConstant * userScale));
         }
 
+        // 5. Tên cầu thủ
         if (this.detailsText) {
             const fontDetailsSize = 15 * responsiveConstant * userScale;
             ctx.font = `bold ${fontDetailsSize}px ${CONFIG.fonts.name}`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.lineWidth = 3 * responsiveConstant * userScale;
-            ctx.strokeStyle = "rgba(0,0,0,0.8)";
-            ctx.strokeText(this.detailsText, this.x, this.y + (35 * responsiveConstant * userScale));
+            ctx.lineWidth = 3.5 * responsiveConstant * userScale;
+            ctx.strokeStyle = "rgba(0,0,0,0.85)";
+            ctx.strokeText(this.detailsText, this.x, this.y + (34 * responsiveConstant * userScale));
             ctx.fillStyle = "white";
-            ctx.fillText(this.detailsText, this.x, this.y + (35 * responsiveConstant * userScale));
+            ctx.fillText(this.detailsText, this.x, this.y + (34 * responsiveConstant * userScale));
         }
 
         ctx.restore();
     }
 
-    /**
-     * Vẽ đường quỹ đạo di chuyển (Ghost Path) từ vị trí ở Sa bàn trước (prevCircle) tới Sa bàn hiện tại
-     */
     drawMovementPath(ctx, prevCircle, responsiveConstant = 1, userScale = 1.0, isSelected = false) {
         if (!prevCircle) return;
         const dist = Math.hypot(this.x - prevCircle.x, this.y - prevCircle.y);
@@ -105,7 +134,6 @@ export class Circle {
         const cy = this.pathCy !== null && this.pathCy !== undefined ? this.pathCy : (prevCircle.y + this.y) / 2;
 
         ctx.save();
-        // Vẽ bóng mờ của cầu thủ ở sa bàn trước
         ctx.beginPath();
         ctx.arc(prevCircle.x, prevCircle.y, (this.radius * userScale) * 0.75, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(255, 230, 0, 0.22)";
@@ -115,7 +143,6 @@ export class Circle {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Vẽ đường cong hướng di chuyển
         ctx.beginPath();
         ctx.setLineDash([8 * responsiveConstant, 6 * responsiveConstant]);
         ctx.moveTo(prevCircle.x, prevCircle.y);
@@ -124,7 +151,6 @@ export class Circle {
         ctx.lineWidth = (isSelected ? 3.5 : 2.5) * responsiveConstant;
         ctx.stroke();
 
-        // Vẽ mũi tên nhỏ chỉ hướng ở điểm đích
         const angle = Math.atan2(this.y - cy, this.x - cx);
         const headLen = 10 * responsiveConstant * userScale;
         ctx.setLineDash([]);
@@ -136,7 +162,6 @@ export class Circle {
         ctx.fillStyle = isSelected ? "#00f076" : "#ffe600";
         ctx.fill();
 
-        // Nút kéo bẻ cong quỹ đạo chạy (chỉ hiện khi chọn cầu thủ ở Keyframe >= 2)
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(cx, cy, 7 * responsiveConstant * userScale, 0, Math.PI * 2);
@@ -159,14 +184,9 @@ export class Circle {
 
     isHit(mouseX, mouseY, userScale = 1.0) {
         const currentRadius = this.radius * userScale;
-        const dx = mouseX - this.x;
-        const dy = mouseY - this.y;
-        return dx * dx + dy * dy <= currentRadius * currentRadius;
+        return Math.hypot(mouseX - this.x, mouseY - this.y) <= currentRadius;
     }
 
-    /**
-     * Nội suy vị trí cầu thủ theo đường cong Quadratic Bezier ở thời điểm t (0 -> 1)
-     */
     static interpolate(c1, c2, t) {
         const cx = c2.pathCx !== null && c2.pathCx !== undefined ? c2.pathCx : (c1.x + c2.x) / 2;
         const cy = c2.pathCy !== null && c2.pathCy !== undefined ? c2.pathCy : (c1.y + c2.y) / 2;
@@ -175,7 +195,11 @@ export class Circle {
         const x = invT * invT * c1.x + 2 * invT * t * cx + t * t * c2.x;
         const y = invT * invT * c1.y + 2 * invT * t * cy + t * t * c2.y;
         const radius = c1.radius + (c2.radius - c1.radius) * t;
+        const vAngle = (c1.visionAngle || 0) + ((c2.visionAngle || 0) - (c1.visionAngle || 0)) * t;
 
-        return new Circle(x, y, radius, c2.color, c2.text, c2.textColor, c2.detailsText, c2.id);
+        return new Circle(
+            x, y, radius, c2.color, c2.text, c2.textColor, c2.detailsText,
+            c2.id, null, null, c2.showVision || c1.showVision, vAngle
+        );
     }
 }

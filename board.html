@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Tactical Board v3 | Goal-Line Studio</title>
+    <title>Tactical Board v4 Pro | Goal-Line Studio</title>
     <link rel="icon" href="assets/img/GL_logo.jpg" type="image/icon type" />
     
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,12 +24,11 @@
     <!-- STARTUP / PROJECT MANAGER MODAL -->
     <div id="startup-modal" class="startup-overlay" style="display:none;">
       <div class="startup-box startup-box-wide">
-        <div class="modal-badge">TACTICAL DESK • MULTI-PROJECT</div>
+        <div class="modal-badge">TACTICAL DESK • PRO ENGINE v4.0</div>
 
         <h2>GOAL-LINE TACTICAL BOARD</h2>
-        <p class="modal-desc">Quản lý các dự án sa bàn, tạo chuỗi chuyển động (Keyframes) & đẩy thẳng sang Video Studio #07</p>
+        <p class="modal-desc">Quản lý đa dự án, Telestrator Highlight, chuỗi chuyển động Keyframes & xuất thẳng sang Video Studio #07</p>
 
-        <!-- DANH SÁCH DỰ ÁN ĐÃ LƯU TRONG INDEXEDDB -->
         <div id="saved-projects-section" class="saved-projects-wrap">
           <div class="saved-header">
             <span><i class="fa-solid fa-folder-open"></i> DỰ ÁN CỦA BẠN (AUTO-SAVED IN BROWSER DB)</span>
@@ -54,29 +53,28 @@
           <button id="btn-custom-mode" class="startup-btn btn-accent-neo">
             <i class="fa-solid fa-upload"></i>
             <span>CUSTOM IMAGE PITCH</span>
-            <small>Tải ảnh mặt sân / sa bàn riêng</small>
+            <small>Tải ảnh mặt sân / băng hình trận đấu</small>
           </button>
           
           <input type="file" id="custom-img-input" accept="image/*" hidden>
         </div>
 
         <button id="btn-close-project-modal" class="neo-btn-full mt-2" style="background:#eee;">
-          ĐÓNG CỬA SỐ
+          ĐÓNG CỬA SỔ
         </button>
       </div>
     </div>
 
-    <!-- TOP NAVIGATION ĐỒNG BỘ -->
+    <!-- TOP NAVIGATION -->
     <header class="top-nav">
       <div class="brand-badge">
           <a href="index.html" class="logo-box" style="text-decoration:none;">GL</a>
           <div class="brand-text">
               <span class="studio-title">TACTICAL <em>BOARD</em></span>
-              <span class="system-tag">MULTI-PROJECT • KEYFRAME ANIMATOR • VIDEO BRIDGE</span>
+              <span class="system-tag">TELESTRATOR PRO • KEYFRAME ANIMATOR • VIDEO BRIDGE</span>
           </div>
       </div>
 
-      <!-- THANH ĐIỀU KHIỂN DỰ ÁN NHANH TRÊN TOPBAR -->
       <div class="project-quickbar">
           <button id="btn-open-projects" class="btn-neo-back" style="background:var(--neo-yellow); color:#000;">
               <i class="fa-solid fa-folder-tree"></i>
@@ -110,38 +108,41 @@
     <!-- MAIN APP WRAPPER -->
     <div class="app-container">
 
-      <!-- 0. LEFT SLIDE DECK (QUẢN LÝ CÁC TRANG / SLIDE TRONG DỰ ÁN) -->
+      <!-- 0. LEFT SLIDE DECK -->
       <aside class="slides-sidebar">
         <div class="slides-header">
           <span>SLIDE DECK (<span id="slide-total-count">1</span>)</span>
-          <button id="btn-add-slide" class="neo-btn-xs btn-action-green" title="Thêm trang sa bàn mới vào dự án">
-            <i class="fa-solid fa-plus"></i> TRANG MỚI
-          </button>
+          <div style="display:flex; gap:4px;">
+            <button id="btn-add-slide" class="neo-btn-xs btn-action-green" title="Thêm trang sa bàn mới độc lập">
+              <i class="fa-solid fa-plus"></i> MỚI
+            </button>
+            <button id="btn-collapse-slides" class="neo-btn-xs" title="Thu gọn cột Slide Deck để mở rộng mặt sân">
+              <i class="fa-solid fa-angles-left"></i>
+            </button>
+          </div>
         </div>
 
-        <div id="slides-list" class="slides-list">
-          <!-- Render động danh sách các Trang/Slide trong Dự án -->
-        </div>
+        <div id="slides-list" class="slides-list"></div>
 
         <div class="slide-meta-box">
           <label class="small-label">TIÊU ĐỀ TRANG / CAPTION:</label>
           <input type="text" id="slide-title-input" class="form-control" placeholder="VD: Build-up 3-2-5..." />
           <label class="small-label mt-2">PHỤ ĐỀ (MANG SANG MOD 07):</label>
-          <textarea id="slide-sub-input" class="form-control" rows="2" placeholder="Nhập vài dòng giải thích chiến thuật cho frame này..."></textarea>
+          <textarea id="slide-sub-input" class="form-control" rows="2" placeholder="Nhập giải thích chiến thuật cho trang này..."></textarea>
         </div>
       </aside>
       
-      <!-- 1. CANVAS WORKSPACE + KEYFRAME ANIMATION BAR -->
+      <!-- 1. CANVAS WORKSPACE + KEYFRAME BAR -->
       <main class="canvas-area">
-        <!-- THANH KEYFRAME (SA BÀN 1 -> SA BÀN 2 -> SA BÀN N) -->
         <div class="keyframe-bar">
           <div class="kf-left">
-            <span class="kf-badge"><i class="fa-solid fa-wand-magic-sparkles"></i>KEYFRAMES:</span>
-            <div id="keyframe-tabs" class="keyframe-tabs">
-              <!-- Nút Sa bàn 1, Sa bàn 2... -->
-            </div>
-            <button id="btn-add-keyframe" class="neo-btn-xs btn-action-yellow" title="Nhân bản sa bàn hiện tại sang nhịp tiếp theo để kéo cầu thủ di chuyển">
-              <i class="fa-solid fa-plus"></i> + SA BÀN TIẾP THEO
+            <button id="btn-toggle-slides" class="neo-btn-xs btn-action-yellow" title="Đóng / Mở cột Slide Deck">
+              <i class="fa-solid fa-table-columns"></i> SLIDES
+            </button>
+            <span class="kf-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> KEYFRAMES:</span>
+            <div id="keyframe-tabs" class="keyframe-tabs"></div>
+            <button id="btn-add-keyframe" class="neo-btn-xs btn-action-yellow" title="Nhân bản sa bàn hiện tại sang nhịp tiếp theo để kéo cầu thủ/highlight di chuyển">
+              <i class="fa-solid fa-plus"></i> + SA BÀN TIẾP
             </button>
             <button id="btn-del-keyframe" class="neo-btn-xs btn-action-pink" title="Xóa nhịp sa bàn đang chọn">
               <i class="fa-solid fa-xmark"></i>
@@ -149,14 +150,14 @@
           </div>
 
           <div class="kf-right">
-            <label class="kf-ghost-toggle" title="Hiện vệt đường chạy (màu vàng/xanh) nối từ Sa bàn trước tới Sa bàn này. Kéo chấm xanh ở giữa để uốn cong hướng chạy!">
+            <label class="kf-ghost-toggle" title="Hiện đường dẫn hướng di chuyển từ Sa bàn trước. Kéo chấm xanh ở giữa để bẻ cong đường chạy!">
               <input type="checkbox" id="toggle-ghost-path" checked />
               <span>GHOST PATH</span>
             </label>
             <div class="kf-duration-box" title="Thời gian di chuyển giữa mỗi nhịp sa bàn (giây)">
               <span>SPEED:</span>
               <input type="number" id="kf-duration-input" min="0.5" max="10" step="0.5" value="2.0" />
-              <span>s/step</span>
+              <span>s</span>
             </div>
             <button id="btn-play-anim" class="neo-btn-xs btn-action-green">
               <i class="fa-solid fa-play"></i> PLAY ANIM
@@ -169,67 +170,89 @@
         </div>
 
         <div class="zoom-controls">
-          <span class="copyright" id="canvas-step-indicator">SLIDE 1 • SA BÀN 1 • KÉO CẦU THỦ ĐỂ SẮP ĐỘI HÌNH</span>
+          <span class="copyright" id="canvas-step-indicator">SLIDE 1 • SA BÀN 1 • CLICK PHẦN TỬ ĐỂ CHỈNH SỬA TRỰC TIẾP</span>
         </div>
       </main>
 
-      <!-- 2. BOTTOM TOOLBAR -->
+      <!-- 2. BOTTOM TOOLBAR (BỔ SUNG UNDO / REDO / DUPLICATE) -->
       <nav class="toolbar">
         <div class="neo-log-container">
           <span class="log-tag">STATUS</span>
-          <span id="editor-log" class="log-text">READY • MULTI-PROJECT & ANIMATION ENGINE v3</span>
+          <span id="editor-log" class="log-text">READY • PRO ENGINE v4.0</span>
         </div>
 
         <div class="neo-sep"></div>
 
         <div class="tool-group">
-          <button id="reset-btn" class="tool-action-btn btn-action-orange" title="Làm mới sa bàn hiện tại">
+          <button id="undo-btn" class="tool-action-btn" title="Hoàn tác (Ctrl + Z)">
             <i class="fa-solid fa-rotate-left"></i>
+          </button>
+          <button id="redo-btn" class="tool-action-btn" title="Làm lại (Ctrl + Y)">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+          <button id="dup-btn" class="tool-action-btn" style="background:var(--neo-blue);" title="Nhân bản phần tử đang chọn (Ctrl + D)">
+            <i class="fa-regular fa-clone"></i>
+            <span>CLONE</span>
+          </button>
+          <button id="reset-btn" class="tool-action-btn btn-action-orange" title="Làm mới sa bàn hiện tại">
+            <i class="fa-solid fa-broom"></i>
             <span>CLEAR</span>
           </button>
-          <button id="delete-btn" class="tool-action-btn btn-action-pink" title="Xóa phần tử đang chọn (Delete)">
+          <button id="delete-btn" class="tool-action-btn btn-action-pink" title="Xóa phần tử đang chọn (Phím Delete)">
             <i class="fa-regular fa-trash-can"></i>
             <span>DELETE</span>
           </button>
           <button id="export-btn" class="tool-action-btn" style="background:var(--neo-yellow);" title="Xuất lẻ ảnh JPG của sa bàn hiện tại">
             <i class="fa-solid fa-image"></i>
-            <span>XUẤT ẢNH LẺ</span>
+            <span>XUẤT ẢNH</span>
           </button>
-          <button id="export-video-btn" class="tool-action-btn btn-action-green" title="Quay và tải về Video Animation ngắn (5-10s) của Trang hiện tại">
+          <button id="export-video-btn" class="tool-action-btn btn-action-green" title="Quay và tải về Video Animation ngắn của Trang hiện tại">
             <i class="fa-solid fa-video"></i>
-            <span>XUẤT VIDEO LẺ</span>
+            <span>XUẤT VIDEO</span>
           </button>
         </div>
       </nav>
 
-      <!-- 3. SETTINGS PANEL -->
+      <!-- 3. SETTINGS PANEL (THỨ TỰ CHUẨN: PITCH/TEXT -> SQUAD -> HIGHLIGHT -> ARROWS/ZONES & ALL Ở DƯỚI CÙNG) -->
       <aside class="settings-panel">
         <div class="panel-header">
-          <h3>TACTICS</h3>
-          <span class="badge-tag">ENGINE v3</span>
+          <h3>TACTICS PRO</h3>
+          <span class="badge-tag" id="selected-obj-badge">MODE: SELECT</span>
         </div>
 
-        <!-- SCALE CONTROLS -->
-        <div class="neo-card card-yellow">
-          <div class="card-badge">TRANSFORM</div>
-          <label class="section-label">Object Size (Scale)</label>
-          <div class="row-input">
-            <input type="range" id="global-scale" class="form-control range-slider" 
-                   min="0.1" max="5.0" step="0.1" value="1.0"> 
-            <input type="number" id="scale-number" class="form-control num-input" 
-                   min="0.1" max="5.0" step="0.1" value="1.0"> 
-          </div>
+        <!-- THANH TAB: 4 TAB CON Ở TRÊN, NÚT ALL BỰ NHẤT NẰM DƯỚI CÙNG -->
+        <div class="panel-filter-tabs">
+          <button type="button" class="panel-tab-btn" data-tab="pitch">PITCH/TEXT</button>
+          <button type="button" class="panel-tab-btn" data-tab="squad">SQUAD</button>
+          <button type="button" class="panel-tab-btn" data-tab="highlight">HIGHLIGHT</button>
+          <button type="button" class="panel-tab-btn" data-tab="draw">ARROWS/ZONES</button>
+          <button type="button" class="panel-tab-btn tab-all-full active" data-tab="all">ALL (HIỂN THỊ TẤT CẢ CÔNG CỤ)</button>
         </div>
-        
-        <!-- PITCH TYPE -->
-        <div class="neo-card card-blue">
-          <div class="card-badge">LAYOUT</div>
-          <label class="section-label">Pitch Orientation</label>
-          <select id="pitch-type" class="form-control neo-select">
-            <option value="horizontal">Horizontal (Full)</option>
-            <option value="vertical">Vertical (Full)</option>
-            <option value="half">Half Pitch (Attacking)</option>
-          </select>
+
+        <!-- 1. NHÓM PITCH & TEXT (LÊN ĐẦU TIÊN) -->
+        <div class="neo-card card-blue" data-card-cat="pitch">
+          <div class="card-badge">PITCH & GRID</div>
+          <label class="section-label">Object Size (Global Scale)</label>
+          <div class="row-input">
+            <input type="range" id="global-scale" class="form-control range-slider" min="0.1" max="5.0" step="0.1" value="1.0"> 
+            <input type="number" id="scale-number" class="form-control num-input" min="0.1" max="5.0" step="0.1" value="1.0"> 
+          </div>
+
+          <label class="section-label mt-2">Hướng Sân & Lưới Chiến Thuật</label>
+          <div class="row-input">
+            <select id="pitch-type" class="form-control neo-select">
+              <option value="horizontal">Sân Ngang</option>
+              <option value="vertical">Sân Dọc</option>
+              <option value="half">Nửa Sân</option>
+            </select>
+            <select id="pitch-grid-overlay" class="form-control neo-select" title="Bật lưới phân tích chiến thuật đè lên sân">
+              <option value="none">Tắt Lưới</option>
+              <option value="5-lanes">5 Hành Lang (Half-Space)</option>
+              <option value="18-zones">Lưới 18 Zones (Zone 14)</option>
+              <option value="thirds">Chia 3 Tuyến Sân</option>
+            </select>
+          </div>
+
           <button id="btn-change-bg-inline" class="neo-btn-full mt-2" style="background:var(--neo-blue); color:#000; font-size:12px; padding:6px;">
             <i class="fa-solid fa-image"></i> ĐỔI ẢNH NỀN TRANG NÀY
           </button>
@@ -238,13 +261,42 @@
           </button>
         </div>
 
-        <!-- PLAYER & BALL SQUAD -->
-        <div class="neo-card card-green">
+        <div class="neo-card card-orange" data-card-cat="pitch">
+          <div class="card-badge">LABELS (<span class="text-count">0</span>)</div>
+          <label class="section-label">Add / Edit Note & Banner</label>
+          <div class="row-input">
+            <input id="text-input" class="form-control" placeholder="Nhập ghi chú chiến thuật...">
+            <button id="text-btn" class="neo-btn-square" title="Thêm Chữ lên sân"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <div class="row-input mt-2">
+            <select id="text-font-size" class="form-control neo-select">
+              <option value="16">16px Nhỏ</option>
+              <option value="20" selected>20px Vừa</option>
+              <option value="28">28px Lớn</option>
+              <option value="40">40px Banner</option>
+            </select>
+            <select id="text-color-select" class="form-control neo-select">
+              <option value="#ffffff">Chữ Trắng</option>
+              <option value="#ffe600">Chữ Vàng</option>
+              <option value="#00f076">Chữ Xanh</option>
+              <option value="#ff2a5f">Chữ Đỏ</option>
+            </select>
+            <select id="text-bg-style" class="form-control neo-select">
+              <option value="none">Không khung</option>
+              <option value="dark-box">Hộp Đen</option>
+              <option value="yellow-box">Hộp Vàng</option>
+            </select>
+          </div>
+          <small class="tip"><i class="fa-solid fa-circle-info"></i> Shift + Lăn chuột để xoay chữ hoặc xoay hướng nhìn cầu thủ</small>
+        </div>
+
+        <!-- 2. NHÓM SQUAD (CẦU THỦ & ĐỘI HÌNH) -->
+        <div class="neo-card card-green" data-card-cat="squad">
           <div class="card-badge">PLAYERS (<span class="circle-count">0</span>)</div>
-          <label class="section-label">Add Token</label>
+          <label class="section-label">Add / Edit Player Token</label>
           <div class="row-input">
             <select id="circle-color" class="form-control neo-select color-select">
-              <option value="ball">⚽ Ball</option>
+              <option value="ball">⚽ Ball (Trái bóng)</option>
               <option value="red">🔴 Red Team</option>
               <option value="dodgerblue">🔵 Blue Team</option>
               <option value="lightgreen">🟢 Green Team</option>
@@ -252,23 +304,141 @@
               <option value="white">⚪ White Team</option>
               <option value="black">⚫ Black Team</option>
             </select>
-            <button id="circle-btn" class="neo-btn-square" title="Add Player/Ball"><i class="fa-solid fa-plus"></i></button>
+            <button id="circle-btn" class="neo-btn-square" title="Thêm Cầu thủ / Bóng lên sân"><i class="fa-solid fa-plus"></i></button>
           </div>
-          <input id="circle-text" class="form-control mt-2" placeholder="Số áo (e.g. 10)">
-          <input id="circle-details-text" class="form-control mt-2" placeholder="Tên cầu thủ (e.g. Messi)">
           <div class="row-input mt-2">
-             <label class="small-label">Font Color:</label>
-             <select id="circle-text-color" class="form-control neo-select">
-              <option value="white">White</option>
-              <option value="black">Black</option>
-             </select>
+            <input id="circle-text" class="form-control" placeholder="Số áo (VD: 10)" style="flex:1;">
+            <select id="circle-text-color" class="form-control neo-select" style="flex:1;">
+              <option value="white">Số Trắng</option>
+              <option value="black">Số Đen</option>
+            </select>
+          </div>
+          <input id="circle-details-text" class="form-control mt-2" placeholder="Tên cầu thủ (Click cầu thủ trên sân để sửa trực tiếp)">
+
+          <div class="hl-subbox mt-2">
+            <div class="checkbox-row">
+              <input type="checkbox" id="circle-vision-check">
+              <label for="circle-vision-check">Bật Chùm hướng nhìn (Vision Cone)</label>
+            </div>
+            <div class="row-input mt-2">
+              <span class="small-label">Góc nhìn:</span>
+              <input type="range" id="circle-vision-angle" class="form-control range-slider" min="-180" max="180" step="5" value="0">
+              <span class="small-label" id="vision-angle-label">0°</span>
+            </div>
+          </div>
+
+          <label class="section-label mt-2">Xếp Nhanh Đội Hình 11 Người</label>
+          <div class="row-input">
+            <select id="formation-preset" class="form-control neo-select">
+              <option value="4-3-3">Sơ đồ 4-3-3 Hiện đại</option>
+              <option value="4-2-3-1">Sơ đồ 4-2-3-1</option>
+              <option value="3-2-5">Sơ đồ 3-2-5 Build-up</option>
+              <option value="4-4-2">Sơ đồ 4-4-2 Khối thấp</option>
+            </select>
+            <button type="button" id="btn-spawn-formation" class="neo-btn-xs btn-action-green" style="height:36px;">
+              <i class="fa-solid fa-users-rays"></i> THẢ ĐỘI
+            </button>
           </div>
         </div>
 
-        <!-- TACTICAL ARROWS & TOGGLE DRAW -->
-        <div class="neo-card card-pink">
-          <div class="card-badge">TACTICAL ARROWS (<span class="arrow-count">0</span>)</div>
-          <label class="section-label">Arrow Controls</label>
+        <!-- 3. NHÓM HIGHLIGHT (VÒNG TRÒN ĐÁNH DẤU & NỐI DÂY) -->
+        <div class="neo-card card-red-hl" data-card-cat="highlight">
+          <div class="card-badge">HIGHLIGHTS (<span class="highlight-count">0</span>)</div>
+          <label class="section-label">Player Highlight & Linker</label>
+
+          <label class="neo-toggle-mode" for="draw-highlight-input">
+            <input type="checkbox" id="draw-highlight-input" class="tool-checkbox" hidden>
+            <div class="toggle-track">
+              <span class="toggle-icon"><i class="fa-solid fa-bullseye"></i></span>
+              <span class="toggle-title">HIGHLIGHT MODE (CHẤM VÒNG)</span>
+              <span class="toggle-status" id="highlight-status-pill">OFF</span>
+            </div>
+          </label>
+
+          <label class="neo-toggle-mode mt-2" for="link-highlight-input">
+            <input type="checkbox" id="link-highlight-input" class="tool-checkbox" hidden>
+            <div class="toggle-track">
+              <span class="toggle-icon"><i class="fa-solid fa-share-nodes"></i></span>
+              <span class="toggle-title">LINK / UNLINK (NỐI DÂY)</span>
+              <span class="toggle-status" id="link-status-pill">OFF</span>
+            </div>
+          </label>
+
+          <div class="checkbox-row mt-2">
+            <input type="checkbox" id="hl-auto-chain">
+            <label for="hl-auto-chain">Tự động nối dây liên tiếp (Auto-Chain)</label>
+          </div>
+
+          <div class="row-input mt-2">
+            <select id="hl-shape-style" class="form-control neo-select" title="Hình dáng vòng Highlight">
+              <option value="circle" selected>⭕ Tròn 2D</option>
+              <option value="ellipse">💿 Đĩa 3D Sân</option>
+              <option value="ring">🔘 Vòng Ring</option>
+            </select>
+            <select id="hl-effect-style" class="form-control neo-select" title="Hiệu ứng truyền hình">
+              <option value="none" selected>✨ Không hiệu ứng</option>
+              <option value="spotlight">🔦 Spotlight</option>
+              <option value="pulse">📡 Sóng đôi</option>
+            </select>
+          </div>
+
+          <label class="section-label mt-2">Kích thước Vòng (Size px)</label>
+          <div class="row-input">
+            <input type="range" id="hl-size-slider" class="form-control range-slider" min="10" max="140" step="1" value="32">
+            <input type="number" id="hl-size-number" class="form-control num-input" min="8" max="200" step="1" value="32">
+          </div>
+
+          <div class="checkbox-row mt-2">
+            <input type="checkbox" id="hl-sync-size" checked>
+            <label for="hl-sync-size">Đồng bộ Size tất cả vòng (Sync All)</label>
+          </div>
+
+          <div class="hl-subbox mt-2">
+            <label class="section-label">Text Dưới Highlight (Đánh dấu cầu thủ)</label>
+            <input type="text" id="hl-label-text" class="form-control mt-2" placeholder="Nhập tên / vai trò (VD: RODRI #16, FREE MAN)...">
+            <div class="row-input mt-2">
+              <span class="small-label">Cỡ chữ:</span>
+              <input type="number" id="hl-label-size" class="form-control num-input" min="8" max="48" step="1" value="15" style="max-width:60px;">
+              <select id="hl-label-style" class="form-control neo-select" style="flex:1;">
+                <option value="dark-pill" selected>Tag Đen Viền Vàng</option>
+                <option value="yellow-pill">Tag Vàng Chữ Đen</option>
+                <option value="color-pill">Tag Tệp Màu Vòng</option>
+                <option value="plain">Chữ Trắng Đổ Bóng</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="section-label mt-2">Màu sắc & Dây nối</label>
+          <div class="hl-color-palette" id="hl-color-swatches">
+            <button type="button" class="hl-swatch active" data-color="#b91c1c" style="background:#b91c1c;" title="Đỏ Broadcast"></button>
+            <button type="button" class="hl-swatch" data-color="#ff2a5f" style="background:#ff2a5f;" title="Đỏ Neon"></button>
+            <button type="button" class="hl-swatch" data-color="#ffe600" style="background:#ffe600;" title="Vàng Goal-Line"></button>
+            <button type="button" class="hl-swatch" data-color="#00f076" style="background:#00f076;" title="Xanh Lá"></button>
+            <button type="button" class="hl-swatch" data-color="#00d2ff" style="background:#00d2ff;" title="Xanh Dương"></button>
+            <button type="button" class="hl-swatch" data-color="#a855f7" style="background:#a855f7;" title="Tím"></button>
+            <button type="button" class="hl-swatch" data-color="#ff944d" style="background:#ff944d;" title="Cam"></button>
+            <button type="button" class="hl-swatch" data-color="#ffffff" style="background:#ffffff;" title="Trắng"></button>
+            <input type="color" id="hl-custom-color" value="#b91c1c" title="Chọn màu tùy ý" class="hl-color-picker">
+          </div>
+
+          <div class="row-input mt-2">
+            <label class="small-label">Độ đậm:</label>
+            <input type="range" id="hl-opacity-slider" class="form-control range-slider" min="0.15" max="0.9" step="0.05" value="0.48">
+            <select id="hl-line-type" class="form-control neo-select" style="flex:1.2;">
+              <option value="solid">Dây liền</option>
+              <option value="dash">Dây đứt</option>
+            </select>
+          </div>
+
+          <button type="button" id="btn-clear-hl-links" class="neo-btn-full mt-2" style="background:#eee; color:#000; font-size:12px; padding:6px;">
+            <i class="fa-solid fa-link-slash"></i> XÓA DÂY NỐI (GIỮ VÒNG TRÒN)
+          </button>
+        </div>
+
+        <!-- 4. NHÓM ARROWS & ZONES (CUỐI CÙNG) -->
+        <div class="neo-card card-pink" data-card-cat="draw">
+          <div class="card-badge">ARROWS (<span class="arrow-count">0</span>)</div>
+          <label class="section-label">Tactical Pass, Run & Dribble</label>
           
           <label class="neo-toggle-mode" for="draw-arrow-input">
             <input type="checkbox" id="draw-arrow-input" class="tool-checkbox" hidden>
@@ -279,32 +449,38 @@
             </div>
           </label>
 
-          <div class="tip-banner mt-2">
-            <i class="fa-solid fa-circle-info"></i>
-            <span><strong>Mẹo Animation:</strong> Ở Sa bàn 2, kéo cầu thủ tới chỗ mới rồi nắm <u>chấm tròn xanh</u> trên đường nối để bẻ cong hướng di chuyển!</span>
+          <div class="row-input mt-2">
+            <select id="arrow-color" class="form-control neo-select">
+              <option value="#ffffff">⚪ Trắng</option>
+              <option value="#ffe600">🟡 Vàng</option>
+              <option value="#ff2a5f">🔴 Đỏ Neon</option>
+              <option value="#00f076">🟢 Xanh Lá</option>
+              <option value="#00d2ff">🔵 Xanh Cyan</option>
+              <option value="#000000">⚫ Đen</option>
+            </select>
+            <select id="arrow-type" class="form-control neo-select">
+              <option value="solid">Đường liền (Chuyền)</option>
+              <option value="dash">Nét đứt (Chạy chỗ)</option>
+              <option value="wavy">Lượn sóng (Dẫn bóng)</option>
+              <option value="double">Đường đôi (Xuyên tuyến)</option>
+            </select>
           </div>
 
           <div class="row-input mt-2">
-            <select id="arrow-color" class="form-control neo-select">
-              <option value="white">White</option>
-              <option value="red">Red</option>
-              <option value="yellow">Yellow</option>
+            <label class="small-label">Đầu mút:</label>
+            <select id="arrow-head-type" class="form-control neo-select">
+              <option value="arrow"Selected>Mũi tên chuẩn</option>
+              <option value="t-bar">Chốt chặn / Pressing</option>
+              <option value="circle">Điểm đích tròn</option>
+              <option value="swap">Hoán đổi 2 chiều</option>
+              <option value="none">Không đầu mút</option>
             </select>
-            <select id="arrow-type" class="form-control neo-select">
-              <option value="solid">Solid Line</option>
-              <option value="dash">Dashed (Pass)</option>
-            </select>
-          </div>
-          <div class="checkbox-row mt-2">
-            <input type="checkbox" id="is-arrow" checked>
-            <label for="is-arrow">Render Arrowhead</label>
           </div>
         </div>
 
-        <!-- TACTICAL ZONES / POLYGON -->
-        <div class="neo-card card-purple">
-          <div class="card-badge">TACTICAL ZONES (<span class="polygon-count">0</span>)</div>
-          <label class="section-label">Zone Creator</label>
+        <div class="neo-card card-purple" data-card-cat="draw">
+          <div class="card-badge">ZONES (<span class="polygon-count">0</span>)</div>
+          <label class="section-label">Tactical Space & Zones</label>
           
           <label class="neo-toggle-mode" for="draw-polygon-input">
             <input type="checkbox" id="draw-polygon-input" class="tool-checkbox" hidden>
@@ -315,30 +491,27 @@
             </div>
           </label>
 
-          <button id="closePolygon" class="neo-btn-full btn-action-green mt-2" title="Hoàn tất polygon">
+          <div class="row-input mt-2">
+            <select id="poly-color" class="form-control neo-select">
+              <option value="#ffffff">⚪ Trắng</option>
+              <option value="#ffe600">🟡 Vàng Half-space</option>
+              <option value="#ff2a5f">🔴 Đỏ Nguy hiểm</option>
+              <option value="#00f076">🟢 Xanh Kiểm soát</option>
+              <option value="#00d2ff">🔵 Xanh Dương</option>
+            </select>
+            <select id="poly-fill-style" class="form-control neo-select">
+              <option value="solid">Tô màu mờ</option>
+              <option value="hatched">Kẻ sọc chéo</option>
+              <option value="outline">Chỉ viền đứt</option>
+            </select>
+          </div>
+
+          <input type="text" id="poly-label-input" class="form-control mt-2" placeholder="Nhãn giữa vùng (VD: ZONE 14, OVERLOAD)...">
+
+          <button id="closePolygon" class="neo-btn-full btn-action-green mt-2" title="Khép kín các điểm đã chấm thành Vùng chiến thuật">
             <i class="fa-solid fa-check"></i>
             <span>FINISH CURRENT ZONE</span>
           </button>
-        </div>
-
-        <!-- TEXT LABELS -->
-        <div class="neo-card card-orange">
-          <div class="card-badge">LABELS (<span class="text-count">0</span>)</div>
-          <label class="section-label">Add Note / Text</label>
-          <div class="row-input">
-            <input id="text-input" class="form-control" placeholder="Nhập ghi chú chiến thuật...">
-            <button id="text-btn" class="neo-btn-square" title="Add Text"><i class="fa-solid fa-plus"></i></button>
-          </div>
-          <div class="row-input mt-2">
-            <label class="small-label">Size:</label>
-            <select id="text-font-size" class="form-control neo-select">
-              <option value="16">16px Small</option>
-              <option value="20" selected>20px Regular</option>
-              <option value="32">32px Header</option>
-              <option value="48">48px Banner</option>
-            </select>
-          </div>
-          <small class="tip"><i class="fa-solid fa-circle-info"></i> Shift + Scroll để xoay chữ</small>
         </div>
       </aside>
     </div>

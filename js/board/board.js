@@ -3,11 +3,12 @@ import { Circle } from './shapes/Circle.js';
 import { Arrow } from './shapes/Arrow.js';
 import { TextObj } from './shapes/TextObj.js';
 import { Polygon } from './shapes/Polygon.js';
+import { Highlight } from './shapes/Highlight.js';
 import { Storage } from './storage.js';
 import { GLDatabase } from '../shared/gl-db.js';
 import {
     canvas, ctx, loadImages, resizeCanvas, drawPitch, clearCanvas, getImages, responsiveConstant,
-    setCustomBackground, clearCustomBackground, getCustomBackground
+    setCustomBackground, clearCustomBackground
 } from './canvas.js';
 import { getMousePos, generateId } from './utils.js';
 
@@ -21,21 +22,37 @@ const AppState = {
     arrows: [],
     texts: [],
     polygons: [],
+    highlights: [],
+    highlightLinks: [],
     pitchType: 'horizontal',
+    gridOverlay: 'none',
 
+    // Selection & Dragging
     selectedObj: null,
-    selectedType: null,
+    selectedType: null, // 'circle' | 'arrow' | 'text' | 'polygon' | 'highlight' | 'highlightLink'
     isDragging: false,
+    hasMovedDuringDrag: false,
     dragOffset: { x: 0, y: 0 },
     isDraggingPathHandle: false,
+    isResizingHighlight: false,
 
     lastMousePos: { x: 0, y: 0 },
     polygonDragIndex: -1,
 
+    // Drawing & Linking Modes
     mode: 'select',
     drawingArrow: null,
     drawingPolygonPoints: [],
     arrowDragPoint: null,
+
+    // Highlight Linker State
+    linkSourceHighlight: null,
+    lastPlacedHighlight: null,
+    activeHighlightColor: '#b91c1c',
+
+    // Undo / Redo History Stack
+    undoStack: [],
+    redoStack: [],
 
     showGhostPath: true,
     isPlayingAnim: false,
@@ -49,13 +66,36 @@ function setLog(text) {
     if (logEl) logEl.textContent = text.toUpperCase();
 }
 
+function updateSelectedBadge() {
+    const badge = document.getElementById("selected-obj-badge");
+    if (!badge) return;
+    if (!AppState.selectedObj) {
+        badge.textContent = "MODE: SELECT";
+        badge.style.background = "var(--neo-yellow)";
+        return;
+    }
+    const map = {
+        highlight: "EDIT: HIGHLIGHT",
+        highlightLink: "EDIT: LINK LINE",
+        circle: "EDIT: PLAYER",
+        arrow: "EDIT: ARROW",
+        polygon: "EDIT: ZONE",
+        text: "EDIT: LABEL"
+    };
+    badge.textContent = map[AppState.selectedType] || "SELECTED";
+    badge.style.background = "var(--neo-green)";
+}
+
+// --- KHỞI TẠO DỮ LIỆU & HYDRATION ---
 function createEmptyKeyframe() {
     return {
         id: 'kf_' + generateId(),
         circles: [],
         arrows: [],
         texts: [],
-        polygons: []
+        polygons: [],
+        highlights: [],
+        highlightLinks: []
     };
 }
 
@@ -65,6 +105,7 @@ function createNewSlide(title = "Trang chiến thuật 1", pitchType = "horizont
         title: title,
         subtitle: "",
         pitchType: pitchType || 'horizontal',
+        gridOverlay: 'none',
         customBgData: customBgData || null,
         stepDuration: 2.0,
         keyframes: [createEmptyKeyframe()]
@@ -82,6 +123,35 @@ function createNewProject(name = "Dự án Chiến thuật Mới", pitchType = "
     };
 }
 
+function hydrateKeyframeObjects(kf) {
+    kf.circles = (kf.circles || []).map(d => new Circle(
+        d.x, d.y, d.radius, d.color, d.text, d.textColor, d.detailsText,
+        d.id, d.pathCx ?? null, d.pathCy ?? null, d.showVision ?? false, d.visionAngle ?? 0
+    ));
+    kf.arrows = (kf.arrows || []).map(d => new Arrow(
+        d.fromX, d.fromY, d.toX, d.toY, d.color, d.type, d.isArrow, d.cx, d.cy, d.id, d.headType || null
+    ));
+    kf.texts = (kf.texts || []).map(d => new TextObj(
+        d.x, d.y, d.text, d.fontSize, d.rotate, d.id, d.color || "#ffffff", d.bgStyle || "none"
+    ));
+    kf.polygons = (kf.polygons || []).map(d => new Polygon(
+        d.points || d, d.id, d.color || "#ffffff", d.fillStyle || "solid", d.label || ""
+    ));
+    kf.highlights = (kf.highlights || []).map(d => new Highlight(
+        d.x, d.y, d.size ?? 32, d.color || '#b91c1c', d.shapeStyle || 'circle',
+        d.opacity ?? 0.48, d.id, d.pathCx ?? null, d.pathCy ?? null,
+        d.labelText || "", d.labelSize ?? 15, d.labelStyle || "dark-pill", d.effectStyle || "none"
+    ));
+    kf.highlightLinks = (kf.highlightLinks || []).map(l => ({
+        id: l.id || ('hlink_' + generateId()),
+        fromId: l.fromId,
+        toId: l.toId,
+        color: l.color || '#b91c1c',
+        lineType: l.lineType || 'solid',
+        lineWidth: l.lineWidth || 3
+    }));
+}
+
 function hydrateProject(rawProj) {
     if (!rawProj.slides || rawProj.slides.length === 0) {
         rawProj.slides = [createNewSlide("Slide 1", rawProj.pitchType, rawProj.customBgData)];
@@ -91,36 +161,70 @@ function hydrateProject(rawProj) {
         slide.subtitle = slide.subtitle || "";
         slide.stepDuration = parseFloat(slide.stepDuration) || 2.0;
         slide.pitchType = slide.pitchType || rawProj.pitchType || 'horizontal';
+        slide.gridOverlay = slide.gridOverlay || 'none';
         slide.customBgData = slide.customBgData !== undefined ? slide.customBgData : (rawProj.customBgData || null);
 
         if (!slide.keyframes || slide.keyframes.length === 0) {
             slide.keyframes = [createEmptyKeyframe()];
         }
-        slide.keyframes.forEach(kf => {
-            kf.circles = (kf.circles || []).map(d => new Circle(
-                d.x, d.y, d.radius, d.color, d.text, d.textColor, d.detailsText,
-                d.id, d.pathCx ?? null, d.pathCy ?? null
-            ));
-            kf.arrows = (kf.arrows || []).map(d => new Arrow(
-                d.fromX, d.fromY, d.toX, d.toY, d.color, d.type, d.isArrow, d.cx, d.cy, d.id
-            ));
-            kf.texts = (kf.texts || []).map(d => new TextObj(
-                d.x, d.y, d.text, d.fontSize, d.rotate, d.id
-            ));
-            kf.polygons = (kf.polygons || []).map(d => new Polygon(
-                d.points || d, d.id
-            ));
-        });
+        slide.keyframes.forEach(kf => hydrateKeyframeObjects(kf));
     });
     return rawProj;
 }
 
-/**
- * Nạp ảnh nền & hướng sân độc lập của từng Slide
- */
+// --- UNDO / REDO SNAPSHOT SYSTEM ---
+function pushHistorySnapshot() {
+    if (!AppState.project) return;
+    const kf = AppState.project.slides[AppState.currentSlideIdx]?.keyframes[AppState.currentKfIdx];
+    if (!kf) return;
+    const snap = JSON.stringify(kf);
+    if (AppState.undoStack.length > 0 && AppState.undoStack[AppState.undoStack.length - 1] === snap) return;
+    AppState.undoStack.push(snap);
+    if (AppState.undoStack.length > 35) AppState.undoStack.shift();
+    AppState.redoStack = [];
+}
+
+function performUndo() {
+    if (!AppState.project || AppState.undoStack.length === 0) {
+        setLog("KHÔNG CÓ THAO TÁC NÀO ĐỂ HOÀN TÁC (UNDO)");
+        return;
+    }
+    const slide = AppState.project.slides[AppState.currentSlideIdx];
+    const currentSnap = JSON.stringify(slide.keyframes[AppState.currentKfIdx]);
+    AppState.redoStack.push(currentSnap);
+
+    const prevSnap = JSON.parse(AppState.undoStack.pop());
+    hydrateKeyframeObjects(prevSnap);
+    slide.keyframes[AppState.currentKfIdx] = prevSnap;
+    AppState.selectedObj = null;
+    syncActiveKeyframeRefs();
+    render();
+    setLog("ĐÃ HOÀN TÁC (UNDO)");
+}
+
+function performRedo() {
+    if (!AppState.project || AppState.redoStack.length === 0) {
+        setLog("KHÔNG CÓ THAO TÁC NÀO ĐỂ LÀM LẠI (REDO)");
+        return;
+    }
+    const slide = AppState.project.slides[AppState.currentSlideIdx];
+    const currentSnap = JSON.stringify(slide.keyframes[AppState.currentKfIdx]);
+    AppState.undoStack.push(currentSnap);
+
+    const nextSnap = JSON.parse(AppState.redoStack.pop());
+    hydrateKeyframeObjects(nextSnap);
+    slide.keyframes[AppState.currentKfIdx] = nextSnap;
+    AppState.selectedObj = null;
+    syncActiveKeyframeRefs();
+    render();
+    setLog("ĐÃ LÀM LẠI (REDO)");
+}
+
+// --- QUẢN LÝ NỀN SÂN & ĐỒNG BỘ KEYFRAME ---
 async function applySlideBackground(slide) {
     if (!slide) return;
     AppState.pitchType = slide.pitchType || 'horizontal';
+    AppState.gridOverlay = slide.gridOverlay || 'none';
 
     if (slide.customBgData) {
         await setCustomBackground(slide.customBgData);
@@ -133,7 +237,9 @@ async function applySlideBackground(slide) {
     }
 
     const pitchSelect = document.getElementById("pitch-type");
+    const gridSelect = document.getElementById("pitch-grid-overlay");
     if (pitchSelect) pitchSelect.value = AppState.pitchType;
+    if (gridSelect) gridSelect.value = AppState.gridOverlay;
 
     resizeCanvas(AppState.pitchType);
 }
@@ -141,9 +247,7 @@ async function applySlideBackground(slide) {
 function updatePitchCustomUI(hasCustom) {
     const revertBtn = document.getElementById("btn-revert-pitch-inline");
     const changeBtn = document.getElementById("btn-change-bg-inline");
-    if (revertBtn) {
-        revertBtn.style.display = hasCustom ? "block" : "none";
-    }
+    if (revertBtn) revertBtn.style.display = hasCustom ? "block" : "none";
     if (changeBtn) {
         changeBtn.innerHTML = hasCustom
             ? `<i class="fa-solid fa-image"></i> ĐỔI ẢNH NỀN KHÁC (TRANG NÀY)`
@@ -160,28 +264,40 @@ function syncActiveKeyframeRefs() {
     if (AppState.currentKfIdx >= slide.keyframes.length) AppState.currentKfIdx = Math.max(0, slide.keyframes.length - 1);
     const kf = slide.keyframes[AppState.currentKfIdx];
 
+    if (!kf.highlights) kf.highlights = [];
+    if (!kf.highlightLinks) kf.highlightLinks = [];
+
     AppState.circles = kf.circles;
     AppState.arrows = kf.arrows;
     AppState.texts = kf.texts;
     AppState.polygons = kf.polygons;
+    AppState.highlights = kf.highlights;
+    AppState.highlightLinks = kf.highlightLinks;
     AppState.pitchType = slide.pitchType || 'horizontal';
+    AppState.gridOverlay = slide.gridOverlay || 'none';
+
+    AppState.linkSourceHighlight = null;
+    AppState.lastPlacedHighlight = null;
 
     const titleInput = document.getElementById("slide-title-input");
     const subInput = document.getElementById("slide-sub-input");
     const durInput = document.getElementById("kf-duration-input");
     const pitchSelect = document.getElementById("pitch-type");
+    const gridSelect = document.getElementById("pitch-grid-overlay");
     const projLabel = document.getElementById("active-project-label");
 
     if (titleInput) titleInput.value = slide.title || "";
     if (subInput) subInput.value = slide.subtitle || "";
     if (durInput) durInput.value = slide.stepDuration || 2.0;
     if (pitchSelect) pitchSelect.value = AppState.pitchType;
+    if (gridSelect) gridSelect.value = AppState.gridOverlay;
     if (projLabel) projLabel.textContent = `PROJECT: ${AppState.project.name.toUpperCase()}`;
 
     renderSlidesSidebar();
     renderKeyframeTabs();
     updateCounts();
     updateBottomIndicator();
+    updateSelectedBadge();
 }
 
 function updateBottomIndicator() {
@@ -195,6 +311,13 @@ function updateBottomIndicator() {
 let saveTimer = null;
 function queueAutoSave() {
     if (!AppState.project) return;
+    try {
+        Storage.save(
+            AppState.circles, AppState.arrows, AppState.texts,
+            AppState.polygons, AppState.pitchType, AppState.highlights, AppState.highlightLinks
+        );
+    } catch (e) { /* Ignore quota */ }
+
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
         try {
@@ -206,6 +329,7 @@ function queueAutoSave() {
     }, 250);
 }
 
+// --- KHỞI ĐỘNG ỨNG DỤNG ---
 async function init() {
     await loadImages();
 
@@ -232,7 +356,6 @@ async function init() {
         document.getElementById("startup-modal").style.display = "flex";
     }
 
-    // Cho phép cuộn chuột ngang trên danh sách Keyframes
     const kfTabsEl = document.getElementById("keyframe-tabs");
     if (kfTabsEl) {
         kfTabsEl.addEventListener("wheel", (e) => {
@@ -243,7 +366,23 @@ async function init() {
         }, { passive: false });
     }
 
-    setLog("READY • CHỌN DỰ ÁN HOẶC BẮT ĐẦU SÁNG TẠO");
+    // Khởi tạo Filter Tabs ở cột phải
+    document.querySelectorAll(".panel-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".panel-tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const tab = btn.dataset.tab;
+            document.querySelectorAll(".settings-panel .neo-card").forEach(card => {
+                if (tab === "all" || card.dataset.cardCat === tab) {
+                    card.style.display = "flex";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        });
+    });
+
+    setLog("READY • TACTICAL BOARD PRO v4.0");
 }
 
 async function loadProjectIntoWorkspace(rawProj) {
@@ -252,6 +391,8 @@ async function loadProjectIntoWorkspace(rawProj) {
     AppState.currentSlideIdx = 0;
     AppState.currentKfIdx = 0;
     AppState.selectedObj = null;
+    AppState.undoStack = [];
+    AppState.redoStack = [];
 
     const firstSlide = AppState.project.slides[0];
     await applySlideBackground(firstSlide);
@@ -323,6 +464,7 @@ async function refreshProjectModalList() {
     });
 }
 
+// --- RENDER SIDEBAR SLIDES & KEYFRAME TABS ---
 function renderSlidesSidebar() {
     const listEl = document.getElementById("slides-list");
     const countEl = document.getElementById("slide-total-count");
@@ -361,6 +503,8 @@ function renderSlidesSidebar() {
             AppState.currentSlideIdx = idx;
             AppState.currentKfIdx = 0;
             AppState.selectedObj = null;
+            AppState.undoStack = [];
+            AppState.redoStack = [];
             await applySlideBackground(slide);
             syncActiveKeyframeRefs();
             render();
@@ -392,6 +536,7 @@ function renderSlidesSidebar() {
             cloneRaw.id = 'slide_' + generateId();
             cloneRaw.title = `${slide.title} (Copy)`;
             cloneRaw.pitchType = slide.pitchType;
+            cloneRaw.gridOverlay = slide.gridOverlay;
             cloneRaw.customBgData = slide.customBgData;
 
             slides.splice(idx + 1, 0, cloneRaw);
@@ -441,6 +586,8 @@ function renderKeyframeTabs() {
             stopAnimationPreview();
             AppState.currentKfIdx = kIdx;
             AppState.selectedObj = null;
+            AppState.undoStack = [];
+            AppState.redoStack = [];
             syncActiveKeyframeRefs();
             render();
             setLog(`CHUYỂN SANG SA BÀN ${kIdx + 1}`);
@@ -449,24 +596,55 @@ function renderKeyframeTabs() {
     });
 }
 
+// --- VÒNG LẶP VẼ CHÍNH (RENDER LOOP) ---
 function render() {
     clearCanvas();
-    drawPitch(AppState.pitchType);
+    drawPitch(AppState.pitchType, AppState.gridOverlay);
     const imgs = getImages();
 
+    // 1. Polygons
     AppState.polygons.forEach((p) => {
         const isSelected = (AppState.selectedObj === p);
-        p.draw(ctx, isSelected, AppState.userScale);
+        p.draw(ctx, isSelected, AppState.userScale, responsiveConstant);
     });
     if (AppState.drawingPolygonPoints.length > 0) {
-        new Polygon(AppState.drawingPolygonPoints).draw(ctx, true, AppState.userScale);
+        const pColor = document.getElementById("poly-color")?.value || "#ffffff";
+        const pFill = document.getElementById("poly-fill-style")?.value || "solid";
+        const pLabel = document.getElementById("poly-label-input")?.value || "";
+        new Polygon(AppState.drawingPolygonPoints, null, pColor, pFill, pLabel).draw(ctx, true, AppState.userScale, responsiveConstant);
     }
 
+    // 2. Highlight Links
+    AppState.highlightLinks.forEach((link) => {
+        const h1 = AppState.highlights.find(h => h.id === link.fromId);
+        const h2 = AppState.highlights.find(h => h.id === link.toId);
+        if (h1 && h2) {
+            const isLinkSelected = (AppState.selectedObj === link && AppState.selectedType === 'highlightLink');
+            Highlight.drawLink(ctx, h1, h2, link, responsiveConstant, AppState.userScale, isLinkSelected);
+        }
+    });
+
+    // 3. Highlights
+    AppState.highlights.forEach((h) => {
+        const isSelected = (AppState.selectedObj === h);
+        const isLinkSource = (AppState.linkSourceHighlight === h);
+        h.draw(ctx, responsiveConstant, isSelected, AppState.userScale, 1.0, isLinkSource);
+    });
+
+    // 4. Ghost Path (từ Sa bàn trước)
     if (AppState.showGhostPath && !AppState.isPlayingAnim && AppState.currentKfIdx > 0 && AppState.project) {
         const prevKf = AppState.project.slides[AppState.currentSlideIdx].keyframes[AppState.currentKfIdx - 1];
         if (prevKf) {
+            AppState.highlights.forEach(h => {
+                const prevHl = (prevKf.highlights || []).find(ph => ph.id === h.id);
+                if (prevHl) {
+                    const isSelected = (AppState.selectedObj === h);
+                    h.drawMovementPath(ctx, prevHl, responsiveConstant, AppState.userScale, isSelected);
+                }
+            });
+
             AppState.circles.forEach(c => {
-                const prevCircle = prevKf.circles.find(pc => pc.id === c.id);
+                const prevCircle = (prevKf.circles || []).find(pc => pc.id === c.id);
                 if (prevCircle) {
                     const isSelected = (AppState.selectedObj === c);
                     c.drawMovementPath(ctx, prevCircle, responsiveConstant, AppState.userScale, isSelected);
@@ -475,6 +653,7 @@ function render() {
         }
     }
 
+    // 5. Arrows
     AppState.arrows.forEach((a) => {
         const isSelected = (AppState.selectedObj === a);
         a.draw(ctx, responsiveConstant, isSelected, AppState.userScale, 1.0);
@@ -483,19 +662,23 @@ function render() {
         AppState.drawingArrow.draw(ctx, responsiveConstant, true, AppState.userScale, 1.0);
     }
 
+    // 6. Circles
     AppState.circles.forEach((c) => {
         const isSelected = (AppState.selectedObj === c);
         c.draw(ctx, imgs.ball, responsiveConstant, isSelected, AppState.userScale);
     });
 
+    // 7. Texts
     AppState.texts.forEach((t) => {
         const isSelected = (AppState.selectedObj === t);
         t.draw(ctx, responsiveConstant, isSelected, AppState.userScale);
     });
 
+    updateSelectedBadge();
     queueAutoSave();
 }
 
+// --- ENGINE NỘI SUY ANIMATION GIỮA CÁC NHỊP SA BÀN ---
 function easeInOutCubic(x) {
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 }
@@ -505,11 +688,14 @@ function renderInterpolatedStep(kf1, kf2, rawT) {
 
     const t = easeInOutCubic(Math.max(0, Math.min(1, rawT)));
     clearCanvas();
-    drawPitch(AppState.pitchType);
+    drawPitch(AppState.pitchType, AppState.gridOverlay);
     const imgs = getImages();
 
     const polys1 = kf1.polygons || [];
     const polys2 = kf2.polygons || [];
+    const hls1 = kf1.highlights || [];
+    const hls2 = kf2.highlights || [];
+    const links2 = kf2.highlightLinks || [];
     const arrows1 = kf1.arrows || [];
     const arrows2 = kf2.arrows || [];
     const circles1 = kf1.circles || [];
@@ -520,7 +706,26 @@ function renderInterpolatedStep(kf1, kf2, rawT) {
     polys2.forEach(p2 => {
         const p1 = polys1.find(p => p.id === p2.id);
         const polyToDraw = p1 ? Polygon.interpolate(p1, p2, t) : p2;
-        polyToDraw.draw(ctx, false, AppState.userScale);
+        polyToDraw.draw(ctx, false, AppState.userScale, responsiveConstant);
+    });
+
+    const interpHighlightsMap = new Map();
+    hls2.forEach(h2 => {
+        const h1 = hls1.find(h => h.id === h2.id);
+        const hlInterp = h1 ? Highlight.interpolate(h1, h2, t) : h2;
+        interpHighlightsMap.set(h2.id, { obj: hlInterp, alpha: h1 ? 1.0 : t });
+    });
+
+    links2.forEach(link => {
+        const entry1 = interpHighlightsMap.get(link.fromId);
+        const entry2 = interpHighlightsMap.get(link.toId);
+        if (entry1 && entry2) {
+            Highlight.drawLink(ctx, entry1.obj, entry2.obj, link, responsiveConstant, AppState.userScale, false);
+        }
+    });
+
+    interpHighlightsMap.forEach(({ obj, alpha }) => {
+        obj.draw(ctx, responsiveConstant, false, AppState.userScale, alpha, false);
     });
 
     arrows2.forEach(a2 => {
@@ -574,7 +779,7 @@ function playSlideAnimation(onFinishCallback = null) {
     if (!AppState.project) return;
     const slide = AppState.project.slides[AppState.currentSlideIdx];
     if (!slide || !slide.keyframes || slide.keyframes.length < 2) {
-        setLog("CẦN ÍT NHẤT 2 NHỊP SA BÀN ĐỂ CHẠY ANIMATION (BẤM '+ SA BÀN TIẾP THEO')");
+        setLog("CẦN ÍT NHẤT 2 NHỊP SA BÀN ĐỂ CHẠY ANIMATION (BẤM '+ SA BÀN TIẾP')");
         if (onFinishCallback) onFinishCallback();
         return;
     }
@@ -624,22 +829,216 @@ function playSlideAnimation(onFinishCallback = null) {
     AppState.animReqId = requestAnimationFrame(stepLoop);
 }
 
-// --- MOUSE EVENTS ---
+// --- LIVE INSPECTOR: ĐỒNG BỘ UI CỘT PHẢI KHI CLICK CHỌN BẤT KỲ PHẦN TỬ NÀO ---
+function syncHighlightControlsFromSelection(hl) {
+    if (!hl) return;
+    document.getElementById("hl-size-slider").value = Math.round(hl.size);
+    document.getElementById("hl-size-number").value = Math.round(hl.size);
+    document.getElementById("hl-shape-style").value = hl.shapeStyle || 'circle';
+    document.getElementById("hl-effect-style").value = hl.effectStyle || 'none';
+    document.getElementById("hl-opacity-slider").value = hl.opacity || 0.48;
+    document.getElementById("hl-custom-color").value = hl.color || '#b91c1c';
+    document.getElementById("hl-label-text").value = hl.labelText || "";
+    document.getElementById("hl-label-size").value = Math.round(hl.labelSize || 15);
+    document.getElementById("hl-label-style").value = hl.labelStyle || "dark-pill";
+
+    AppState.activeHighlightColor = hl.color || '#b91c1c';
+    document.querySelectorAll(".hl-swatch").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.color?.toLowerCase() === AppState.activeHighlightColor.toLowerCase());
+    });
+}
+
+function syncCircleControlsFromSelection(cir) {
+    if (!cir) return;
+    document.getElementById("circle-color").value = cir.color || "red";
+    document.getElementById("circle-text").value = cir.text || "";
+    document.getElementById("circle-details-text").value = cir.detailsText || "";
+    document.getElementById("circle-text-color").value = cir.textColor || "white";
+    document.getElementById("circle-vision-check").checked = Boolean(cir.showVision);
+    document.getElementById("circle-vision-angle").value = Math.round(cir.visionAngle || 0);
+    document.getElementById("vision-angle-label").textContent = `${Math.round(cir.visionAngle || 0)}°`;
+}
+
+function syncArrowControlsFromSelection(arr) {
+    if (!arr) return;
+    document.getElementById("arrow-color").value = arr.color || "#ffffff";
+    document.getElementById("arrow-type").value = arr.type || "solid";
+    document.getElementById("arrow-head-type").value = arr.headType || "arrow";
+}
+
+function syncPolygonControlsFromSelection(poly) {
+    if (!poly) return;
+    document.getElementById("poly-color").value = poly.color || "#ffffff";
+    document.getElementById("poly-fill-style").value = poly.fillStyle || "solid";
+    document.getElementById("poly-label-input").value = poly.label || "";
+}
+
+function syncTextControlsFromSelection(txt) {
+    if (!txt) return;
+    document.getElementById("text-input").value = txt.text || "";
+    document.getElementById("text-font-size").value = String(txt.fontSize || 20);
+    document.getElementById("text-color-select").value = txt.color || "#ffffff";
+    document.getElementById("text-bg-style").value = txt.bgStyle || "none";
+}
+
+function toggleHighlightLink(hlA, hlB) {
+    if (!hlA || !hlB || hlA.id === hlB.id) return;
+    pushHistorySnapshot();
+
+    const existingIdx = AppState.highlightLinks.findIndex(
+        l => (l.fromId === hlA.id && l.toId === hlB.id) || (l.fromId === hlB.id && l.toId === hlA.id)
+    );
+
+    if (existingIdx !== -1) {
+        AppState.highlightLinks.splice(existingIdx, 1);
+        setLog("ĐÃ NGẮT ĐƯỜNG THẲNG LIÊN KẾT GIỮA 2 VÒNG HIGHLIGHT");
+    } else {
+        const lineType = document.getElementById("hl-line-type")?.value || "solid";
+        AppState.highlightLinks.push({
+            id: 'hlink_' + generateId(),
+            fromId: hlA.id,
+            toId: hlB.id,
+            color: AppState.activeHighlightColor || hlA.color,
+            lineType: lineType,
+            lineWidth: 3
+        });
+        setLog("ĐÃ NỐI ĐƯỜNG THẲNG LIÊN KẾT 2 VÒNG HIGHLIGHT");
+    }
+}
+
+// --- SỰ KIỆN CHUỘT TRÊN CANVAS ---
 canvas.addEventListener("mousedown", (e) => {
     if (AppState.isPlayingAnim) stopAnimationPreview();
     const pos = getMousePos(canvas, e);
+    AppState.hasMovedDuringDrag = false;
 
-    if (document.getElementById("draw-arrow-input").checked) {
+    const isDrawArrowMode = document.getElementById("draw-arrow-input")?.checked;
+    const isDrawPolygonMode = document.getElementById("draw-polygon-input")?.checked;
+    const isDrawHighlightMode = document.getElementById("draw-highlight-input")?.checked;
+    const isLinkHighlightMode = document.getElementById("link-highlight-input")?.checked;
+
+    // 0A. Mode: NỐI / NGẮT DÂY HIGHLIGHT (Hoặc giữ Shift + Click)
+    if (isLinkHighlightMode || e.shiftKey) {
+        for (let i = AppState.highlights.length - 1; i >= 0; i--) {
+            if (AppState.highlights[i].isHit(pos.x, pos.y, responsiveConstant, AppState.userScale)) {
+                const clickedHl = AppState.highlights[i];
+                if (!AppState.linkSourceHighlight) {
+                    AppState.linkSourceHighlight = clickedHl;
+                    AppState.selectedObj = clickedHl;
+                    AppState.selectedType = 'highlight';
+                    syncHighlightControlsFromSelection(clickedHl);
+                    setLog("ĐÃ CHỌN VÒNG #1 • CLICK VÀO VÒNG #2 ĐỂ NỐI HOẶC NGẮT DÂY!");
+                } else if (AppState.linkSourceHighlight === clickedHl) {
+                    AppState.linkSourceHighlight = null;
+                    setLog("ĐÃ HỦY CHỌN ĐIỂM NỐI");
+                } else {
+                    toggleHighlightLink(AppState.linkSourceHighlight, clickedHl);
+                    AppState.linkSourceHighlight = clickedHl;
+                    AppState.selectedObj = clickedHl;
+                    AppState.selectedType = 'highlight';
+                }
+                render();
+                return;
+            }
+        }
+
+        if (isLinkHighlightMode) {
+            for (let i = AppState.highlightLinks.length - 1; i >= 0; i--) {
+                const lnk = AppState.highlightLinks[i];
+                const h1 = AppState.highlights.find(h => h.id === lnk.fromId);
+                const h2 = AppState.highlights.find(h => h.id === lnk.toId);
+                if (Highlight.isHitLink(pos.x, pos.y, h1, h2, responsiveConstant, AppState.userScale)) {
+                    pushHistorySnapshot();
+                    AppState.highlightLinks.splice(i, 1);
+                    setLog("ĐÃ XÓA ĐƯỜNG NỐI");
+                    render();
+                    return;
+                }
+            }
+            AppState.linkSourceHighlight = null;
+            render();
+            return;
+        }
+    }
+
+    // 0B. Kiểm tra nút kéo chỉnh Size trực tiếp trên vành Highlight
+    if (AppState.selectedObj && AppState.selectedType === 'highlight') {
+        if (AppState.selectedObj.isHitResizeHandle(pos.x, pos.y, responsiveConstant, AppState.userScale)) {
+            pushHistorySnapshot();
+            AppState.isDragging = true;
+            AppState.isResizingHighlight = true;
+            setLog("KÉO CHUỘT ĐỂ CHỈNH TO / NHỎ VÒNG HIGHLIGHT");
+            render();
+            return;
+        }
+    }
+
+    // 0C. Mode: CHẤM VÒNG HIGHLIGHT CẦU THỦ
+    if (isDrawHighlightMode) {
+        for (let i = AppState.highlights.length - 1; i >= 0; i--) {
+            if (AppState.highlights[i].isHit(pos.x, pos.y, responsiveConstant, AppState.userScale)) {
+                pushHistorySnapshot();
+                AppState.selectedObj = AppState.highlights[i];
+                AppState.selectedType = 'highlight';
+                AppState.isDragging = true;
+                AppState.dragOffset = { x: pos.x - AppState.highlights[i].x, y: pos.y - AppState.highlights[i].y };
+                syncHighlightControlsFromSelection(AppState.highlights[i]);
+                setLog("ĐÃ CHỌN HIGHLIGHT • GÕ VÀO Ô 'TEXT DƯỚI HIGHLIGHT' ĐỂ ĐẶT TÊN CẦU THỦ");
+                render();
+                return;
+            }
+        }
+
+        pushHistorySnapshot();
+        const sizeVal = parseFloat(document.getElementById("hl-size-number")?.value) || 32;
+        const shapeStyle = document.getElementById("hl-shape-style")?.value || "circle";
+        const effectStyle = document.getElementById("hl-effect-style")?.value || "none";
+        const opacityVal = parseFloat(document.getElementById("hl-opacity-slider")?.value) || 0.48;
+        const colorVal = AppState.activeHighlightColor || "#b91c1c";
+        const labelSize = parseFloat(document.getElementById("hl-label-size")?.value) || 15;
+        const labelStyle = document.getElementById("hl-label-style")?.value || "dark-pill";
+
+        const newHl = new Highlight(
+            pos.x, pos.y, sizeVal, colorVal, shapeStyle, opacityVal,
+            null, null, null, "", labelSize, labelStyle, effectStyle
+        );
+        AppState.highlights.push(newHl);
+
+        // Xóa trắng ô nhập chữ để người dùng gõ tên mới cho vòng vừa đặt
+        const lbInput = document.getElementById("hl-label-text");
+        if (lbInput) lbInput.value = "";
+
+        const autoChain = document.getElementById("hl-auto-chain")?.checked;
+        if (autoChain && AppState.lastPlacedHighlight && AppState.highlights.includes(AppState.lastPlacedHighlight)) {
+            toggleHighlightLink(AppState.lastPlacedHighlight, newHl);
+        }
+
+        AppState.lastPlacedHighlight = newHl;
+        AppState.selectedObj = newHl;
+        AppState.selectedType = 'highlight';
+        AppState.isDragging = true;
+        AppState.dragOffset = { x: 0, y: 0 };
+
+        updateCounts();
+        setLog(`ĐÃ ĐẶT VÒNG HIGHLIGHT #${AppState.highlights.length} • GÕ TÊN CẦU THỦ Ở CỘT PHẢI NẾU CẦN`);
+        render();
+        return;
+    }
+
+    // Mode: Draw Arrow
+    if (isDrawArrowMode) {
+        pushHistorySnapshot();
         AppState.mode = 'drawArrow';
         const color = document.getElementById("arrow-color").value;
         const type = document.getElementById("arrow-type").value;
-        const isArrow = document.getElementById("is-arrow").checked;
-        AppState.drawingArrow = new Arrow(pos.x, pos.y, pos.x, pos.y, color, type, isArrow);
+        const headType = document.getElementById("arrow-head-type").value;
+        AppState.drawingArrow = new Arrow(pos.x, pos.y, pos.x, pos.y, color, type, headType !== 'none', pos.x, pos.y, null, headType);
         setLog("DRAWING ARROW • KÉO CHUỘT ĐỂ ĐỊNH HƯỚNG");
         return;
     }
 
-    if (document.getElementById("draw-polygon-input").checked) {
+    // Mode: Draw Polygon
+    if (isDrawPolygonMode) {
         AppState.mode = 'drawPolygon';
         AppState.drawingPolygonPoints.push({ x: pos.x, y: pos.y });
         setLog(`ĐÃ THÊM ĐỈNH VÙNG CHIẾN THUẬT (${AppState.drawingPolygonPoints.length} ĐIỂM)`);
@@ -647,85 +1046,139 @@ canvas.addEventListener("mousedown", (e) => {
         return;
     }
 
+    // Mode: Select & Drag
     AppState.mode = 'select';
+    AppState.linkSourceHighlight = null;
 
-    if (
-        AppState.showGhostPath &&
-        AppState.currentKfIdx > 0 &&
-        AppState.selectedObj &&
-        AppState.selectedType === 'circle'
-    ) {
+    // Kiểm tra nút uốn cong quỹ đạo Ghost Path
+    if (AppState.showGhostPath && AppState.currentKfIdx > 0 && AppState.selectedObj) {
         const prevKf = AppState.project.slides[AppState.currentSlideIdx].keyframes[AppState.currentKfIdx - 1];
-        const prevCircle = prevKf?.circles.find(pc => pc.id === AppState.selectedObj.id);
-        if (prevCircle && AppState.selectedObj.isHitPathHandle(pos.x, pos.y, prevCircle, responsiveConstant, AppState.userScale)) {
-            AppState.isDragging = true;
-            AppState.isDraggingPathHandle = true;
-            setLog("ĐANG UỐN CONG QUỸ ĐẠO DI CHUYỂN CỦA CẦU THỦ");
-            render();
-            return;
+        if (AppState.selectedType === 'circle') {
+            const prevCircle = prevKf?.circles.find(pc => pc.id === AppState.selectedObj.id);
+            if (prevCircle && AppState.selectedObj.isHitPathHandle(pos.x, pos.y, prevCircle, responsiveConstant, AppState.userScale)) {
+                pushHistorySnapshot();
+                AppState.isDragging = true;
+                AppState.isDraggingPathHandle = true;
+                setLog("ĐANG UỐN CONG QUỸ ĐẠO DI CHUYỂN CỦA CẦU THỦ");
+                render();
+                return;
+            }
+        } else if (AppState.selectedType === 'highlight') {
+            const prevHl = (prevKf?.highlights || []).find(ph => ph.id === AppState.selectedObj.id);
+            if (prevHl && AppState.selectedObj.isHitPathHandle(pos.x, pos.y, prevHl, responsiveConstant, AppState.userScale)) {
+                pushHistorySnapshot();
+                AppState.isDragging = true;
+                AppState.isDraggingPathHandle = true;
+                setLog("ĐANG UỐN CONG QUỸ ĐẠO DI CHUYỂN CỦA HIGHLIGHT");
+                render();
+                return;
+            }
         }
     }
 
     AppState.selectedObj = null;
+    AppState.selectedType = null;
     AppState.isDragging = false;
     AppState.isDraggingPathHandle = false;
+    AppState.isResizingHighlight = false;
     AppState.polygonDragIndex = -1;
 
+    // 1. Check Text
     for (let i = AppState.texts.length - 1; i >= 0; i--) {
         if (AppState.texts[i].isHit(pos.x, pos.y, ctx, responsiveConstant, AppState.userScale)) {
+            pushHistorySnapshot();
             AppState.selectedObj = AppState.texts[i];
             AppState.selectedType = 'text';
             AppState.isDragging = true;
             AppState.dragOffset = { x: pos.x - AppState.texts[i].x, y: pos.y - AppState.texts[i].y };
-            setLog(`ĐÃ CHỌN NHÃN "${AppState.texts[i].text}" • KÉO ĐỂ DI CHUYỂN`);
+            syncTextControlsFromSelection(AppState.texts[i]);
+            setLog(`ĐÃ CHỌN NHÃN "${AppState.texts[i].text}" • CHỈNH SỬA TRỰC TIẾP Ở CỘT PHẢI`);
             render();
             return;
         }
     }
 
+    // 2. Check Circle
     for (let i = AppState.circles.length - 1; i >= 0; i--) {
         if (AppState.circles[i].isHit(pos.x, pos.y, AppState.userScale)) {
+            pushHistorySnapshot();
             AppState.selectedObj = AppState.circles[i];
             AppState.selectedType = 'circle';
             AppState.isDragging = true;
             AppState.dragOffset = { x: pos.x - AppState.circles[i].x, y: pos.y - AppState.circles[i].y };
+            syncCircleControlsFromSelection(AppState.circles[i]);
             const name = AppState.circles[i].detailsText || (AppState.circles[i].text ? `#${AppState.circles[i].text}` : 'TOKEN');
-            setLog(`ĐÃ CHỌN ${name} • KÉO ĐỂ ĐỔI VỊ TRÍ`);
+            setLog(`ĐÃ CHỌN ${name} • SỬA SỐ ÁO/TÊN/HƯỚNG NHÌN TRỰC TIẾP Ở CỘT PHẢI`);
             render();
             return;
         }
     }
 
+    // 3. Check Highlight
+    for (let i = AppState.highlights.length - 1; i >= 0; i--) {
+        if (AppState.highlights[i].isHit(pos.x, pos.y, responsiveConstant, AppState.userScale)) {
+            pushHistorySnapshot();
+            AppState.selectedObj = AppState.highlights[i];
+            AppState.selectedType = 'highlight';
+            AppState.isDragging = true;
+            AppState.dragOffset = { x: pos.x - AppState.highlights[i].x, y: pos.y - AppState.highlights[i].y };
+            syncHighlightControlsFromSelection(AppState.highlights[i]);
+            setLog("ĐÃ CHỌN HIGHLIGHT • GÕ TÊN CẦU THỦ BÊN DƯỚI HOẶC SHIFT+CLICK ĐỂ NỐI DÂY");
+            render();
+            return;
+        }
+    }
+
+    // 4. Check Highlight Link
+    for (let i = AppState.highlightLinks.length - 1; i >= 0; i--) {
+        const lnk = AppState.highlightLinks[i];
+        const h1 = AppState.highlights.find(h => h.id === lnk.fromId);
+        const h2 = AppState.highlights.find(h => h.id === lnk.toId);
+        if (Highlight.isHitLink(pos.x, pos.y, h1, h2, responsiveConstant, AppState.userScale)) {
+            AppState.selectedObj = lnk;
+            AppState.selectedType = 'highlightLink';
+            setLog("ĐÃ CHỌN DÂY LIÊN KẾT • BẤM DELETE ĐỂ XÓA HOẶC ĐỔI MÀU Ở BẢNG MÀU");
+            render();
+            return;
+        }
+    }
+
+    // 5. Check Arrow
     for (let i = AppState.arrows.length - 1; i >= 0; i--) {
         const arr = AppState.arrows[i];
         if (arr.isHitHandle(pos.x, pos.y, 'control', responsiveConstant, AppState.userScale)) {
+            pushHistorySnapshot();
             AppState.selectedObj = arr;
             AppState.selectedType = 'arrow';
             AppState.isDragging = true;
             AppState.arrowDragPoint = 'control';
+            syncArrowControlsFromSelection(arr);
             setLog("BẺ CONG ĐƯỜNG CHUYỀN / MŨI TÊN");
             render();
             return;
         }
         if (arr.isHitHandle(pos.x, pos.y, 'from', responsiveConstant, AppState.userScale)) {
+            pushHistorySnapshot();
             AppState.selectedObj = arr;
             AppState.selectedType = 'arrow';
             AppState.isDragging = true;
             AppState.arrowDragPoint = 'from';
-            setLog("ĐIỀU CHỈNH ĐIỂM ĐẦU MŨI TÊN");
+            syncArrowControlsFromSelection(arr);
             render();
             return;
         }
         if (arr.isHitHandle(pos.x, pos.y, 'to', responsiveConstant, AppState.userScale)) {
+            pushHistorySnapshot();
             AppState.selectedObj = arr;
             AppState.selectedType = 'arrow';
             AppState.isDragging = true;
             AppState.arrowDragPoint = 'to';
-            setLog("ĐIỀU CHỈNH ĐIỂM CUỐI MŨI TÊN");
+            syncArrowControlsFromSelection(arr);
             render();
             return;
         }
         if (arr.isHitBody(pos.x, pos.y, AppState.userScale)) {
+            pushHistorySnapshot();
             AppState.selectedObj = arr;
             AppState.selectedType = 'arrow';
             AppState.isDragging = true;
@@ -735,37 +1188,42 @@ canvas.addEventListener("mousedown", (e) => {
                 toX: pos.x - arr.toX, toY: pos.y - arr.toY,
                 cx: pos.x - arr.cx, cy: pos.y - arr.cy
             };
-            setLog("DI CHUYỂN MŨI TÊN");
+            syncArrowControlsFromSelection(arr);
+            setLog("ĐÃ CHỌN MŨI TÊN • ĐỔI KIỂU LƯỢN SÓNG/ĐẦU MÚT TRỰC TIẾP Ở CỘT PHẢI");
             render();
             return;
         }
     }
 
+    // 6. Check Polygon
     for (let i = AppState.polygons.length - 1; i >= 0; i--) {
         const poly = AppState.polygons[i];
         const vertexIndex = poly.getHitVertexIndex(pos.x, pos.y, AppState.userScale);
         if (vertexIndex !== -1) {
+            pushHistorySnapshot();
             AppState.selectedObj = poly;
             AppState.selectedType = 'polygon';
             AppState.isDragging = true;
             AppState.polygonDragIndex = vertexIndex;
-            setLog(`ĐIỀU CHỈNH ĐỈNH VÙNG CHIẾN THUẬT #${vertexIndex + 1}`);
+            syncPolygonControlsFromSelection(poly);
             render();
             return;
         }
         if (poly.isHit(pos.x, pos.y)) {
+            pushHistorySnapshot();
             AppState.selectedObj = poly;
             AppState.selectedType = 'polygon';
             AppState.isDragging = true;
             AppState.lastMousePos = { x: pos.x, y: pos.y };
             AppState.polygonDragIndex = -1;
-            setLog("DI CHUYỂN VÙNG CHIẾN THUẬT");
+            syncPolygonControlsFromSelection(poly);
+            setLog("ĐÃ CHỌN VÙNG CHIẾN THUẬT • ĐỔI MÀU/KẺ SỌC/NHÃN VÙNG Ở CỘT PHẢI");
             render();
             return;
         }
     }
 
-    setLog("READY • CHỌN & KÉO CÁC PHẦN TỬ TRÊN SÂN");
+    setLog("READY • CLICK PHẦN TỬ ĐỂ CHỈNH SỬA TRỰC TIẾP");
     render();
 });
 
@@ -782,14 +1240,24 @@ canvas.addEventListener("mousemove", (e) => {
     }
 
     if (AppState.isDragging && AppState.selectedObj) {
-        if (AppState.isDraggingPathHandle && AppState.selectedType === 'circle') {
+        AppState.hasMovedDuringDrag = true;
+
+        if (AppState.isResizingHighlight && AppState.selectedType === 'highlight') {
+            const hl = AppState.selectedObj;
+            const rawDist = Math.hypot(pos.x - hl.x, pos.y - hl.y);
+            const newSize = Math.max(8, Math.min(200, Math.round(rawDist / (responsiveConstant * AppState.userScale))));
+            applyHighlightSizeChange(newSize);
+            return;
+        }
+
+        if (AppState.isDraggingPathHandle && (AppState.selectedType === 'circle' || AppState.selectedType === 'highlight')) {
             AppState.selectedObj.pathCx = pos.x;
             AppState.selectedObj.pathCy = pos.y;
             render();
             return;
         }
 
-        if (AppState.selectedType === 'circle' || AppState.selectedType === 'text') {
+        if (AppState.selectedType === 'circle' || AppState.selectedType === 'text' || AppState.selectedType === 'highlight') {
             AppState.selectedObj.x = pos.x - AppState.dragOffset.x;
             AppState.selectedObj.y = pos.y - AppState.dragOffset.y;
         } else if (AppState.selectedType === 'arrow') {
@@ -826,6 +1294,8 @@ canvas.addEventListener("mousemove", (e) => {
 canvas.addEventListener("mouseup", () => {
     if (AppState.mode === 'drawArrow' && AppState.drawingArrow) {
         AppState.arrows.push(AppState.drawingArrow);
+        AppState.selectedObj = AppState.drawingArrow;
+        AppState.selectedType = 'arrow';
         AppState.drawingArrow = null;
         AppState.mode = 'select';
         const arrowCheckbox = document.getElementById("draw-arrow-input");
@@ -837,12 +1307,325 @@ canvas.addEventListener("mouseup", () => {
 
     AppState.isDragging = false;
     AppState.isDraggingPathHandle = false;
+    AppState.isResizingHighlight = false;
     AppState.arrowDragPoint = null;
     AppState.polygonDragIndex = -1;
     render();
 });
 
-// --- ACTIONS & CONTROLS ---
+// --- ĐIỀU KHIỂN HIGHLIGHT, TEXT DƯỚI HIGHLIGHT & HIỆU ỨNG ---
+function applyHighlightSizeChange(newSize) {
+    const val = Math.max(8, Math.min(200, parseFloat(newSize) || 32));
+    const slider = document.getElementById("hl-size-slider");
+    const numInput = document.getElementById("hl-size-number");
+    const syncAll = document.getElementById("hl-sync-size")?.checked;
+
+    if (slider) slider.value = Math.min(140, val);
+    if (numInput) numInput.value = val;
+
+    if (syncAll) {
+        AppState.highlights.forEach(h => { h.size = val; });
+        setLog(`ĐÃ ĐỒNG BỘ SIZE TẤT CẢ HIGHLIGHT: ${val}PX`);
+    } else if (AppState.selectedObj && AppState.selectedType === 'highlight') {
+        AppState.selectedObj.size = val;
+        setLog(`SIZE HIGHLIGHT ĐANG CHỌN: ${val}PX`);
+    }
+    render();
+}
+
+document.getElementById("hl-size-slider")?.addEventListener("input", (e) => applyHighlightSizeChange(e.target.value));
+document.getElementById("hl-size-number")?.addEventListener("input", (e) => applyHighlightSizeChange(e.target.value));
+
+document.getElementById("hl-sync-size")?.addEventListener("change", (e) => {
+    if (e.target.checked) {
+        const currentVal = parseFloat(document.getElementById("hl-size-number")?.value) || 32;
+        applyHighlightSizeChange(currentVal);
+    } else {
+        setLog("CHẾ ĐỘ SIZE RIÊNG LẺ TỪNG VÒNG HIGHLIGHT");
+    }
+});
+
+document.getElementById("hl-shape-style")?.addEventListener("change", (e) => {
+    const style = e.target.value;
+    const syncAll = document.getElementById("hl-sync-size")?.checked;
+    if (syncAll) AppState.highlights.forEach(h => { h.shapeStyle = style; });
+    else if (AppState.selectedObj && AppState.selectedType === 'highlight') AppState.selectedObj.shapeStyle = style;
+    render();
+});
+
+document.getElementById("hl-effect-style")?.addEventListener("change", (e) => {
+    const eff = e.target.value;
+    if (AppState.selectedObj && AppState.selectedType === 'highlight') {
+        AppState.selectedObj.effectStyle = eff;
+    } else {
+        AppState.highlights.forEach(h => { h.effectStyle = eff; });
+    }
+    render();
+});
+
+// Nhập Text đánh dấu cầu thủ bên dưới Highlight (Live Edit)
+document.getElementById("hl-label-text")?.addEventListener("input", (e) => {
+    if (AppState.selectedObj && AppState.selectedType === 'highlight') {
+        AppState.selectedObj.labelText = e.target.value;
+        render();
+    }
+});
+
+document.getElementById("hl-label-size")?.addEventListener("input", (e) => {
+    const sz = Math.max(8, Math.min(48, parseFloat(e.target.value) || 15));
+    const syncAll = document.getElementById("hl-sync-size")?.checked;
+    if (syncAll) AppState.highlights.forEach(h => { h.labelSize = sz; });
+    else if (AppState.selectedObj && AppState.selectedType === 'highlight') AppState.selectedObj.labelSize = sz;
+    render();
+});
+
+document.getElementById("hl-label-style")?.addEventListener("change", (e) => {
+    const st = e.target.value;
+    const syncAll = document.getElementById("hl-sync-size")?.checked;
+    if (syncAll) AppState.highlights.forEach(h => { h.labelStyle = st; });
+    else if (AppState.selectedObj && AppState.selectedType === 'highlight') AppState.selectedObj.labelStyle = st;
+    render();
+});
+
+document.getElementById("hl-opacity-slider")?.addEventListener("input", (e) => {
+    const op = parseFloat(e.target.value) || 0.48;
+    const syncAll = document.getElementById("hl-sync-size")?.checked;
+    if (syncAll) AppState.highlights.forEach(h => { h.opacity = op; });
+    else if (AppState.selectedObj && AppState.selectedType === 'highlight') AppState.selectedObj.opacity = op;
+    render();
+});
+
+document.getElementById("hl-line-type")?.addEventListener("change", (e) => {
+    const lt = e.target.value;
+    if (AppState.selectedObj && AppState.selectedType === 'highlightLink') {
+        AppState.selectedObj.lineType = lt;
+    } else {
+        AppState.highlightLinks.forEach(l => { l.lineType = lt; });
+    }
+    render();
+});
+
+function setHighlightColor(colorHex) {
+    AppState.activeHighlightColor = colorHex;
+    const picker = document.getElementById("hl-custom-color");
+    if (picker) picker.value = colorHex;
+
+    document.querySelectorAll(".hl-swatch").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.color?.toLowerCase() === colorHex.toLowerCase());
+    });
+
+    if (AppState.selectedObj && AppState.selectedType === 'highlight') {
+        AppState.selectedObj.color = colorHex;
+        AppState.highlightLinks.forEach(l => {
+            if (l.fromId === AppState.selectedObj.id || l.toId === AppState.selectedObj.id) {
+                l.color = colorHex;
+            }
+        });
+        render();
+    } else if (AppState.selectedObj && AppState.selectedType === 'highlightLink') {
+        AppState.selectedObj.color = colorHex;
+        render();
+    }
+}
+
+document.querySelectorAll(".hl-swatch").forEach(btn => {
+    btn.addEventListener("click", () => setHighlightColor(btn.dataset.color));
+});
+
+document.getElementById("hl-custom-color")?.addEventListener("input", (e) => setHighlightColor(e.target.value));
+
+document.getElementById("btn-clear-hl-links")?.addEventListener("click", () => {
+    pushHistorySnapshot();
+    if (AppState.selectedObj && AppState.selectedType === 'highlight') {
+        const id = AppState.selectedObj.id;
+        const kf = AppState.project.slides[AppState.currentSlideIdx].keyframes[AppState.currentKfIdx];
+        kf.highlightLinks = kf.highlightLinks.filter(l => l.fromId !== id && l.toId !== id);
+        syncActiveKeyframeRefs();
+        render();
+        setLog("ĐÃ XÓA CÁC DÂY NỐI CỦA VÒNG HIGHLIGHT ĐANG CHỌN");
+    } else if (AppState.highlightLinks.length > 0) {
+        if (confirm("Xóa toàn bộ các đường thẳng nối giữa các vòng Highlight (giữ nguyên các vòng tròn)?")) {
+            const kf = AppState.project.slides[AppState.currentSlideIdx].keyframes[AppState.currentKfIdx];
+            kf.highlightLinks = [];
+            syncActiveKeyframeRefs();
+            render();
+            setLog("ĐÃ XÓA TOÀN BỘ DÂY NỐI HIGHLIGHT");
+        }
+    }
+});
+
+// --- LIVE EDIT & CONTROLS CHO PLAYER (CIRCLE), ARROW, POLYGON, TEXT ---
+
+// Live edit cho Player Token khi đang được chọn
+["circle-color", "circle-text-color"].forEach(id => {
+    document.getElementById(id)?.addEventListener("change", () => {
+        if (AppState.selectedObj && AppState.selectedType === 'circle') {
+            AppState.selectedObj.color = document.getElementById("circle-color").value;
+            AppState.selectedObj.textColor = document.getElementById("circle-text-color").value;
+            render();
+        }
+    });
+});
+
+["circle-text", "circle-details-text"].forEach(id => {
+    document.getElementById(id)?.addEventListener("input", () => {
+        if (AppState.selectedObj && AppState.selectedType === 'circle') {
+            AppState.selectedObj.text = document.getElementById("circle-text").value;
+            AppState.selectedObj.detailsText = document.getElementById("circle-details-text").value;
+            render();
+        }
+    });
+});
+
+document.getElementById("circle-vision-check")?.addEventListener("change", (e) => {
+    if (AppState.selectedObj && AppState.selectedType === 'circle') {
+        AppState.selectedObj.showVision = e.target.checked;
+        render();
+    }
+});
+
+document.getElementById("circle-vision-angle")?.addEventListener("input", (e) => {
+    const deg = parseFloat(e.target.value) || 0;
+    document.getElementById("vision-angle-label").textContent = `${deg}°`;
+    if (AppState.selectedObj && AppState.selectedType === 'circle') {
+        AppState.selectedObj.showVision = true;
+        document.getElementById("circle-vision-check").checked = true;
+        AppState.selectedObj.visionAngle = deg;
+        render();
+    }
+});
+
+// 1-Click Formation Spawner
+const FORMATIONS = {
+    "4-3-3": [
+        { num: "1", role: "GK", x: 0.08, y: 0.50 },
+        { num: "2", role: "RB", x: 0.25, y: 0.84 },
+        { num: "4", role: "CB", x: 0.22, y: 0.62 },
+        { num: "5", role: "CB", x: 0.22, y: 0.38 },
+        { num: "3", role: "LB", x: 0.25, y: 0.16 },
+        { num: "6", role: "DM", x: 0.38, y: 0.50 },
+        { num: "8", role: "CM", x: 0.50, y: 0.68 },
+        { num: "10", role: "CM", x: 0.50, y: 0.32 },
+        { num: "7", role: "RW", x: 0.72, y: 0.82 },
+        { num: "9", role: "ST", x: 0.76, y: 0.50 },
+        { num: "11", role: "LW", x: 0.72, y: 0.18 }
+    ],
+    "4-2-3-1": [
+        { num: "1", role: "GK", x: 0.08, y: 0.50 },
+        { num: "2", role: "RB", x: 0.24, y: 0.84 },
+        { num: "4", role: "CB", x: 0.21, y: 0.62 },
+        { num: "5", role: "CB", x: 0.21, y: 0.38 },
+        { num: "3", role: "LB", x: 0.24, y: 0.16 },
+        { num: "6", role: "DM", x: 0.38, y: 0.62 },
+        { num: "8", role: "DM", x: 0.38, y: 0.38 },
+        { num: "7", role: "RAM", x: 0.58, y: 0.80 },
+        { num: "10", role: "CAM", x: 0.56, y: 0.50 },
+        { num: "11", role: "LAM", x: 0.58, y: 0.20 },
+        { num: "9", role: "ST", x: 0.76, y: 0.50 }
+    ],
+    "3-2-5": [
+        { num: "1", role: "GK", x: 0.08, y: 0.50 },
+        { num: "2", role: "RCB", x: 0.24, y: 0.76 },
+        { num: "4", role: "CCB", x: 0.22, y: 0.50 },
+        { num: "5", role: "LCB", x: 0.24, y: 0.24 },
+        { num: "6", role: "PIVOT", x: 0.40, y: 0.62 },
+        { num: "3", role: "IWB", x: 0.40, y: 0.38 },
+        { num: "7", role: "RW", x: 0.70, y: 0.88 },
+        { num: "8", role: "RHS", x: 0.64, y: 0.66 },
+        { num: "9", role: "ST", x: 0.74, y: 0.50 },
+        { num: "10", role: "LHS", x: 0.64, y: 0.34 },
+        { num: "11", role: "LW", x: 0.70, y: 0.12 }
+    ],
+    "4-4-2": [
+        { num: "1", role: "GK", x: 0.08, y: 0.50 },
+        { num: "2", role: "RB", x: 0.22, y: 0.82 },
+        { num: "4", role: "CB", x: 0.20, y: 0.60 },
+        { num: "5", role: "CB", x: 0.20, y: 0.40 },
+        { num: "3", role: "LB", x: 0.22, y: 0.18 },
+        { num: "7", role: "RM", x: 0.42, y: 0.82 },
+        { num: "6", role: "CM", x: 0.40, y: 0.60 },
+        { num: "8", role: "CM", x: 0.40, y: 0.40 },
+        { num: "11", role: "LM", x: 0.42, y: 0.18 },
+        { num: "9", role: "ST", x: 0.66, y: 0.60 },
+        { num: "10", role: "ST", x: 0.66, y: 0.40 }
+    ]
+};
+
+document.getElementById("btn-spawn-formation")?.addEventListener("click", () => {
+    pushHistorySnapshot();
+    const presetKey = document.getElementById("formation-preset")?.value || "4-3-3";
+    let teamColor = document.getElementById("circle-color")?.value || "red";
+    if (teamColor === "ball") teamColor = "red";
+    const textColor = document.getElementById("circle-text-color")?.value || "white";
+
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.width / dpr;
+    const H = canvas.height / dpr;
+    const isVert = AppState.pitchType === 'vertical';
+
+    const template = FORMATIONS[presetKey] || FORMATIONS["4-3-3"];
+    template.forEach(p => {
+        const px = isVert ? (p.y * W) : (p.x * W);
+        const py = isVert ? ((1 - p.x) * H) : (p.y * H);
+        AppState.circles.push(new Circle(px, py, 20 * responsiveConstant, teamColor, p.num, textColor, p.role));
+    });
+
+    updateCounts();
+    render();
+    setLog(`ĐÃ THẢ ĐỘI HÌNH ${presetKey} (${teamColor.toUpperCase()})`);
+});
+
+// Live edit cho Arrow khi đang chọn
+["arrow-color", "arrow-type", "arrow-head-type"].forEach(id => {
+    document.getElementById(id)?.addEventListener("change", () => {
+        if (AppState.selectedObj && AppState.selectedType === 'arrow') {
+            AppState.selectedObj.color = document.getElementById("arrow-color").value;
+            AppState.selectedObj.type = document.getElementById("arrow-type").value;
+            AppState.selectedObj.headType = document.getElementById("arrow-head-type").value;
+            AppState.selectedObj.isArrow = AppState.selectedObj.headType !== 'none';
+            render();
+        }
+    });
+});
+
+// Live edit cho Polygon (Zone) khi đang chọn
+["poly-color", "poly-fill-style"].forEach(id => {
+    document.getElementById(id)?.addEventListener("change", () => {
+        if (AppState.selectedObj && AppState.selectedType === 'polygon') {
+            AppState.selectedObj.color = document.getElementById("poly-color").value;
+            AppState.selectedObj.fillStyle = document.getElementById("poly-fill-style").value;
+            render();
+        }
+    });
+});
+
+document.getElementById("poly-label-input")?.addEventListener("input", (e) => {
+    if (AppState.selectedObj && AppState.selectedType === 'polygon') {
+        AppState.selectedObj.label = e.target.value;
+        render();
+    }
+});
+
+// Live edit cho Text Label khi đang chọn
+document.getElementById("text-input")?.addEventListener("input", (e) => {
+    if (AppState.selectedObj && AppState.selectedType === 'text') {
+        AppState.selectedObj.text = e.target.value;
+        render();
+    }
+});
+
+["text-font-size", "text-color-select", "text-bg-style"].forEach(id => {
+    document.getElementById(id)?.addEventListener("change", () => {
+        if (AppState.selectedObj && AppState.selectedType === 'text') {
+            AppState.selectedObj.fontSize = parseInt(document.getElementById("text-font-size").value) || 20;
+            AppState.selectedObj.color = document.getElementById("text-color-select").value;
+            AppState.selectedObj.bgStyle = document.getElementById("text-bg-style").value;
+            render();
+        }
+    });
+});
+
+// --- CÁC NÚT QUẢN LÝ KEYFRAME, SLIDE & TOOLBAR ---
 document.getElementById("btn-add-keyframe").addEventListener("click", () => {
     if (!AppState.project) return;
     stopAnimationPreview();
@@ -854,15 +1637,19 @@ document.getElementById("btn-add-keyframe").addEventListener("click", () => {
         circles: currentKf.circles.map(c => c.clone()),
         arrows: currentKf.arrows.map(a => a.clone()),
         texts: currentKf.texts.map(t => t.clone()),
-        polygons: currentKf.polygons.map(p => p.clone())
+        polygons: currentKf.polygons.map(p => p.clone()),
+        highlights: (currentKf.highlights || []).map(h => h.clone()),
+        highlightLinks: (currentKf.highlightLinks || []).map(l => ({ ...l }))
     };
 
     slide.keyframes.splice(AppState.currentKfIdx + 1, 0, nextKf);
     AppState.currentKfIdx += 1;
     AppState.selectedObj = null;
+    AppState.undoStack = [];
+    AppState.redoStack = [];
     syncActiveKeyframeRefs();
     render();
-    setLog(`ĐÃ TẠO SA BÀN ${AppState.currentKfIdx + 1} • HÃY KÉO CẦU THỦ TỚI VỊ TRÍ MỚI!`);
+    setLog(`ĐÃ TẠO SA BÀN ${AppState.currentKfIdx + 1} • KÉO CẦU THỦ / HIGHLIGHT TỚI VỊ TRÍ MỚI!`);
 });
 
 document.getElementById("btn-del-keyframe").addEventListener("click", () => {
@@ -905,12 +1692,10 @@ document.getElementById("btn-play-anim").addEventListener("click", () => {
     }
 });
 
-// Thêm trang mới hoàn toàn độc lập
 document.getElementById("btn-add-slide").addEventListener("click", async () => {
     if (!AppState.project) return;
     stopAnimationPreview();
     const newIndex = AppState.project.slides.length + 1;
-    // Trang mới mặc định dùng sân 2D chuẩn, độc lập với ảnh của trang trước
     const slide = createNewSlide(`Slide ${newIndex}: Tình huống mới`, 'horizontal', null);
     AppState.project.slides.push(slide);
     AppState.currentSlideIdx = AppState.project.slides.length - 1;
@@ -921,7 +1706,7 @@ document.getElementById("btn-add-slide").addEventListener("click", async () => {
     syncActiveKeyframeRefs();
     render();
     queueAutoSave();
-    setLog(`ĐÃ THÊM TRANG MỚI #${newIndex} (SÂN MỚI ĐỘC LẬP)`);
+    setLog(`ĐÃ THÊM TRANG MỚI #${newIndex}`);
 });
 
 document.getElementById("slide-title-input").addEventListener("input", (e) => {
@@ -976,7 +1761,6 @@ document.getElementById("btn-change-bg-inline").addEventListener("click", () => 
     document.getElementById("custom-img-input").click();
 });
 
-// Nút huỷ ảnh custom quay về sân chuẩn
 const revertBtn = document.getElementById("btn-revert-pitch-inline");
 if (revertBtn) {
     revertBtn.addEventListener("click", async () => {
@@ -991,7 +1775,6 @@ if (revertBtn) {
     });
 }
 
-// Xử lý nạp ảnh custom: Chỉ lưu vào trang hiện tại!
 document.getElementById("custom-img-input").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1024,14 +1807,13 @@ document.getElementById("custom-img-input").addEventListener("change", (e) => {
     e.target.value = "";
 });
 
-// Đổi hướng sân cho riêng trang hiện tại
 document.getElementById("pitch-type").addEventListener("change", (e) => {
     const newPitch = e.target.value;
     AppState.pitchType = newPitch;
     const curSlide = AppState.project?.slides[AppState.currentSlideIdx];
     if (curSlide) {
         curSlide.pitchType = newPitch;
-        curSlide.customBgData = null; // chọn hướng sân chuẩn thì bỏ ảnh custom
+        curSlide.customBgData = null;
     }
     resizeCanvas(AppState.pitchType);
     render();
@@ -1040,6 +1822,16 @@ document.getElementById("pitch-type").addEventListener("change", (e) => {
     setLog(`HƯỚNG SÂN TRANG #${AppState.currentSlideIdx + 1}: ${newPitch.toUpperCase()}`);
 });
 
+document.getElementById("pitch-grid-overlay")?.addEventListener("change", (e) => {
+    AppState.gridOverlay = e.target.value;
+    const curSlide = AppState.project?.slides[AppState.currentSlideIdx];
+    if (curSlide) curSlide.gridOverlay = AppState.gridOverlay;
+    render();
+    queueAutoSave();
+    setLog(`LƯỚI CHIẾN THUẬT: ${AppState.gridOverlay.toUpperCase()}`);
+});
+
+// --- RECORD VIDEO ANIMATION & BRIDGE SANG MODULE 07 ---
 async function recordSlideAnimationBlob(slideIndex) {
     const prevSlideIdx = AppState.currentSlideIdx;
     const prevKfIdx = AppState.currentKfIdx;
@@ -1117,7 +1909,7 @@ document.getElementById("export-video-btn").addEventListener("click", async () =
     if (!AppState.project) return;
     const slide = AppState.project.slides[AppState.currentSlideIdx];
     if (slide.keyframes.length < 2) {
-        alert("Trang hiện tại chỉ có 1 Sa bàn tĩnh. Hãy bấm '+ SA BÀN TIẾP THEO' và kéo cầu thủ di chuyển để tạo Video Animation, hoặc dùng nút 'XUẤT ẢNH LẺ'!");
+        alert("Trang hiện tại chỉ có 1 Sa bàn tĩnh. Hãy bấm '+ SA BÀN TIẾP' và kéo cầu thủ/highlight di chuyển để tạo Video Animation, hoặc dùng nút 'XUẤT ẢNH'!");
         return;
     }
 
@@ -1175,6 +1967,7 @@ document.getElementById("btn-push-module7").addEventListener("click", async () =
     window.location.href = "video.html";
 });
 
+// --- SCALE & THÊM OBJECT ---
 const scaleSlider = document.getElementById("global-scale");
 const scaleNumber = document.getElementById("scale-number");
 
@@ -1197,19 +1990,23 @@ scaleNumber.addEventListener("input", (e) => {
 });
 
 document.getElementById("circle-btn").addEventListener("click", () => {
+    pushHistorySnapshot();
     const color = document.getElementById("circle-color").value;
     const text = document.getElementById("circle-text").value;
     const details = document.getElementById("circle-details-text").value;
     const textColor = document.getElementById("circle-text-color").value || "white";
+    const showVision = document.getElementById("circle-vision-check")?.checked || false;
+    const visionAngle = parseFloat(document.getElementById("circle-vision-angle")?.value) || 0;
 
     const dpr = window.devicePixelRatio || 1;
-    const cx = (canvas.width / dpr) / 2;
-    const cy = (canvas.height / dpr) / 2;
+    const cx = (canvas.width / dpr) / 2 + (Math.random() * 24 - 12);
+    const cy = (canvas.height / dpr) / 2 + (Math.random() * 24 - 12);
 
-    const newCircle = new Circle(cx, cy, 20 * responsiveConstant, color, text, textColor, details);
+    const newCircle = new Circle(cx, cy, 20 * responsiveConstant, color, text, textColor, details, null, null, null, showVision, visionAngle);
     AppState.circles.push(newCircle);
-    document.getElementById("circle-text").value = "";
-    document.getElementById("circle-details-text").value = "";
+    AppState.selectedObj = newCircle;
+    AppState.selectedType = 'circle';
+
     updateCounts();
     render();
     setLog(`ADDED TOKEN ${details ? details : (text ? '#' + text : color)}`);
@@ -1218,10 +2015,17 @@ document.getElementById("circle-btn").addEventListener("click", () => {
 document.getElementById("text-btn").addEventListener("click", () => {
     const val = document.getElementById("text-input").value;
     if (!val) return;
+    pushHistorySnapshot();
     const fontSize = parseInt(document.getElementById("text-font-size").value) || 20;
+    const color = document.getElementById("text-color-select")?.value || "#ffffff";
+    const bgStyle = document.getElementById("text-bg-style")?.value || "none";
     const dpr = window.devicePixelRatio || 1;
-    AppState.texts.push(new TextObj((canvas.width / dpr) / 2, (canvas.height / dpr) / 2, val, fontSize));
-    document.getElementById("text-input").value = "";
+
+    const newTxt = new TextObj((canvas.width / dpr) / 2, (canvas.height / dpr) / 2, val, fontSize, 0, null, color, bgStyle);
+    AppState.texts.push(newTxt);
+    AppState.selectedObj = newTxt;
+    AppState.selectedType = 'text';
+
     updateCounts();
     render();
     setLog(`ADDED TEXT: "${val}"`);
@@ -1229,44 +2033,125 @@ document.getElementById("text-btn").addEventListener("click", () => {
 
 document.getElementById("closePolygon").addEventListener("click", () => {
     if (AppState.drawingPolygonPoints.length > 2) {
-        AppState.polygons.push(new Polygon(AppState.drawingPolygonPoints));
+        pushHistorySnapshot();
+        const pColor = document.getElementById("poly-color")?.value || "#ffffff";
+        const pFill = document.getElementById("poly-fill-style")?.value || "solid";
+        const pLabel = document.getElementById("poly-label-input")?.value || "";
+
+        const newPoly = new Polygon(AppState.drawingPolygonPoints, null, pColor, pFill, pLabel);
+        AppState.polygons.push(newPoly);
         AppState.drawingPolygonPoints = [];
+        AppState.selectedObj = newPoly;
+        AppState.selectedType = 'polygon';
+
         const zoneCheckbox = document.getElementById("draw-polygon-input");
         if (zoneCheckbox) zoneCheckbox.checked = false;
         updateToggleStatus();
         updateCounts();
         render();
-        setLog("TACTICAL ZONE CLOSED & CREATED");
+        setLog("TACTICAL ZONE CREATED");
     } else {
         setLog("CẦN ÍT NHẤT 3 ĐIỂM ĐỂ KHÉP VÙNG CHIẾN THUẬT");
     }
 });
 
-document.getElementById("delete-btn").addEventListener("click", () => {
+// Nhân bản nhanh phần tử đang chọn (CLONE / Ctrl+D)
+function duplicateSelectedObject() {
+    if (!AppState.selectedObj) {
+        setLog("CHƯA CHỌN PHẦN TỬ NÀO ĐỂ NHÂN BẢN");
+        return;
+    }
+    pushHistorySnapshot();
+    const offset = 22 * responsiveConstant;
+
+    if (AppState.selectedType === 'circle') {
+        const c = AppState.selectedObj.clone();
+        c.id = 'cir_' + generateId();
+        c.x += offset; c.y += offset;
+        AppState.circles.push(c);
+        AppState.selectedObj = c;
+    } else if (AppState.selectedType === 'highlight') {
+        const h = AppState.selectedObj.clone();
+        h.id = 'hl_' + generateId();
+        h.x += offset; h.y += offset;
+        AppState.highlights.push(h);
+        AppState.selectedObj = h;
+    } else if (AppState.selectedType === 'arrow') {
+        const a = AppState.selectedObj.clone();
+        a.id = 'arr_' + generateId();
+        a.fromX += offset; a.fromY += offset;
+        a.toX += offset; a.toY += offset;
+        a.cx += offset; a.cy += offset;
+        AppState.arrows.push(a);
+        AppState.selectedObj = a;
+    } else if (AppState.selectedType === 'text') {
+        const t = AppState.selectedObj.clone();
+        t.id = 'txt_' + generateId();
+        t.x += offset; t.y += offset;
+        AppState.texts.push(t);
+        AppState.selectedObj = t;
+    } else if (AppState.selectedType === 'polygon') {
+        const p = AppState.selectedObj.clone();
+        p.id = 'poly_' + generateId();
+        p.move(offset, offset);
+        AppState.polygons.push(p);
+        AppState.selectedObj = p;
+    }
+
+    updateCounts();
+    render();
+    setLog("ĐÃ NHÂN BẢN PHẦN TỬ (CLONE)");
+}
+
+function deleteSelectedObject() {
     if (!AppState.selectedObj) {
         setLog("CHƯA CHỌN PHẦN TỬ NÀO ĐỂ XÓA");
         return;
     }
+    pushHistorySnapshot();
     const targetId = AppState.selectedObj.id;
     const slide = AppState.project.slides[AppState.currentSlideIdx];
     const kf = slide.keyframes[AppState.currentKfIdx];
 
-    if (AppState.selectedType === 'circle') kf.circles = kf.circles.filter(o => o.id !== targetId);
-    else if (AppState.selectedType === 'arrow') kf.arrows = kf.arrows.filter(o => o.id !== targetId);
-    else if (AppState.selectedType === 'text') kf.texts = kf.texts.filter(o => o.id !== targetId);
-    else if (AppState.selectedType === 'polygon') kf.polygons = kf.polygons.filter(o => o.id !== targetId);
+    if (AppState.selectedType === 'circle') {
+        kf.circles = kf.circles.filter(o => o.id !== targetId);
+    } else if (AppState.selectedType === 'arrow') {
+        kf.arrows = kf.arrows.filter(o => o.id !== targetId);
+    } else if (AppState.selectedType === 'text') {
+        kf.texts = kf.texts.filter(o => o.id !== targetId);
+    } else if (AppState.selectedType === 'polygon') {
+        kf.polygons = kf.polygons.filter(o => o.id !== targetId);
+    } else if (AppState.selectedType === 'highlight') {
+        kf.highlights = kf.highlights.filter(o => o.id !== targetId);
+        kf.highlightLinks = kf.highlightLinks.filter(l => l.fromId !== targetId && l.toId !== targetId);
+    } else if (AppState.selectedType === 'highlightLink') {
+        kf.highlightLinks = kf.highlightLinks.filter(l => l.id !== targetId);
+    }
 
     AppState.selectedObj = null;
+    AppState.linkSourceHighlight = null;
     syncActiveKeyframeRefs();
     render();
     setLog("ĐÃ XÓA PHẦN TỬ");
-});
+}
+
+document.getElementById("undo-btn")?.addEventListener("click", performUndo);
+document.getElementById("redo-btn")?.addEventListener("click", performRedo);
+document.getElementById("dup-btn")?.addEventListener("click", duplicateSelectedObject);
+document.getElementById("delete-btn")?.addEventListener("click", deleteSelectedObject);
 
 document.getElementById("reset-btn").addEventListener("click", () => {
     if (confirm("Xóa toàn bộ phần tử trên nhịp sa bàn hiện tại?")) {
+        pushHistorySnapshot();
         const kf = AppState.project.slides[AppState.currentSlideIdx].keyframes[AppState.currentKfIdx];
-        kf.circles = []; kf.arrows = []; kf.texts = []; kf.polygons = [];
+        kf.circles = [];
+        kf.arrows = [];
+        kf.texts = [];
+        kf.polygons = [];
+        kf.highlights = [];
+        kf.highlightLinks = [];
         AppState.selectedObj = null;
+        AppState.linkSourceHighlight = null;
         syncActiveKeyframeRefs();
         render();
         setLog("ĐÃ LÀM MỚI SA BÀN HIỆN TẠI");
@@ -1275,6 +2160,7 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 
 document.getElementById("export-btn").addEventListener("click", () => {
     AppState.selectedObj = null;
+    AppState.linkSourceHighlight = null;
     render();
     const link = document.createElement('a');
     link.download = `${(AppState.project?.name || 'goal-line')}-slide-${AppState.currentSlideIdx + 1}.jpg`;
@@ -1288,52 +2174,139 @@ function updateCounts() {
     const arrowCnt = document.querySelector(".arrow-count");
     const textCnt = document.querySelector(".text-count");
     const polyCnt = document.querySelector(".polygon-count");
+    const hlCnt = document.querySelector(".highlight-count");
     if (circleCnt) circleCnt.innerText = AppState.circles.length;
     if (arrowCnt) arrowCnt.innerText = AppState.arrows.length;
     if (textCnt) textCnt.innerText = AppState.texts.length;
     if (polyCnt) polyCnt.innerText = AppState.polygons.length;
+    if (hlCnt) hlCnt.innerText = AppState.highlights.length;
+}
+
+function setExclusiveToolMode(activeCheckboxId) {
+    const ids = ["draw-arrow-input", "draw-polygon-input", "draw-highlight-input", "link-highlight-input"];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && id !== activeCheckboxId) el.checked = false;
+    });
+    updateToggleStatus();
 }
 
 function updateToggleStatus() {
-    const arrowChecked = document.getElementById("draw-arrow-input").checked;
-    const zoneChecked = document.getElementById("draw-polygon-input").checked;
+    const arrowChecked = document.getElementById("draw-arrow-input")?.checked;
+    const zoneChecked = document.getElementById("draw-polygon-input")?.checked;
+    const hlChecked = document.getElementById("draw-highlight-input")?.checked;
+    const linkChecked = document.getElementById("link-highlight-input")?.checked;
+
     const arrowPill = document.getElementById("arrow-status-pill");
     const zonePill = document.getElementById("zone-status-pill");
+    const hlPill = document.getElementById("highlight-status-pill");
+    const linkPill = document.getElementById("link-status-pill");
+
     if (arrowPill) arrowPill.textContent = arrowChecked ? "ON" : "OFF";
     if (zonePill) zonePill.textContent = zoneChecked ? "ON" : "OFF";
+    if (hlPill) hlPill.textContent = hlChecked ? "ON" : "OFF";
+    if (linkPill) linkPill.textContent = linkChecked ? "ON" : "OFF";
 }
 
-document.getElementById("draw-arrow-input").addEventListener("change", (e) => {
-    const zoneInput = document.getElementById("draw-polygon-input");
-    if (e.target.checked && zoneInput) zoneInput.checked = false;
-    updateToggleStatus();
-    if (e.target.checked) {
-        AppState.selectedObj = null;
-        setLog("MODE: DRAW ARROW • NHẤN & KÉO TRÊN SÂN");
-    } else {
-        setLog("MODE: SELECT & DRAG");
-    }
+document.getElementById("draw-arrow-input")?.addEventListener("change", (e) => {
+    if (e.target.checked) setExclusiveToolMode("draw-arrow-input");
+    else updateToggleStatus();
+    AppState.selectedObj = null;
+    AppState.linkSourceHighlight = null;
+    render();
+    setLog(e.target.checked ? "MODE: DRAW ARROW • NHẤN & KÉO TRÊN SÂN" : "MODE: SELECT & DRAG");
 });
 
-document.getElementById("draw-polygon-input").addEventListener("change", (e) => {
-    const arrowInput = document.getElementById("draw-arrow-input");
-    if (e.target.checked && arrowInput) arrowInput.checked = false;
-    updateToggleStatus();
-    if (e.target.checked) {
-        AppState.selectedObj = null;
-        setLog("MODE: DRAW ZONE • CHẤM CÁC ĐIỂM TRÊN SÂN");
-    } else {
-        setLog("MODE: SELECT & DRAG");
-    }
+document.getElementById("draw-polygon-input")?.addEventListener("change", (e) => {
+    if (e.target.checked) setExclusiveToolMode("draw-polygon-input");
+    else updateToggleStatus();
+    AppState.selectedObj = null;
+    AppState.linkSourceHighlight = null;
+    render();
+    setLog(e.target.checked ? "MODE: DRAW ZONE • CHẤM CÁC ĐIỂM TRÊN SÂN" : "MODE: SELECT & DRAG");
 });
 
+document.getElementById("draw-highlight-input")?.addEventListener("change", (e) => {
+    if (e.target.checked) setExclusiveToolMode("draw-highlight-input");
+    else updateToggleStatus();
+    AppState.linkSourceHighlight = null;
+    AppState.lastPlacedHighlight = null;
+    render();
+    setLog(e.target.checked ? "MODE: HIGHLIGHT • CLICK LÊN SÂN ĐỂ ĐẶT VÒNG HIGHLIGHT" : "MODE: SELECT & DRAG");
+});
+
+document.getElementById("link-highlight-input")?.addEventListener("change", (e) => {
+    if (e.target.checked) setExclusiveToolMode("link-highlight-input");
+    else updateToggleStatus();
+    AppState.linkSourceHighlight = null;
+    render();
+    setLog(e.target.checked ? "MODE: LINK/UNLINK • CLICK 2 VÒNG HIGHLIGHT ĐỂ NỐI HOẶC NGẮT DÂY" : "MODE: SELECT & DRAG");
+});
+
+// Shift + Lăn chuột: Xoay chữ HOẶC xoay hướng nhìn (Vision Cone) của Cầu thủ
 window.addEventListener("wheel", (e) => {
-    if (e.shiftKey && AppState.selectedObj && AppState.selectedType === 'text') {
+    if (!e.shiftKey || !AppState.selectedObj) return;
+    if (AppState.selectedType === 'text') {
         AppState.selectedObj.rotate += (e.deltaY > 0 ? 5 : -5);
-        setLog(`ROTATING TEXT: ${AppState.selectedObj.rotate}°`);
+        setLog(`XOAY CHỮ: ${AppState.selectedObj.rotate}°`);
+        render();
+    } else if (AppState.selectedType === 'circle' && AppState.selectedObj.color !== 'ball') {
+        AppState.selectedObj.showVision = true;
+        AppState.selectedObj.visionAngle = ((AppState.selectedObj.visionAngle || 0) + (e.deltaY > 0 ? 10 : -10));
+        syncCircleControlsFromSelection(AppState.selectedObj);
+        setLog(`XOAY HƯỚNG NHÌN CẦU THỦ: ${AppState.selectedObj.visionAngle}°`);
         render();
     }
 });
+
+// Phím tắt bàn phím chuyên nghiệp (Ctrl+Z, Ctrl+Y, Ctrl+D, Delete, Esc)
+window.addEventListener("keydown", (e) => {
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        performUndo();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        performRedo();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        duplicateSelectedObject();
+    } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (AppState.selectedObj) {
+            e.preventDefault();
+            deleteSelectedObject();
+        }
+    } else if (e.key === "Escape") {
+        setExclusiveToolMode(null);
+        AppState.selectedObj = null;
+        AppState.linkSourceHighlight = null;
+        AppState.drawingPolygonPoints = [];
+        render();
+        setLog("ĐÃ BỎ CHỌN & VỀ CHẾ ĐỘ CON TRỎ CHUỘT");
+    }
+});
+
+// Đóng / Mở cột Slide Deck bên trái để mở rộng diện tích mặt sân
+    const toggleSlidesDeck = () => {
+        const appContainer = document.querySelector(".app-container");
+        if (!appContainer) return;
+        const isCollapsed = appContainer.classList.toggle("slides-collapsed");
+        const toggleBtn = document.getElementById("btn-toggle-slides");
+        if (toggleBtn) {
+            toggleBtn.style.background = isCollapsed ? "var(--neo-green)" : "var(--neo-yellow)";
+        }
+        // Tự động phóng to mặt sân ra phần diện tích vừa giải phóng
+        setTimeout(() => {
+            resizeCanvas(AppState.pitchType);
+            render();
+        }, 30);
+        setLog(isCollapsed ? "ĐÃ THU GỌN SLIDE DECK • MỞ RỘNG MẶT SÂN" : "ĐÃ MỞ SLIDE DECK");
+    };
+
+    document.getElementById("btn-toggle-slides")?.addEventListener("click", toggleSlidesDeck);
+    document.getElementById("btn-collapse-slides")?.addEventListener("click", toggleSlidesDeck);
 
 window.addEventListener("resize", () => {
     resizeCanvas(AppState.pitchType);
